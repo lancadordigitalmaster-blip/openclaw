@@ -8,7 +8,12 @@ function esc(str) {
   if (!str) return '';
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function md(str) { if (!str) return ''; return esc(str).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); }
+function md(str) {
+  if (!str) return '';
+  // normaliza <strong> HTML que o LLM às vezes retorna → markdown, antes do esc()
+  str = str.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+  return esc(str).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
 function pad2(n) { return String(n).padStart(2, '0'); }
 function encodeWAText(t) { return encodeURIComponent(t); }
 
@@ -147,7 +152,10 @@ function generateHTML(data, templateHTML, options = {}) {
   const scriptBlocks = [];
   const scriptRegex = /<script(?:\s[^>]*)?>[\s\S]*?<\/script>/g;
   let m;
-  while ((m = scriptRegex.exec(templateHTML)) !== null) scriptBlocks.push(m[0]);
+  while ((m = scriptRegex.exec(templateHTML)) !== null) {
+    // skip external script-src tags — they come through headPre already
+    if (!/<script\s[^>]*src=/i.test(m[0])) scriptBlocks.push(m[0]);
+  }
   const headMatch = templateHTML.match(/<head>([\s\S]*?)<style>/);
   let headPre = headMatch ? headMatch[1].trim() : '';
   const clientTitle = esc(data.client_name || 'Proposta Comercial');
