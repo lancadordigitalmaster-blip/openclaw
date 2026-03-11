@@ -9,6 +9,19 @@ const TEMPLATES = {
   wesley: readFileSync(join(__dirname, '../_lib/template-wesley.html'), 'utf-8'),
 };
 
+function jsonError(res, status, error, extra = {}) {
+  return res.status(status).json({ ok: false, error, ...extra });
+}
+
+function extractTextContent(content) {
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter((block) => block && block.type === 'text' && typeof block.text === 'string')
+    .map((block) => block.text)
+    .join('\n')
+    .trim();
+}
+
 const PARSE_PROMPT = `Voce e um parser de propostas comerciais da Wolf Agency. Converta o texto abaixo (formato de slides do WhatsApp) para JSON estruturado.
 
 EXEMPLO DE REFERENCIA (proposta real aprovada — siga este padrao):
@@ -88,13 +101,13 @@ module.exports = async function handler(req, res) {
     return res.status(204).end();
   }
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return jsonError(res, 405, 'Method not allowed');
   }
 
   try {
     // Validar env vars
     if (!process.env.ANTHROPIC_API_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      return res.status(500).json({ ok: false, error: 'Variaveis de ambiente nao configuradas no servidor' });
+      return jsonError(res, 500, 'Variaveis de ambiente nao configuradas no servidor');
     }
 
     const { text, seller, origin, proposal_code, whatsapp, template } = req.body || {};
@@ -102,7 +115,7 @@ module.exports = async function handler(req, res) {
     const templateHTML = TEMPLATES[templateName] || TEMPLATES.classic;
 
     if (!text || text.length < 50) {
-      return res.status(400).json({ ok: false, error: 'Texto da proposta muito curto (minimo 50 chars)' });
+      return jsonError(res, 400, 'Texto da proposta muito curto (minimo 50 chars)');
     }
 
     // 1. Parse with Claude
@@ -113,13 +126,16 @@ module.exports = async function handler(req, res) {
       messages: [{ role: 'user', content: PARSE_PROMPT + text }],
     });
 
-    const jsonText = response.content[0].text.trim();
+    const jsonText = extractTextContent(response.content);
+    if (!jsonText) {
+      return jsonError(res, 500, 'Claude retornou resposta vazia');
+    }
     let data;
     try {
       const cleaned = jsonText.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
       data = JSON.parse(cleaned);
     } catch (parseErr) {
-      return res.status(500).json({ ok: false, error: 'Claude retornou JSON invalido', raw: jsonText.substring(0, 200) });
+      return jsonError(res, 500, 'Claude retornou JSON invalido', { raw: jsonText.substring(0, 200) });
     }
 
     // Override whatsapp if provided by seller
@@ -140,7 +156,7 @@ module.exports = async function handler(req, res) {
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
     if (!clientSlug) {
-      return res.status(400).json({ error: 'Nome do cliente invalido' });
+      return jsonError(res, 400, 'Nome do cliente invalido');
     }
 
     const htmlBuffer = Buffer.from(html, 'utf-8');
@@ -152,7 +168,7 @@ module.exports = async function handler(req, res) {
       });
 
     if (uploadErr) {
-      return res.status(500).json({ error: `Erro ao salvar proposta: ${uploadErr.message}` });
+      return jsonError(res, 500, `Erro ao salvar proposta: ${uploadErr.message}`);
     }
 
     // 4. Get public URL
@@ -160,7 +176,7 @@ module.exports = async function handler(req, res) {
     const storageUrl = urlData.publicUrl;
 
     // Clean URL via rewrite
-    const baseUrl = req.headers['x-forwarded-host'] || req.headers.host || 'comercial.wolfpacks.com.br';
+    const baseUrl = req.headers['x-forwarded-host'] || req.headers.host || 'propostas.wolfpacks.com.br';
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const publicUrl = `${protocol}://${baseUrl}/p/${clientSlug}`;
 
@@ -201,6 +217,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('parse-proposal error:', err);
-    return res.status(500).json({ ok: false, error: err.message });
+    return jsonError(res, 500, err.message);
   }
 };
