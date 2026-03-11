@@ -228,85 +228,169 @@ def get_weight_atd(tipo, quality_ok=True):
     return base  # multiplicador aplicado depois (× 0.8 ou × 1.2)
 
 # ── Busca tarefas entregues ontem ─────────────────────────────────────────────
+def load_history_deliveries(yesterday_str):
+    """
+    Lê clickup-history.jsonl e retorna set de task_ids que mudaram para
+    'enviado ao cliente' ou 'finalizado' na data de ontem.
+
+    Formato confirmado do JSONL:
+      {"task_id": "...", "event": "taskStatusUpdated",
+       "status_before": "...", "status_after": "...",
+       "timestamp": 1773199837056, "date": "2026-03-11"}
+    """
+    DELIVERY_STATUSES = {"enviado ao cliente", "finalizado", "concluído", "done"}
+    delivered_ids = set()
+
+    if not os.path.exists(HISTORY_FILE):
+        log("History file não encontrado — usando apenas ClickUp API")
+        return delivered_ids
+
+    try:
+        with open(HISTORY_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                    if (ev.get("date") == yesterday_str and
+                            ev.get("status_after", "").lower() in DELIVERY_STATUSES):
+                        delivered_ids.add(ev["task_id"])
+                except:
+                    pass
+    except Exception as e:
+        log(f"ERRO lendo history: {e}")
+
+    log(f"History: {len(delivered_ids)} task_ids entregues ontem ({yesterday_str})")
+    return delivered_ids
+
+def load_history_briefings(yesterday_str):
+    """
+    Retorna set de task_ids que entraram em 'produzindo' ontem (início de produção = briefing criado).
+    """
+    PRODUCTION_START = {"produzindo", "em produção"}
+    briefing_ids = set()
+
+    if not os.path.exists(HISTORY_FILE):
+        return briefing_ids
+
+    try:
+        with open(HISTORY_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                    if (ev.get("date") == yesterday_str and
+                            ev.get("status_after", "").lower() in PRODUCTION_START and
+                            ev.get("status_before", "").lower() == "para fazer"):
+                        briefing_ids.add(ev["task_id"])
+                except:
+                    pass
+    except Exception as e:
+        log(f"ERRO lendo history briefings: {e}")
+
+    log(f"History: {len(briefing_ids)} task_ids com novo briefing ontem ({yesterday_str})")
+    return briefing_ids
+
+def fetch_tasks_by_ids(task_ids, token):
+    """Busca detalhes de tarefas por ID (para enriquecer dados do history)."""
+    tasks = []
+    for tid in task_ids:
+        try:
+            t = api_get(f"https://api.clickup.com/api/v2/task/{tid}", token)
+            tasks.append(t)
+        except Exception as e:
+            log(f"ERRO busca task {tid}: {e}")
+    return tasks
+
 def fetch_delivered_yesterday(token):
     """
-    Retorna lista de tarefas que foram concluídas ontem.
-    Usa dois critérios:
-      1. Tarefas com status 'finalizado' e date_done de ontem
-      2. Tarefas com status 'enviado ao cliente' cujo last_update foi ontem
-         (proxy — não é perfeito, mas funciona sem history file)
+    Retorna lista de tarefas entregues ontem.
+    Fonte primária: clickup-history.jsonl (status_after = enviado/finalizado, date = ontem)
+    Fallback: ClickUp API com filtro date_done (apenas tarefas fechadas)
     """
-    now    = datetime.now(BRT)
+    now       = datetime.now(BRT)
     yesterday = now - timedelta(days=1)
-    day_start = datetime(yesterday.year, yesterday.month, yesterday.day,
-                          0, 0, 0, tzinfo=BRT)
-    day_end   = day_start + timedelta(days=1)
+    yesterday_str = yesterday.strftime("%Y-%m-%d")
 
-    start_ms = int(day_start.timestamp() * 1000)
-    end_ms   = int(day_end.timestamp()   * 1000)
+    day_start = datetime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0, tzinfo=BRT)
+    day_end   = day_start + timedelta(days=1)
+    start_ms  = int(day_start.timestamp() * 1000)
+    end_ms    = int(day_end.timestamp()   * 1000)
 
     delivered = []
+    seen_ids  = set()
 
+    # 1. Fonte primária: history file
+    history_ids = load_history_deliveries(yesterday_str)
+    if history_ids:
+        tasks = fetch_tasks_by_ids(history_ids, token)
+        for t in tasks:
+            t["_delivery_type"] = "history"
+            delivered.append(t)
+            seen_ids.add(t["id"])
+
+    # 2. Fallback API: tarefas fechadas com date_done de ontem (complementa history)
     for list_id in LISTS:
-        # Busca fechadas (date_done no range de ontem)
         try:
             url = (f"https://api.clickup.com/api/v2/list/{list_id}/task"
                    f"?include_closed=true&subtasks=true&page=0"
                    f"&date_done_gt={start_ms}&date_done_lt={end_ms}")
             data = api_get(url, token)
             for t in data.get("tasks", []):
-                t["_delivery_type"] = "finalizado"
-                delivered.append(t)
+                if t["id"] not in seen_ids:
+                    t["_delivery_type"] = "api_closed"
+                    delivered.append(t)
+                    seen_ids.add(t["id"])
         except Exception as e:
             log(f"ERRO busca fechadas lista {list_id}: {e}")
 
-        # Busca 'enviado ao cliente' atualizadas ontem (proxy)
-        try:
-            url = (f"https://api.clickup.com/api/v2/list/{list_id}/task"
-                   f"?include_closed=false&subtasks=true&page=0"
-                   f"&date_updated_gt={start_ms}&date_updated_lt={end_ms}"
-                   f"&statuses[]=enviado ao cliente")
-            data = api_get(url, token)
-            for t in data.get("tasks", []):
-                # Evitar duplicata se já veio como finalizado
-                if not any(d["id"] == t["id"] for d in delivered):
-                    t["_delivery_type"] = "enviado_ao_cliente"
-                    delivered.append(t)
-        except Exception as e:
-            log(f"ERRO busca enviados lista {list_id}: {e}")
-
-    log(f"Tarefas entregues ontem encontradas: {len(delivered)}")
+    log(f"Total entregas ontem: {len(delivered)} (history:{len(history_ids)} + api complementar)")
     return delivered
 
 def fetch_briefings_yesterday(token):
     """
-    Retorna tarefas criadas ou atualizadas para 'produzindo' ontem.
-    Proxy para briefings criados pelo atendimento.
+    Retorna tarefas com briefing criado ontem.
+    Fonte primária: history file (para fazer → produzindo = briefing criado)
+    Fallback: tarefas criadas ontem via ClickUp API
     """
-    now    = datetime.now(BRT)
-    yesterday = now - timedelta(days=1)
-    day_start = datetime(yesterday.year, yesterday.month, yesterday.day,
-                          0, 0, 0, tzinfo=BRT)
-    day_end   = day_start + timedelta(days=1)
+    now           = datetime.now(BRT)
+    yesterday     = now - timedelta(days=1)
+    yesterday_str = yesterday.strftime("%Y-%m-%d")
 
-    start_ms = int(day_start.timestamp() * 1000)
-    end_ms   = int(day_end.timestamp()   * 1000)
+    day_start = datetime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0, tzinfo=BRT)
+    day_end   = day_start + timedelta(days=1)
+    start_ms  = int(day_start.timestamp() * 1000)
+    end_ms    = int(day_end.timestamp()   * 1000)
 
     briefings = []
+    seen_ids  = set()
 
+    # 1. Fonte primária: history (para fazer → produzindo ontem)
+    history_ids = load_history_briefings(yesterday_str)
+    if history_ids:
+        tasks = fetch_tasks_by_ids(history_ids, token)
+        for t in tasks:
+            briefings.append(t)
+            seen_ids.add(t["id"])
+
+    # 2. Fallback: tarefas criadas ontem (sem history ou complementar)
     for list_id in LISTS:
-        # Tarefas criadas ontem = briefing novo
         try:
             url = (f"https://api.clickup.com/api/v2/list/{list_id}/task"
                    f"?include_closed=false&subtasks=true&page=0"
                    f"&date_created_gt={start_ms}&date_created_lt={end_ms}")
             data = api_get(url, token)
             for t in data.get("tasks", []):
-                briefings.append(t)
+                if t["id"] not in seen_ids:
+                    briefings.append(t)
+                    seen_ids.add(t["id"])
         except Exception as e:
             log(f"ERRO busca briefings lista {list_id}: {e}")
 
-    log(f"Briefings criados ontem: {len(briefings)}")
+    log(f"Briefings ontem: {len(briefings)}")
     return briefings
 
 # ── Verificação de qualidade de briefing ──────────────────────────────────────
