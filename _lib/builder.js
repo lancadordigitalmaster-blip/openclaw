@@ -8,7 +8,12 @@ function esc(str) {
   if (!str) return '';
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function md(str) { if (!str) return ''; return esc(str).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); }
+function md(str) {
+  if (!str) return '';
+  // normaliza <strong> HTML que o LLM às vezes retorna → markdown, antes do esc()
+  str = str.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+  return esc(str).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
 function pad2(n) { return String(n).padStart(2, '0'); }
 function encodeWAText(t) { return encodeURIComponent(t); }
 
@@ -50,7 +55,7 @@ function fixAccents(obj) {
 
 // ── Section builders
 function buildCover(data) {
-  return `<section class="cover"><div class="cover-noise"></div><div class="cover-iridescence"></div><canvas id="coverCanvas"></canvas><div class="cover-top"></div><div class="cover-body"><p class="cover-label reveal">${esc(data.tagline||'')}</p><h1 class="cover-title reveal">Proposta<br class="mobile-br"> Comercial<span class="accent">.</span></h1><div class="cover-divider reveal"></div><div class="cover-client reveal"><span class="cover-client-label">Para</span><span class="cover-client-name">${esc(data.client_name||'')}</span></div></div><div class="cover-bottom"><div class="cover-meta reveal"><span>Wolf Agency</span><span>${esc(data.year||new Date().getFullYear().toString())} · ${esc(data.service_type||'')}</span></div><div class="cover-scroll-hint reveal"><span class="scroll-line"></span><span>Scroll</span></div></div></section>`;
+  return `<section class="cover"><div class="cover-noise"></div><canvas id="coverCanvas"></canvas><div class="cover-top"></div><div class="cover-body"><p class="cover-label reveal">${esc(data.tagline||'')}</p><h1 class="cover-title reveal">Proposta<br class="mobile-br"> Comercial<span class="accent">.</span></h1><div class="cover-divider reveal"></div><div class="cover-client reveal"><span class="cover-client-label">Para</span><span class="cover-client-name">${esc(data.client_name||'')}</span></div></div><div class="cover-bottom"><div class="cover-meta reveal"><span>Wolf Agency</span><span>${esc(data.year||new Date().getFullYear().toString())} · ${esc(data.service_type||'')}</span></div><div class="cover-scroll-hint reveal"><span class="scroll-line"></span><span>Scroll</span></div></div></section>`;
 }
 
 function buildTicker(data) {
@@ -137,7 +142,10 @@ function generateHTML(data, templateHTML) {
   const scriptBlocks = [];
   const scriptRegex = /<script(?:\s[^>]*)?>[\s\S]*?<\/script>/g;
   let m;
-  while ((m = scriptRegex.exec(templateHTML)) !== null) scriptBlocks.push(m[0]);
+  while ((m = scriptRegex.exec(templateHTML)) !== null) {
+    // skip external script-src tags — they come through headPre already
+    if (!/<script\s[^>]*src=/i.test(m[0])) scriptBlocks.push(m[0]);
+  }
   const headMatch = templateHTML.match(/<head>([\s\S]*?)<style>/);
   let headPre = headMatch ? headMatch[1].trim() : '';
   const clientTitle = esc(data.client_name || 'Proposta Comercial');

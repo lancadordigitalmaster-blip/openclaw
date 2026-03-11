@@ -132,7 +132,7 @@ module.exports = async function handler(req, res) {
 
     const { error: uploadErr } = await supabase.storage
       .from('proposals')
-      .upload(`${clientSlug}.html`, html, {
+      .upload(`${clientSlug}.html`, Buffer.from(html, 'utf-8'), {
         contentType: 'text/html; charset=utf-8',
         upsert: true,
       });
@@ -146,7 +146,7 @@ module.exports = async function handler(req, res) {
     const storageUrl = urlData.publicUrl;
 
     // Clean URL via rewrite
-    const baseUrl = req.headers['x-forwarded-host'] || req.headers.host || 'wolf-comercial.vercel.app';
+    const baseUrl = req.headers['x-forwarded-host'] || req.headers.host || 'comercial.wolfpacks.com.br';
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const publicUrl = `${protocol}://${baseUrl}/proposta/${clientSlug}`;
 
