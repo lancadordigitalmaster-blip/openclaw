@@ -170,9 +170,47 @@ Além dos comandos exatos, responda também a variações em pt-BR:
 
 ---
 
+## MÓDULO 13 — PRODUTIVIDADE REAL
+
+Ativa a **segunda dimensão do score**: output real (entregas + briefings ponderados por complexidade), não só compliance.
+
+### Pré-requisito
+Campo `tipo_material` (dropdown) deve ser criado manualmente nas listas ClickUp antes de ativar.
+Após criar, preencher `TIPO_MATERIAL_FIELD_ID` em `guardiao-produtividade.py` e rodar `guardiao-poll-m13-patch.py <field_id>`.
+
+### Scripts
+| Script | Quando | Função |
+|--------|--------|--------|
+| `guardiao-produtividade.py` | 07h45 seg-sex | Coleta entregas/briefings de ontem, pontuação ponderada, alerta de baixa/alta produção |
+| `guardiao-produtividade-semanal.py` | 08h segunda | Ranking semanal com tendência vs semana anterior |
+| `guardiao-relatorio-cliente-patch.py` | executar 1× | Injeta bloco de produção no relatório mensal |
+| `guardiao-poll-m13-patch.py <id>` | executar 1× após criar campo | Adiciona tipo_material à higiene M01 |
+
+### Fases de ativação
+1. **Semana 1** — `SILENT_MODE = True` em ambos os scripts: coleta silenciosa, sem mensagem
+2. **Semana 2** — `SILENT_MODE = False` em `guardiao-produtividade.py`: relatório diário ativo
+3. **Semana 3** — `SILENT_MODE = False` em `guardiao-produtividade-semanal.py`: relatório semanal ativo
+4. **Mês 2** — rodar `guardiao-poll-m13-patch.py`: ativa higiene para tipo_material
+
+### Score integrado (Mês 2+)
+```
+SCORE FINAL = (Score Compliance × 0.5) + (Score Produtividade × 0.5)
+```
+Score produtividade 0–100 baseado na média móvel 30 dias de pontos ponderados.
+
+### Pesos de complexidade
+- Designer: `post_static`=1 · `carousel`=2 · `reels_short`=3 · `motion`=4 · `branding_logo`=7 · `branding_iv`=10
+- Atendimento: mesma lógica, pesos refletem esforço de planejamento/briefing
+
+### Alertas automáticos
+- **Baixa produção 3 dias** (< 50% da média): mensagem privada para Gestão — verificação, não punição
+- **Alta produção 40%+**: destaque público no relatório semanal
+
+---
+
 ## ROTEAMENTO
 
-Ativado quando Alfred detecta keywords: `guardiao`, `integridade`, `loop`, `parado`, `tarefa parada`, `revisão loop`, `saúde clickup`, `compliance`
+Ativado quando Alfred detecta keywords: `guardiao`, `integridade`, `loop`, `parado`, `tarefa parada`, `revisão loop`, `saúde clickup`, `compliance`, `produtividade`, `entrega`, `ranking`
 
 Tier de modelo: **T1 (Haiku 4.5)** — polling automático
 Tier de modelo: **T2 (Sonnet 4.6)** — análise on-demand via WhatsApp
@@ -200,4 +238,6 @@ scripts:
   radar:     ~/openclaw/whatsapp-bridge/guardiao-radar-semana.py
   ondemand:  ~/openclaw/whatsapp-bridge/guardiao-ondemand.py
   cliente:   ~/openclaw/whatsapp-bridge/guardiao-relatorio-cliente.py
+  prod_daily: ~/openclaw/whatsapp-bridge/guardiao-produtividade.py
+  prod_week:  ~/openclaw/whatsapp-bridge/guardiao-produtividade-semanal.py
 ```
