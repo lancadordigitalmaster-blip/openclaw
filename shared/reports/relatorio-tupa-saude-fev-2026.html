@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Mensal - Tupã Saúde</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #181D21;
+            color: #ffffff;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #333;
+        }
+        
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #888;
+        }
+        
+        .section {
+            margin-bottom: 35px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .metric-card {
+            background: #252B30;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        .metric-change {
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .positive { color: #4CAF50; }
+        .negative { color: #f44336; }
+        
+        .insights-box {
+            background: #252B30;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .insight-icon {
+            font-size: 18px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #252B30 0%, #1a1f23 100%);
+            border-left: 4px solid #4CAF50;
+            padding: 20px;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .rec-card {
+            background: #252B30;
+            padding: 15px;
+            border-radius: 10px;
+            border-top: 3px solid;
+        }
+        
+        .rec-high { border-color: #f44336; }
+        .rec-medium { border-color: #ff9800; }
+        .rec-low { border-color: #4CAF50; }
+        
+        .rec-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .rec-text {
+            font-size: 13px;
+            color: #ccc;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🐺</div>
+        <div class="title">RELATÓRIO MENSAL</div>
+        <div class="subtitle">Tupã Saúde • Fevereiro 2026</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">📈 Números do Mês</div>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-value">279</div>
+                <div class="metric-label">Seguidores</div>
+                <div class="metric-change positive">+10 vs jan</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">953</div>
+                <div class="metric-label">Visualizações</div>
+                <div class="metric-change negative">-12% vs jan</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">18%</div>
+                <div class="metric-label">Não Seguidores</div>
+                <div class="metric-change positive">Oportunidade</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">11</div>
+                <div class="metric-label">Conteúdos</div>
+                <div class="metric-change">1 reel + 10 posts</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🎯 Insights Principais</div>
+        <div class="insights-box">
+            <div class="insight-item">
+                <span class="insight-icon">✅</span>
+                <span>Crescimento orgânico positivo: +10 seguidores sem posts humanizados — excelente para nicho B2B/SST</span>
+            </div>
+            <div class="insight-item">
+                <span class="insight-icon">✅</span>
+                <span>Zero unfollows: retenção de 100% da base atual</span>
+            </div>
+            <div class="insight-item">
+                <span class="insight-icon">⚠️</span>
+                <span>Queda de 12% nas visualizações vs janeiro — investigar causas</span>
+            </div>
+            <div class="insight-item">
+                <span class="insight-icon">💡</span>
+                <span>18% de não seguidores nas visualizações = oportunidade de conversão com lead magnets</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">📱 Conteúdo Destaque</div>
+        <div class="highlight-box">
+            <strong>Reel mais engajado:</strong> "Como eu estruturaria a SST de uma..."<br>
+            <strong>Visualizações:</strong> 157 | <strong>Formato:</strong> Reel<br>
+            <strong>Por que funcionou:</strong> Conteúdo educativo + formato de valor (reels geram mais alcance)
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">🚀 Recomendações para Março</div>
+        <div class="recommendations">
+            <div class="rec-card rec-high">
+                <div class="rec-title">🔴 Aumentar reels</div>
+                <div class="rec-text">De 1 para 2-3 reels/mês. Único reel foi o mais engajado.</div>
+            </div>
+            <div class="rec-card rec-medium">
+                <div class="rec-title">🟡 Lead magnets</div>
+                <div class="rec-text">Criar PDFs (checklist SST, template PGR) para converter não seguidores.</div>
+            </div>
+            <div class="rec-card rec-low">
+                <div class="rec-title">🟢 Testar horários</div>
+                <div class="rec-text">Analisar melhor dia/hora de publicação para recuperar visualizações.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Relatório gerado por Wolf Agency • @wolfpacks<br>
+        Dados: Instagram Insights • Período: 01-28 Fev 2026
+    </div>
+</body>
+</html>

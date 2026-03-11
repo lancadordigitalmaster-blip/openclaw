@@ -1,0 +1,46 @@
+{
+  "canais": [
+    {
+      "id": "UCOkJ5c_xUVLdKQpWvetlJzA",
+      "handle": "@ChannelsCast",
+      "nome": "ChannelsCast",
+      "inscritos": 25100,
+      "videos": 171,
+      "categoria": "Canal Dark",
+      "prioridade": "alta",
+      "ativo": true
+    },
+    {
+      "id": "UCdK1BWb4fKBRyLJcHJrRQ3w",
+      "handle": "@canalrafasilva",
+      "nome": "Rafa Silva",
+      "inscritos": 184000,
+      "videos": 543,
+      "categoria": "Canal Dark",
+      "prioridade": "alta",
+      "ativo": true
+    },
+    {
+      "id": "UCf6fGkOk0PJ0bVhFWhIfRiQ",
+      "handle": "@giovannidottidotti1",
+      "nome": "Giovanni Dotti",
+      "inscritos": 20600,
+      "videos": 189,
+      "categoria": "Canal Dark",
+      "prioridade": "alta",
+      "ativo": true
+    }
+  ],
+  "configuracoes": {
+    "check_interval": 1440,
+    "horario_check": "21:00",
+    "timezone": "America/Sao_Paulo",
+    "min_views_bronze": 0,
+    "min_views_prata": 1000,
+    "min_views_ouro": 5000,
+    "min_views_diamante": 20000,
+    "notificar_grupo": "-5086938074",
+    "gerar_documento": true,
+    "transcrever_audio": true
+  }
+}

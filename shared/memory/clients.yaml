@@ -1,0 +1,54 @@
+# clients.yaml — Base de Clientes Wolf Agency
+# Atualizado via comando: "alfred, atualiza cliente [NOME]"
+# Última atualização: 2026-03-08 (limpo — sem clientes reais ainda)
+
+clientes: {}
+  # Quando fechar o primeiro cliente, copie o schema abaixo e preencha.
+
+# Schema de referência — copie e preencha para cada cliente:
+#
+#   nome-cliente-slug:
+#     nome: "Nome Completo do Cliente"
+#     segmento: "ex: e-commerce, saúde, educação, varejo"
+#     responsavel_wolf: "Netto"
+#     status: "ativo"  # ativo | pausado | prospecto | churned
+#
+#     contato:
+#       nome: "Nome do contato principal"
+#       whatsapp: "+5511999999999"
+#       email: "email@cliente.com"
+#
+#     canais_ativos:
+#       - instagram
+#       - facebook
+#       - google_ads
+#       - meta_ads
+#
+#     plataformas_ads:
+#       meta:
+#         account_id: ""
+#         budget_mensal: 0
+#         objetivo: "conversão"  # conversão | reconhecimento | tráfego
+#         target_roas: 3.0
+#       google:
+#         account_id: ""
+#         budget_mensal: 0
+#
+#     marca:
+#       tom_de_voz: "profissional e acolhedor"
+#       cores_primarias: ["#000000", "#ffffff"]
+#       fontes: []
+#       evitar: []  # palavras ou abordagens a evitar
+#
+#     clickup:
+#       space_id: ""
+#       lista_principal: ""
+#
+#     metricas_alvo:
+#       cac_max: 0
+#       roas_min: 0
+#       ctr_min: 0.01
+#
+#     notas: ""
+#     criado_em: "YYYY-MM-DD"
+#     atualizado_em: "YYYY-MM-DD"

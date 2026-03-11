@@ -1,0 +1,26 @@
+#!/bin/bash
+# wolf-check — Quality check for Wolf deliverables
+
+FILE="$2"
+CLIENT="$4"
+PROJECT_TYPE="$6"
+
+echo "🔍 Wolf Quality Check"
+echo "====================="
+echo ""
+echo "Arquivo: $FILE"
+echo "Cliente: $CLIENT"
+echo "Tipo: $PROJECT_TYPE"
+echo ""
+echo "Checklist de Qualidade:"
+echo ""
+echo "[ ] Marca Wolf presente (logo, cores, fontes)"
+echo "[ ] Dados do cliente corretos"
+echo "[ ] Qualidade técnica adequada"
+echo "[ ] Textos sem erros ortográficos"
+echo "[ ] CTA (call to action) claro"
+echo "[ ] Consistente com identidade do cliente"
+echo "[ ] Todos os requisitos do brief atendidos"
+echo ""
+echo "⚠️  REVISÃO MANUAL NECESSÁRIA"
+echo "Este é um checklist inicial. Sempre revise antes de enviar ao cliente."

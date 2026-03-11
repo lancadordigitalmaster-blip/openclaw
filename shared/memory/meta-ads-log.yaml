@@ -1,0 +1,29 @@
+
+# Operações executadas em 2026-03-10 (via chamada direta, antes da skill ser carregada)
+
+- timestamp: "2026-03-10T09:01:00-03:00"
+  action: PAUSE_CAMPAIGN
+  operator: netto
+  account: act_135916159825609
+  campaign_id: "6987237933861"
+  campaign_name: "Post do Instagram: A Fluwa foi pensada para..."
+  result: SUCCESS
+  note: "Pausada a pedido de Netto"
+
+- timestamp: "2026-03-10T09:01:00-03:00"
+  action: PAUSE_CAMPAIGN
+  operator: netto
+  account: act_135916159825609
+  campaign_id: "6987121320061"
+  campaign_name: "Post do Instagram: Minimalismo, ciência e..."
+  result: SUCCESS
+  note: "Pausada a pedido de Netto"
+
+- timestamp: "2026-03-10T09:01:00-03:00"
+  action: PAUSE_CAMPAIGN
+  operator: netto
+  account: act_135916159825609
+  campaign_id: "6987054907261"
+  campaign_name: "Post do Instagram: A Youdose não é só um..."
+  result: SUCCESS
+  note: "Pausada a pedido de Netto"

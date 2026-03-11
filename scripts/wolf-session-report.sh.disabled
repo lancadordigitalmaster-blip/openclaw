@@ -1,0 +1,366 @@
+#!/bin/bash
+# ============================================================
+# WOLF SESSION REPORT — Gera PDF do relatorio e envia Telegram
+# Uso: bash wolf-session-report.sh [dados.json]
+# Se nao passar JSON, gera relatorio do dia com dados do sistema
+# ============================================================
+set -euo pipefail
+
+set -a
+source "$HOME/.openclaw/.env"
+set +a
+
+TELEGRAM_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
+NETTO_CHAT="789352357"
+REPORTS_CHAT="-1003823242231"
+SCRIPTS_DIR="$HOME/.openclaw/workspace/scripts"
+TMP_DIR="/tmp/wolf-reports"
+TODAY=$(date '+%Y-%m-%d')
+TIMESTAMP=$(date '+%d/%m/%Y')
+LOG="/tmp/wolf-session-report.log"
+
+mkdir -p "$TMP_DIR"
+
+# ============================================================
+# Gera relatorio via Python (HTML -> PDF -> Telegram)
+# ============================================================
+python3 << 'PYEOF'
+import json, os, sys, subprocess, urllib.request, urllib.parse
+from datetime import datetime
+
+tmp_dir = "/tmp/wolf-reports"
+today = datetime.now().strftime("%d/%m/%Y")
+today_file = datetime.now().strftime("%Y-%m-%d")
+telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+netto_chat = "789352357"
+
+# Se um JSON foi passado como argumento, usa ele
+data_file = sys.argv[1] if len(sys.argv) > 1 else None
+
+if data_file and os.path.exists(data_file):
+    with open(data_file) as f:
+        data = json.load(f)
+else:
+    # Gera dados automaticos do sistema
+    data = {
+        "date": today,
+        "duration": "auto",
+        "with": "Sistema",
+        "agent": "Alfred",
+        "theme": "Relatorio Automatico",
+        "mode": "Cron",
+        "done": [],
+        "pending": [],
+        "next": [],
+        "notes": [],
+        "decision": None
+    }
+
+    # Ler crons para status
+    jobs_path = os.path.expanduser("~/.openclaw/cron/jobs.json")
+    if os.path.exists(jobs_path):
+        with open(jobs_path) as f:
+            jobs = json.load(f)
+        for j in jobs.get("jobs", []):
+            if not j.get("enabled", False):
+                continue
+            name = j.get("name", "?")
+            state = j.get("state", {})
+            status = state.get("lastRunStatus", "never")
+            if status == "ok":
+                data["done"].append({"title": name, "detail": "Cron executado com sucesso"})
+            elif status == "error":
+                data["pending"].append({
+                    "title": name,
+                    "blocker": f"Erro consecutivo ({state.get('consecutiveErrors', 0)}x)",
+                    "forecast": "Proxima execucao"
+                })
+
+# ============================================================
+# Template HTML
+# ============================================================
+def make_items_html(items, section_type):
+    rows = ""
+    for i, item in enumerate(items, 1):
+        title = item.get("title", "")
+        detail = item.get("detail", "")
+        blocker = item.get("blocker", "")
+        forecast = item.get("forecast", "")
+        priority = item.get("priority", "")
+
+        if section_type == "done":
+            tag = '<span class="status-tag tag-done">done</span>'
+            detail_html = f'<div class="item-detail">{detail}</div>' if detail else ""
+        elif section_type == "pending":
+            has_blocker = bool(blocker)
+            tag_class = "tag-block" if has_blocker else "tag-pend"
+            tag_label = "blocked" if has_blocker else "pending"
+            tag = f'<span class="status-tag {tag_class}">{tag_label}</span>'
+            detail_html = ""
+            if blocker:
+                detail_html += f'<div class="item-detail"><span class="label">bloqueio:</span><span class="val-block">{blocker}</span></div>'
+            if forecast:
+                detail_html += f'<div class="item-detail"><span class="label">previsao:</span><span class="val-prev">{forecast}</span></div>'
+        elif section_type == "next":
+            p = priority or "P2"
+            tag_map = {"P1": "tag-p1", "P2": "tag-p2", "P3": "tag-p3"}
+            tag = f'<span class="status-tag {tag_map.get(p, "tag-p2")}">{p}</span>'
+            detail_html = f'<div class="item-detail">{detail}</div>' if detail else ""
+        else:
+            tag = ""
+            detail_html = f'<div class="item-detail">{detail}</div>' if detail else ""
+
+        num = f"{i:02d}" if section_type != "next" else priority or f"P{i}"
+        rows += f'''
+        <div class="item-row">
+            <div class="item-num">{num}</div>
+            <div class="item-content">
+                <div class="item-title">{title}</div>
+                {detail_html}
+            </div>
+            {tag}
+        </div>'''
+    return rows
+
+def make_notes_html(notes):
+    rows = ""
+    for note in notes:
+        text = note if isinstance(note, str) else note.get("text", "")
+        rows += f'''
+        <div class="note-row">
+            <div class="note-dot"></div>
+            <div class="note-text">{text}</div>
+        </div>'''
+    return rows
+
+done_count = len(data.get("done", []))
+pend_count = len(data.get("pending", []))
+block_count = sum(1 for p in data.get("pending", []) if p.get("blocker"))
+next_count = len(data.get("next", []))
+
+done_html = make_items_html(data.get("done", []), "done")
+pend_html = make_items_html(data.get("pending", []), "pending")
+next_html = make_items_html(data.get("next", []), "next")
+notes_html = make_notes_html(data.get("notes", []))
+
+decision_html = ""
+if data.get("decision"):
+    dec = data["decision"]
+    options_html = ""
+    for opt in dec.get("options", []):
+        options_html += f'<div class="opt-btn">{opt}</div>'
+    decision_html = f'''
+    <div class="decision-box">
+        <div class="d-label">Decisao Pendente</div>
+        <p>{dec.get("question", "")}</p>
+        <div class="options">{options_html}</div>
+    </div>'''
+
+html = f'''<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    background: #07080f;
+    color: #dde0f0;
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 30px 24px;
+    max-width: 720px;
+    margin: 0 auto;
+  }}
+  .report-header {{
+    border: 1px solid #272b40;
+    border-top: 3px solid #c9a84c;
+    background: #0c0e18;
+    border-radius: 0 0 12px 12px;
+    padding: 24px 28px 20px;
+    margin-bottom: 24px;
+  }}
+  .header-top {{ display: flex; justify-content: space-between; margin-bottom: 16px; }}
+  .wolf-brand {{ display: flex; align-items: center; gap: 10px; }}
+  .wolf-icon {{ width: 32px; height: 32px; background: #171a28; border: 1px solid #272b40; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }}
+  .brand-text .name {{ font-size: 12px; font-weight: 700; color: #c9a84c; letter-spacing: 1px; text-transform: uppercase; }}
+  .brand-text .sub {{ font-size: 10px; color: #4a5068; }}
+  .session-badge {{ font-size: 10px; background: #171a28; border: 1px solid #272b40; border-radius: 6px; padding: 6px 12px; color: #4a5068; text-align: right; line-height: 1.8; }}
+  .session-badge b {{ color: #f0c96a; font-weight: 500; }}
+  .header-title {{ font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }}
+  .header-meta {{ display: flex; gap: 16px; font-size: 10px; color: #4a5068; }}
+  .header-meta em {{ color: #dde0f0; font-style: normal; }}
+  .stats-row {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }}
+  .stat-box {{ background: #11141f; border: 1px solid #1e2135; border-radius: 10px; padding: 12px; text-align: center; }}
+  .stat-box .num {{ font-size: 24px; font-weight: 600; line-height: 1; margin-bottom: 4px; }}
+  .stat-box .lbl {{ font-size: 9px; color: #4a5068; letter-spacing: 1px; text-transform: uppercase; }}
+  .stat-box.done .num {{ color: #3ecf8e; }}
+  .stat-box.pend .num {{ color: #fb923c; }}
+  .stat-box.block .num {{ color: #f87171; }}
+  .stat-box.next .num {{ color: #7c9fff; }}
+  .section {{ margin-bottom: 16px; }}
+  .section-header {{ display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 8px 8px 0 0; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; }}
+  .section-header.done-h {{ background: rgba(62,207,142,.08); color: #3ecf8e; border: 1px solid rgba(62,207,142,.18); border-bottom: none; }}
+  .section-header.pend-h {{ background: rgba(251,146,60,.08); color: #fb923c; border: 1px solid rgba(251,146,60,.18); border-bottom: none; }}
+  .section-header.next-h {{ background: rgba(124,159,255,.08); color: #7c9fff; border: 1px solid rgba(124,159,255,.18); border-bottom: none; }}
+  .section-header.note-h {{ background: rgba(167,139,250,.08); color: #a78bfa; border: 1px solid rgba(167,139,250,.18); border-bottom: none; }}
+  .section-body {{ border-radius: 0 0 8px 8px; overflow: hidden; border: 1px solid #1e2135; border-top: none; }}
+  .item-row {{ display: grid; grid-template-columns: 28px 1fr auto; align-items: start; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #1e2135; background: #0c0e18; }}
+  .item-row:last-child {{ border-bottom: none; }}
+  .item-num {{ font-size: 10px; color: #2e3350; text-align: center; font-weight: 600; padding-top: 2px; }}
+  .item-title {{ font-size: 12px; font-weight: 500; color: #dde0f0; margin-bottom: 2px; }}
+  .item-detail {{ font-size: 10px; color: #4a5068; }}
+  .item-detail .label {{ color: #272b40; margin-right: 4px; }}
+  .item-detail .val-block {{ color: #f87171; }}
+  .item-detail .val-prev {{ color: #7c9fff; }}
+  .status-tag {{ font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.5px; white-space: nowrap; }}
+  .tag-done {{ background: rgba(62,207,142,.12); color: #3ecf8e; border: 1px solid rgba(62,207,142,.25); }}
+  .tag-pend {{ background: rgba(251,146,60,.12); color: #fb923c; border: 1px solid rgba(251,146,60,.25); }}
+  .tag-block {{ background: rgba(248,113,113,.12); color: #f87171; border: 1px solid rgba(248,113,113,.25); }}
+  .tag-p1 {{ background: rgba(240,201,106,.12); color: #f0c96a; border: 1px solid rgba(240,201,106,.25); }}
+  .tag-p2 {{ background: rgba(124,159,255,.12); color: #7c9fff; border: 1px solid rgba(124,159,255,.25); }}
+  .tag-p3 {{ background: rgba(167,139,250,.12); color: #a78bfa; border: 1px solid rgba(167,139,250,.25); }}
+  .note-row {{ display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #1e2135; background: #0c0e18; }}
+  .note-row:last-child {{ border-bottom: none; }}
+  .note-dot {{ width: 6px; height: 6px; border-radius: 50%; background: #a78bfa; margin-top: 6px; flex-shrink: 0; }}
+  .note-text {{ font-size: 12px; color: #9ca3c8; }}
+  .decision-box {{ background: #11141f; border: 1px solid rgba(201,168,76,.2); border-left: 3px solid #c9a84c; border-radius: 0 8px 8px 0; padding: 14px 18px; margin-top: 16px; }}
+  .decision-box .d-label {{ font-size: 9px; color: #c9a84c; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }}
+  .decision-box p {{ font-size: 12px; color: #b0b5cc; }}
+  .options {{ display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }}
+  .opt-btn {{ font-size: 10px; padding: 5px 12px; border-radius: 6px; border: 1px solid #272b40; background: #171a28; color: #dde0f0; }}
+  .report-footer {{ display: flex; justify-content: space-between; padding-top: 16px; border-top: 1px solid #1e2135; font-size: 10px; color: #4a5068; }}
+</style>
+</head>
+<body>
+<div class="report-header">
+    <div class="header-top">
+        <div class="wolf-brand">
+            <div class="wolf-icon">W</div>
+            <div class="brand-text">
+                <div class="name">Wolf Agency</div>
+                <div class="sub">Session Report - Alfred Runtime</div>
+            </div>
+        </div>
+        <div class="session-badge">
+            <b>{data.get("date", today)}</b><br>
+            Duracao: <b>{data.get("duration", "auto")}</b><br>
+            Com: <b>{data.get("with", "Sistema")}</b>
+        </div>
+    </div>
+    <div class="header-title">Relatorio de Sessao</div>
+    <div class="header-meta">
+        <span>{data.get("agent", "Alfred")}</span>
+        <span>Tema: <em>{data.get("theme", "Auto")}</em></span>
+        <span>Modo: <em>{data.get("mode", "Auto")}</em></span>
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="stat-box done"><div class="num">{done_count}</div><div class="lbl">Concluidos</div></div>
+    <div class="stat-box pend"><div class="num">{pend_count}</div><div class="lbl">Pendentes</div></div>
+    <div class="stat-box block"><div class="num">{block_count}</div><div class="lbl">Bloqueados</div></div>
+    <div class="stat-box next"><div class="num">{next_count}</div><div class="lbl">Proxima</div></div>
+</div>
+
+{"<div class='section'><div class='section-header done-h'>Concluido</div><div class='section-body'>" + done_html + "</div></div>" if done_html else ""}
+
+{"<div class='section'><div class='section-header pend-h'>Pendente</div><div class='section-body'>" + pend_html + "</div></div>" if pend_html else ""}
+
+{"<div class='section'><div class='section-header next-h'>Proxima Sessao</div><div class='section-body'>" + next_html + "</div></div>" if next_html else ""}
+
+{"<div class='section'><div class='section-header note-h'>Notas</div><div class='section-body'>" + notes_html + "</div></div>" if notes_html else ""}
+
+{decision_html}
+
+<div class="report-footer">
+    <span>Wolf Agency - Alfred Runtime</span>
+    <span>{data.get("date", today)}</span>
+</div>
+</body>
+</html>'''
+
+# Salvar HTML
+html_path = os.path.join(tmp_dir, f"report-{today_file}.html")
+with open(html_path, "w") as f:
+    f.write(html)
+
+# Converter para PDF
+pdf_path = os.path.join(tmp_dir, f"Wolf-Report-{today_file}.pdf")
+try:
+    from weasyprint import HTML
+    HTML(string=html).write_pdf(pdf_path)
+    print(f"PDF gerado: {pdf_path}")
+except ImportError:
+    # Fallback: tentar wkhtmltopdf
+    result = subprocess.run(
+        ["wkhtmltopdf", "--quiet", "--page-size", "A4",
+         "--margin-top", "10", "--margin-bottom", "10",
+         html_path, pdf_path],
+        capture_output=True, text=True, timeout=30
+    )
+    if result.returncode != 0:
+        print(f"ERRO: Nao foi possivel gerar PDF: {result.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+# Enviar via Telegram como documento
+if not telegram_token:
+    print("ERRO: TELEGRAM_BOT_TOKEN nao definido", file=sys.stderr)
+    sys.exit(1)
+
+if not os.path.exists(pdf_path):
+    print(f"ERRO: PDF nao encontrado: {pdf_path}", file=sys.stderr)
+    sys.exit(1)
+
+# Enviar para Netto e para o canal Reports
+for chat_id in [netto_chat]:
+    import http.client
+    import mimetypes
+
+    boundary = "----WolfReport"
+    filename = os.path.basename(pdf_path)
+
+    with open(pdf_path, "rb") as f:
+        pdf_data = f.read()
+
+    body = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="chat_id"\r\n\r\n'
+        f"{chat_id}\r\n"
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="caption"\r\n\r\n'
+        f"Wolf Agency - Relatorio de Sessao {data.get('date', today)}\r\n"
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="document"; filename="{filename}"\r\n'
+        f"Content-Type: application/pdf\r\n\r\n"
+    ).encode() + pdf_data + f"\r\n--{boundary}--\r\n".encode()
+
+    conn = http.client.HTTPSConnection("api.telegram.org")
+    conn.request(
+        "POST",
+        f"/bot{telegram_token}/sendDocument",
+        body=body,
+        headers={
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(body))
+        }
+    )
+    resp = conn.getresponse()
+    result = resp.read().decode()
+    conn.close()
+
+    if '"ok":true' in result:
+        print(f"Enviado para chat {chat_id}")
+    else:
+        print(f"ERRO ao enviar para {chat_id}: {result}", file=sys.stderr)
+
+# Limpar HTMLs antigos (manter ultimos 7)
+import glob
+htmls = sorted(glob.glob(os.path.join(tmp_dir, "report-*.html")))
+pdfs = sorted(glob.glob(os.path.join(tmp_dir, "Wolf-Report-*.pdf")))
+for old in htmls[:-7] + pdfs[:-7]:
+    os.remove(old)
+
+PYEOF
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Report gerado e enviado" >> "$LOG"

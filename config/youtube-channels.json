@@ -1,0 +1,38 @@
+{
+  "channels": [
+    {
+      "name": "@oalanicolas",
+      "url": "https://youtube.com/@oalanicolas",
+      "language": "pt-BR",
+      "category": "dev-tools",
+      "description": "Dev talks sobre orquestração de agentes IA",
+      "active": true,
+      "translate_to": null
+    },
+    {
+      "name": "@alexfinnofficial",
+      "url": "https://youtube.com/@alexfinnofficial",
+      "language": "en",
+      "category": "marketing-ai",
+      "description": "Marketing e automação com IA",
+      "active": true,
+      "translate_to": "pt-BR"
+    },
+    {
+      "name": "@briancasel",
+      "url": "https://youtube.com/@briancasel",
+      "language": "en",
+      "category": "entrepreneurship",
+      "description": "Entrepreneurship, SaaS e negócios",
+      "active": true,
+      "translate_to": "pt-BR"
+    }
+  ],
+  "settings": {
+    "check_interval_hours": 12,
+    "process_interval_hours": 6,
+    "auto_translate": true,
+    "save_transcripts": true,
+    "extract_insights": true
+  }
+}

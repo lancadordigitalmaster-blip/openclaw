@@ -1,0 +1,13 @@
+{
+  "name": "intro-netto",
+  "version": "1.0.0",
+  "dependencies": {
+    "remotion": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "scripts": {
+    "build": "remotion render src/index.tsx Intro out/intro.mp4"
+  }
+}

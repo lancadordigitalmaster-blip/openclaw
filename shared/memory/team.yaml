@@ -1,0 +1,102 @@
+# team.yaml — Equipe Interna Wolf Agency
+# Atualizado: 2026-03-05
+# Fonte de verdade para crons e relatórios
+
+# ─── REGRA CRÍTICA ────────────────────────────────────────────────────────
+# Para identificar designer/atendimento: usar SEMPRE custom field do ClickUp.
+# NUNCA usar assignees — muda a cada etapa da tarefa.
+
+clickup_fields:
+  design:
+    field_id: "b9b3676c-f119-48cf-851d-8ebd83e5011f"
+    # IMPORTANTE: o valor retornado pela API é o índice 0-based da opção no dropdown,
+    # NÃO o UUID. Ex: Pedro = índice 6 (7ª opção na lista).
+  atendimento:
+    field_id: "00e6513e-ef48-4262-aa2f-1288f8ebed72"
+
+# ─── REGRA DE OURO ────────────────────────────────────────────────────────
+regra_de_ouro: >
+  NUNCA cobrar Designer diretamente.
+  SEMPRE cobrar Atendimento — eles são responsáveis por prazos e gestão de conta.
+
+responsavel_prazos:
+  nome: "Natiely"
+  whatsapp: "55 73 99984-0448"
+  funcao: "Responsável por cobrar datas de vencimento no ClickUp"
+  escopo: "Design + Atendimento + Apontamentos"
+
+fluxo_de_alertas:
+  apontamentos: "Alfred detecta → alerta Natiely → Natiely cobra Atendimento → Atendimento resolve"
+  data_vencida: "Alfred detecta → alerta Natiely → Natiely cobra Atendimento → Atendimento toma providência"
+
+# ─── DESIGN ───────────────────────────────────────────────────────────────
+# clickup_option_id = valor do custom field "Design" no ClickUp
+# meta_diaria = tarefas esperadas finalizadas por dia (null = qualitativo)
+design:
+  designers:
+    - nome: "Pedro"
+      clickup_option_index: 6
+      meta_diaria: 17
+
+    - nome: "Leoneli"
+      clickup_option_index: 3
+      meta_diaria: 12
+
+    - nome: "Abilio"
+      clickup_option_index: 11
+      meta_diaria: 14
+
+    - nome: "Eliedson"
+      clickup_option_index: 1
+      meta_diaria: 8
+
+    - nome: "Levi"
+      clickup_option_index: 5
+      meta_diaria: 2
+
+    - nome: "Felipe"
+      clickup_option_index: 4
+      meta_diaria: null
+      tipo: freelancer
+
+    - nome: "Rodrigo Bispo"
+      clickup_option_index: 2
+      meta_diaria: null
+      tipo: freelancer
+
+    - nome: "Rodrigo Web"
+      clickup_option_index: 7
+      meta_diaria: null
+      tipo: freelancer
+
+# ─── ATENDIMENTO ──────────────────────────────────────────────────────────
+atendimento:
+  membros:
+    - nome: "Mariana"
+      clickup_option_id: "c6a601cb-b8ce-4039-a397-7325df04f5a1"
+
+    - nome: "Mirelli"
+      clickup_option_id: "681d3e2f-28a2-452b-9263-45a3eb7b31ad"
+
+    - nome: "Sindy"
+      clickup_option_id: "3d7799e5-1e46-413b-ac19-1a74d9444fc6"
+
+    - nome: "Thalita"
+      clickup_option_id: "5687bd42-028b-4d06-a8c9-c67c7bb8e455"
+
+    - nome: "Natiely"
+      clickup_option_id: "91e32f67-100e-4b0f-a067-794dd288a662"
+
+    - nome: "Ilanna"
+      clickup_option_id: "c5bdf9e7-3299-44ac-8b6b-10a4cd798e5a"
+
+# ─── MÉTRICAS DE ATENDIMENTO ──────────────────────────────────────────────
+atendimento_metricas:
+  negativo:
+    - "Deixar cliente no vácuo (sem resposta, sem follow-up)"
+    - "Falha de comunicação / ghosting"
+  positivo:
+    - "Feedback positivo explícito do cliente"
+    - "Satisfação demonstrada / reconhecimento"
+
+# Última atualização: 2026-03-05

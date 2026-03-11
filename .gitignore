@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+.vercel/
+*.log
+.DS_Store
+__pycache__/
+.venv/
+venv/
+*.pyc
+auth_state/
+sessions.json
+backups/
+*.bak

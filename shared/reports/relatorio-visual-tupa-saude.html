@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Visual - Tupã Saúde</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .story-container {
+            width: 1080px;
+            height: 1920px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .header {
+            padding: 80px 60px 40px;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        
+        .client-name {
+            font-size: 56px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+        
+        .report-title {
+            font-size: 36px;
+            color: #e94560;
+            font-weight: 600;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        
+        .month {
+            font-size: 48px;
+            color: #ffd700;
+            font-weight: 700;
+            margin-top: 15px;
+        }
+        
+        /* Metrics Section */
+        .metrics-section {
+            padding: 40px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 30px;
+            padding: 50px 60px;
+            border: 2px solid rgba(233, 69, 96, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .metric-header {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-icon {
+            font-size: 60px;
+        }
+        
+        .metric-label {
+            font-size: 32px;
+            color: #aaa;
+            font-weight: 500;
+        }
+        
+        .metric-value {
+            font-size: 96px;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1;
+        }
+        
+        .metric-change {
+            font-size: 32px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        
+        .positive { color: #4CAF50; }
+        .negative { color: #ff6b6b; }
+        .highlight { color: #ffd700; }
+        
+        .metric-insight {
+            font-size: 28px;
+            color: #ccc;
+            margin-top: 20px;
+            line-height: 1.5;
+            padding-left: 85px;
+        }
+        
+        /* Highlight Box */
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(233, 69, 96, 0.2) 0%, rgba(255, 215, 0, 0.1) 100%);
+            border: 3px solid #e94560;
+            border-radius: 30px;
+            padding: 50px 60px;
+            margin: 20px 60px;
+        }
+        
+        .highlight-title {
+            font-size: 36px;
+            color: #e94560;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .highlight-item {
+            font-size: 30px;
+            color: #fff;
+            margin-bottom: 18px;
+            padding-left: 20px;
+            border-left: 4px solid #4CAF50;
+            line-height: 1.5;
+        }
+        
+        /* Action Section */
+        .action-section {
+            padding: 40px 60px 60px;
+        }
+        
+        .action-title {
+            font-size: 40px;
+            color: #ffd700;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .action-item {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 6px solid #4CAF50;
+            padding: 30px 40px;
+            margin-bottom: 20px;
+            border-radius: 0 20px 20px 0;
+        }
+        
+        .action-number {
+            font-size: 36px;
+            font-weight: 900;
+            color: #4CAF50;
+            margin-right: 20px;
+        }
+        
+        .action-text {
+            font-size: 30px;
+            color: #fff;
+            line-height: 1.5;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            padding: 40px;
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .footer-logo {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .footer-text {
+            font-size: 28px;
+            color: #888;
+        }
+        
+        .footer-handle {
+            font-size: 32px;
+            color: #e94560;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="story-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🏥</div>
+            <div class="client-name">TUPÃ SAÚDE</div>
+            <div class="report-title">RELATÓRIO MENSAL</div>
+            <div class="month">FEVEREIRO 2026</div>
+        </div>
+        
+        <!-- Metrics -->
+        <div class="metrics-section">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">👥</span>
+                    <span class="metric-label">SEGUIDORES</span>
+                </div>
+                <div class="metric-value">279</div>
+                <div class="metric-change positive">▲ +10 vs janeiro</div>
+                <div class="metric-insight">Crescimento orgânico positivo sem posts humanizados — excelente para nicho B2B!</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-header">
+                    <span class="metric-icon">👀</span>
+                    <span class="metric-label">VISUALIZAÇÕES</span>
+                </div>
+                <div class="metric-value">953</div>
+                <div class="metric-change negative">▼ -12% vs janeiro</div>
+                <div class="metric-insight">Investigando causas. Reels ainda são o formato com maior alcance.</div>
+            </div>
+        </div>
+        
+        <!-- Highlight Box -->
+        <div class="highlight-box">
+            <div class="highlight-title">🎯 OPORTUNIDADE</div>
+            <div class="highlight-item">18% das visualizações vêm de NÃO seguidores</div>
+            <div class="highlight-item">Zero unfollows = retenção 100% da base</div>
+            <div class="highlight-item">Reel foi o conteúdo mais engajado (157 views)</div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="action-section">
+            <div class="action-title">🚀 AÇÕES PARA MARÇO</div>
+            <div class="action-item">
+                <span class="action-number">1</span>
+                <span class="action-text">Aumentar reels: 2-3 por mês</span>
+            </div>
+            <div class="action-item">
+                <span class="action-number">2</span>
+                <span class="action-text">Criar PDFs gratuitos (checklist SST) para converter não seguidores</span>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-logo">🐺</div>
+            <div class="footer-text">Relatório gerado por</div>
+            <div class="footer-handle">@_wolfpacks</div>
+        </div>
+    </div>
+</body>
+</html>

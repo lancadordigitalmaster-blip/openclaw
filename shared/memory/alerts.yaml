@@ -1,0 +1,19 @@
+# alerts.yaml — Alertas Abertos do Sistema Wolf Agency
+# Gerenciado automaticamente pelos agentes durante heartbeat
+# Última atualização: 2026-03-06 (limpo — todos alertas eram fictícios)
+
+alertas: []
+
+# Schema de referência:
+#
+# alertas:
+#   - id: "alerta-001"
+#     data: "YYYY-MM-DD HH:MM"
+#     agente: "Gabi"         # Gabi | Luna | Sage | Nova | Alfred
+#     tipo: "budget"         # budget | criativo | ranking | performance | operacional | integracao
+#     severidade: "alta"     # alta | media | baixa
+#     cliente: "nome-slug"   # referência em clients.yaml
+#     mensagem: "Descrição do alerta"
+#     status: "open"         # open | acknowledged | resolved
+#     resolvido_em: null
+#     notas: ""
