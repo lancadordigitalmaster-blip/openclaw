@@ -49,8 +49,18 @@ function fixAccents(obj) {
 }
 
 // ── Section builders
-function buildCover(data) {
-  return `<section class="cover"><div class="cover-noise"></div><div class="cover-iridescence"></div><canvas id="coverCanvas"></canvas><div class="cover-top"></div><div class="cover-body"><p class="cover-label reveal">${esc(data.tagline||'')}</p><h1 class="cover-title reveal">Proposta<br class="mobile-br"> Comercial<span class="accent">.</span></h1><div class="cover-divider reveal"></div><div class="cover-client reveal"><span class="cover-client-label">Para</span><span class="cover-client-name">${esc(data.client_name||'')}</span></div></div><div class="cover-bottom"><div class="cover-meta reveal"><span>Wolf Agency</span><span>${esc(data.year||new Date().getFullYear().toString())} · ${esc(data.service_type||'')}</span></div><div class="cover-scroll-hint reveal"><span class="scroll-line"></span><span>Scroll</span></div></div></section>`;
+function buildCover(data, options = {}) {
+  const templateName = (options.templateName || 'classic').toLowerCase();
+  const tagline = esc(data.tagline || '');
+  const clientName = esc(data.client_name || '');
+  const year = esc(data.year || new Date().getFullYear().toString());
+  const serviceType = esc(data.service_type || '');
+
+  if (templateName === 'wesley') {
+    return `<section class="cover"><div class="cover-backdrop" aria-hidden="true"><div class="cover-backdrop-shell"><div class="cover-backdrop-stage"><div class="cover-backdrop-unicorn" data-us-project="sajpUiTp7MIKdX6daDCu"></div></div></div><div class="cover-tint"></div><div class="cover-grid-glow"></div><div class="cover-vignette"></div></div><div class="cover-noise"></div><div class="cover-top"></div><div class="cover-body"><p class="cover-label reveal">${tagline}</p><h1 class="cover-title reveal">Proposta<br class="mobile-br"> Comercial<span class="accent">.</span></h1><div class="cover-divider reveal"></div><div class="cover-client reveal"><span class="cover-client-label">Para</span><span class="cover-client-name">${clientName}</span></div></div><div class="cover-bottom"><div class="cover-meta reveal"><span>Wolf Agency</span><span>${year} · ${serviceType}</span></div><div class="cover-scroll-hint reveal"><span class="scroll-line"></span><span>Scroll</span></div></div></section>`;
+  }
+
+  return `<section class="cover"><div class="cover-noise"></div><div class="cover-iridescence"></div><canvas id="coverCanvas"></canvas><div class="cover-top"></div><div class="cover-body"><p class="cover-label reveal">${tagline}</p><h1 class="cover-title reveal">Proposta<br class="mobile-br"> Comercial<span class="accent">.</span></h1><div class="cover-divider reveal"></div><div class="cover-client reveal"><span class="cover-client-label">Para</span><span class="cover-client-name">${clientName}</span></div></div><div class="cover-bottom"><div class="cover-meta reveal"><span>Wolf Agency</span><span>${year} · ${serviceType}</span></div><div class="cover-scroll-hint reveal"><span class="scroll-line"></span><span>Scroll</span></div></div></section>`;
 }
 
 function buildTicker(data) {
@@ -129,7 +139,7 @@ function buildClose(data) {
 }
 
 // ── Main export
-function generateHTML(data, templateHTML) {
+function generateHTML(data, templateHTML, options = {}) {
   data = fixAccents(data);
 
   const styleMatch = templateHTML.match(/<style>([\s\S]*?)<\/style>/);
@@ -144,7 +154,7 @@ function generateHTML(data, templateHTML) {
   headPre = headPre.replace(/<title>[^<]*<\/title>/, `<title>Proposta Comercial — ${clientTitle}</title>`);
 
   const body = [
-    buildCover(data), buildTicker(data), buildContext(data), buildServices(data),
+    buildCover(data, options), buildTicker(data), buildContext(data), buildServices(data),
     buildDeliverables(data), buildInvestment(data), buildSupport(data), buildClose(data),
   ].filter(Boolean).join('\n');
 

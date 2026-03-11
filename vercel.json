@@ -9,8 +9,12 @@
   },
   "rewrites": [
     {
+      "source": "/p/:slug",
+      "destination": "/api/proposal?slug=:slug"
+    },
+    {
       "source": "/proposta/:slug",
-      "destination": "https://dqhiafxbljujahmpcdhf.supabase.co/storage/v1/object/public/proposals/:slug.html"
+      "destination": "/api/proposal?slug=:slug"
     }
   ],
   "headers": [

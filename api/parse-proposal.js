@@ -4,7 +4,10 @@ const { readFileSync } = require('fs');
 const { join } = require('path');
 const { generateHTML } = require('../_lib/builder');
 
-const TEMPLATE = readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8');
+const TEMPLATES = {
+  classic: readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8'),
+  wesley: readFileSync(join(__dirname, '../_lib/template-wesley.html'), 'utf-8'),
+};
 
 const PARSE_PROMPT = `Voce e um parser de propostas comerciais da Wolf Agency. Converta o texto abaixo (formato de slides do WhatsApp) para JSON estruturado.
 
@@ -79,6 +82,9 @@ TEXTO DA PROPOSTA:
 
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
   }
   if (req.method !== 'POST') {
@@ -86,10 +92,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const { text, seller, origin, proposal_code, whatsapp } = req.body || {};
+    // Validar env vars
+    if (!process.env.ANTHROPIC_API_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return res.status(500).json({ ok: false, error: 'Variaveis de ambiente nao configuradas no servidor' });
+    }
+
+    const { text, seller, origin, proposal_code, whatsapp, template } = req.body || {};
+    const templateName = String(template || 'classic').toLowerCase();
+    const templateHTML = TEMPLATES[templateName] || TEMPLATES.classic;
 
     if (!text || text.length < 50) {
-      return res.status(400).json({ error: 'Texto da proposta muito curto (minimo 50 chars)' });
+      return res.status(400).json({ ok: false, error: 'Texto da proposta muito curto (minimo 50 chars)' });
     }
 
     // 1. Parse with Claude
@@ -106,14 +119,14 @@ module.exports = async function handler(req, res) {
       const cleaned = jsonText.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
       data = JSON.parse(cleaned);
     } catch (parseErr) {
-      return res.status(500).json({ error: 'Claude retornou JSON invalido', raw: jsonText.substring(0, 200) });
+      return res.status(500).json({ ok: false, error: 'Claude retornou JSON invalido', raw: jsonText.substring(0, 200) });
     }
 
     // Override whatsapp if provided by seller
     if (whatsapp) data.whatsapp = whatsapp;
 
     // 2. Generate HTML
-    const html = generateHTML(data, TEMPLATE);
+    const html = generateHTML(data, templateHTML, { templateName });
 
     // 3. Upload to Supabase Storage
     const supabase = createClient(
@@ -130,9 +143,10 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Nome do cliente invalido' });
     }
 
+    const htmlBuffer = Buffer.from(html, 'utf-8');
     const { error: uploadErr } = await supabase.storage
       .from('proposals')
-      .upload(`${clientSlug}.html`, html, {
+      .upload(`${clientSlug}.html`, htmlBuffer, {
         contentType: 'text/html; charset=utf-8',
         upsert: true,
       });
@@ -148,7 +162,7 @@ module.exports = async function handler(req, res) {
     // Clean URL via rewrite
     const baseUrl = req.headers['x-forwarded-host'] || req.headers.host || 'wolf-comercial.vercel.app';
     const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const publicUrl = `${protocol}://${baseUrl}/proposta/${clientSlug}`;
+    const publicUrl = `${protocol}://${baseUrl}/p/${clientSlug}`;
 
     // 5. Register in Supabase DB
     let supabaseId = null;
@@ -161,7 +175,7 @@ module.exports = async function handler(req, res) {
       currency: inv.currency || 'R$',
       suffix: inv.suffix || '/mês',
       status: 'open',
-      template: 'classic',
+      template: TEMPLATES[templateName] ? templateName : 'classic',
       netlify_url: publicUrl,
       proposal_data: data,
     };
@@ -187,6 +201,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('parse-proposal error:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ ok: false, error: err.message });
   }
 };

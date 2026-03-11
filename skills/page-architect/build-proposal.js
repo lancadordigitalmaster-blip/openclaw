@@ -5,8 +5,8 @@
  * Reads the design-system proposal template and replaces body content
  * with data from a JSON file, keeping CSS and JS exactly as-is.
  *
- * Usage: node build-proposal.js input.json output.html [--template luminal|classic]
- *        cat input.json | node build-proposal.js - output.html --template luminal
+ * Usage: node build-proposal.js input.json output.html [--template classic|wesley]
+ *        cat input.json | node build-proposal.js - output.html --template wesley
  */
 
 const fs = require('fs');
@@ -15,6 +15,7 @@ const crypto = require('crypto');
 
 const TEMPLATES = {
   classic: path.resolve(__dirname, '../design-system/references/proposal-template.html'),
+  wesley: path.resolve(__dirname, '../design-system/references/proposal-template-wesley.html'),
 };
 const TEMPLATE_BACKUP = path.resolve(__dirname, '../design-system/references/backups/proposal-template.LOCKED.html');
 const TEMPLATE_CHECKSUM = 'f84d6ae8bc3d38fd71c2cb9392e8f8dd'; // MD5 of production template
@@ -137,11 +138,59 @@ function fixAccents(obj) {
 
 // ── Section builders ───────────────────────────────────────────────
 
-function buildCover(data) {
+function buildCover(data, options = {}) {
   const tagline = esc(data.tagline || '');
   const clientName = esc(data.client_name || '');
   const serviceType = esc(data.service_type || '');
   const year = esc(data.year || new Date().getFullYear().toString());
+  const templateName = (options.templateName || 'classic').toLowerCase();
+
+  if (templateName === 'wesley') {
+    return `
+  <!-- ══════════════════════════════
+       COVER
+  ══════════════════════════════ -->
+  <section class="cover">
+    <div class="cover-backdrop" aria-hidden="true">
+      <div class="cover-backdrop-shell">
+        <div class="cover-backdrop-stage">
+          <div class="cover-backdrop-unicorn" data-us-project="sajpUiTp7MIKdX6daDCu"></div>
+        </div>
+      </div>
+      <div class="cover-tint"></div>
+      <div class="cover-grid-glow"></div>
+      <div class="cover-vignette"></div>
+    </div>
+    <div class="cover-noise"></div>
+
+    <div class="cover-top">
+      <!-- badge removed per feedback -->
+    </div>
+
+    <div class="cover-body">
+      <p class="cover-label reveal">${tagline}</p>
+      <h1 class="cover-title reveal">
+        Proposta<br class="mobile-br"> Comercial<span class="accent">.</span>
+      </h1>
+      <div class="cover-divider reveal"></div>
+      <div class="cover-client reveal">
+        <span class="cover-client-label">Para</span>
+        <span class="cover-client-name">${clientName}</span>
+      </div>
+    </div>
+
+    <div class="cover-bottom">
+      <div class="cover-meta reveal">
+        <span>Wolf Agency</span>
+        <span>${year} · ${serviceType}</span>
+      </div>
+      <div class="cover-scroll-hint reveal">
+        <span class="scroll-line"></span>
+        <span>Scroll</span>
+      </div>
+    </div>
+  </section>`;
+  }
 
   return `
   <!-- ══════════════════════════════
@@ -498,10 +547,10 @@ function main() {
   // Parse arguments
   const args = process.argv.slice(2);
   if (args.length < 2) {
-    console.error('Usage: node build-proposal.js <input.json | -> <output.html> [--template classic|luminal]');
+    console.error('Usage: node build-proposal.js <input.json | -> <output.html> [--template classic|wesley]');
     console.error('  input.json  Path to JSON data file (use - for stdin)');
     console.error('  output.html Path where the HTML will be written');
-    console.error('  --template  Template style: classic (default) or luminal');
+    console.error('  --template  Template style: classic (default) or wesley');
     process.exit(1);
   }
 
@@ -551,7 +600,7 @@ function main() {
   let template = fs.readFileSync(TEMPLATE_PATH, 'utf-8');
   // Verify template integrity
   const currentChecksum = crypto.createHash('md5').update(fs.readFileSync(TEMPLATE_PATH)).digest('hex');
-  if (currentChecksum !== TEMPLATE_CHECKSUM) {
+  if (templateName === 'classic' && currentChecksum !== TEMPLATE_CHECKSUM) {
     console.error(`Warning: template checksum mismatch (got ${currentChecksum}, expected ${TEMPLATE_CHECKSUM})`);
     if (fs.existsSync(TEMPLATE_BACKUP)) {
       console.error(`Restoring template from LOCKED backup`);
@@ -584,7 +633,7 @@ function main() {
 
   // Build body sections
   const bodySections = [
-    buildCover(data),
+    buildCover(data, { templateName }),
     buildTicker(data),
     buildContext(data),
     buildServices(data),
