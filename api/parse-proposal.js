@@ -191,6 +191,7 @@ module.exports = async function handler(req, res) {
       status: 'open',
       template: TEMPLATES[templateName] ? templateName : 'classic',
       netlify_url: publicUrl,
+      slug: clientSlug,
       proposal_data: data,
     };
     if (seller) record.seller = seller;
