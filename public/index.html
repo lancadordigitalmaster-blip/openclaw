@@ -3097,6 +3097,10 @@ window.switchView = function(view) {
 
 // ── INIT ──
 renderKanbanColumns();
+// No mobile, abre direto no Pipeline (propostas)
+if (window.innerWidth <= 600) {
+  switchView('pipeline');
+}
 loadProposals();
 </script>
 
