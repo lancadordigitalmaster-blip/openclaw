@@ -110,12 +110,33 @@ module.exports = async function handler(req, res) {
       return jsonError(res, 500, 'Variaveis de ambiente nao configuradas no servidor');
     }
 
-    const { text, seller, origin, proposal_code, whatsapp, template } = req.body || {};
+    const { text, structured, seller, origin, proposal_code, whatsapp, template } = req.body || {};
     const templateName = String(template || 'classic').toLowerCase();
     const templateHTML = TEMPLATES[templateName] || TEMPLATES.classic;
 
-    if (!text || text.length < 50) {
+    const isStructured = !!(structured && structured.client_name && structured.service_type && structured.about_client);
+
+    if (!isStructured && (!text || text.length < 50)) {
       return jsonError(res, 400, 'Texto da proposta muito curto (minimo 50 chars)');
+    }
+    if (isStructured && !structured.about_client) {
+      return jsonError(res, 400, 'Descreva o cliente (quem é, negócio, momento)');
+    }
+
+    // Build prompt based on input mode
+    let prompt;
+    if (isStructured) {
+      const { client_name, service_type, about_client, value, notes } = structured;
+      prompt = PARSE_PROMPT + `
+Cliente: ${client_name}
+Serviço: ${service_type}
+Sobre o cliente: ${about_client}
+Valor mensal: R$ ${value || '0'}
+${notes ? `Observações: ${notes}` : ''}
+
+Instruções extras: gere uma proposta completa e personalizada para este cliente com base nas informações acima. Preencha todos os campos do JSON com conteúdo rico e específico ao nicho/negócio do cliente.`;
+    } else {
+      prompt = PARSE_PROMPT + text;
     }
 
     // 1. Parse with Claude
@@ -123,7 +144,7 @@ module.exports = async function handler(req, res) {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
-      messages: [{ role: 'user', content: PARSE_PROMPT + text }],
+      messages: [{ role: 'user', content: prompt }],
     });
 
     const jsonText = extractTextContent(response.content);
@@ -209,6 +230,7 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
+      id: supabaseId,
       url: publicUrl,
       storage_url: storageUrl,
       message: `Proposta gerada e publicada com sucesso!\n\nURL publica: ${publicUrl}${supabaseId ? `\nID: ${supabaseId}` : ''}`,

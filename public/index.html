@@ -2494,7 +2494,7 @@ window.saveProposalContent = async function() {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: p.id, proposal_data: data }),
+      body: JSON.stringify({ id: p.id, proposal_data: data, seller: p.seller || undefined }),
     });
     const result = await res.json();
     if (result.ok) {

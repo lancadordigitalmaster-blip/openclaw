@@ -3,14 +3,17 @@ const { readFileSync } = require('fs');
 const { join } = require('path');
 const { generateHTML } = require('../_lib/builder');
 
-const TEMPLATE = readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8');
+const TEMPLATES = {
+  classic: readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8'),
+  wesley: readFileSync(join(__dirname, '../_lib/template-wesley.html'), 'utf-8'),
+};
 
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { id, proposal_data } = req.body || {};
+    const { id, proposal_data, seller } = req.body || {};
 
     if (!id) return res.status(400).json({ error: 'ID da proposta obrigatorio' });
     if (!proposal_data || !proposal_data.client_name) {
@@ -22,8 +25,13 @@ module.exports = async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Generate new HTML from updated data
-    const html = generateHTML(proposal_data, TEMPLATE);
+    // Fetch current record to preserve template
+    const { data: current } = await supabase.from('proposals').select('template').eq('id', id).single();
+    const templateName = (current?.template && TEMPLATES[current.template]) ? current.template : 'classic';
+    const templateHTML = TEMPLATES[templateName];
+
+    // Generate new HTML from updated data using original template
+    const html = generateHTML(proposal_data, templateHTML, { templateName });
 
     // Derive slug from client_name
     const clientSlug = proposal_data.client_name
@@ -59,6 +67,15 @@ module.exports = async function handler(req, res) {
     }).eq('id', id);
 
     if (dbErr) console.error('DB update error:', dbErr.message);
+
+    // Log activity
+    const actor = seller || 'Sistema';
+    await supabase.from('proposal_activities').insert({
+      proposal_id: id,
+      type: 'updated',
+      description: `Proposta atualizada por ${actor}`,
+      actor,
+    }).catch(() => {});
 
     return res.status(200).json({ ok: true, url: publicUrl });
   } catch (err) {
