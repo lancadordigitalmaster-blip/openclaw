@@ -9,8 +9,12 @@
   },
   "rewrites": [
     {
+      "source": "/p/:slug",
+      "destination": "/api/proposal?slug=:slug"
+    },
+    {
       "source": "/proposta/:slug",
-      "destination": "/api/proposta?slug=:slug"
+      "destination": "/api/proposal?slug=:slug"
     },
     {
       "source": "/admin",

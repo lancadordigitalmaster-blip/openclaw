@@ -2335,7 +2335,17 @@ window.generateProposal = async function() {
         proposal_code: code,
       }),
     });
-    const result = await res.json();
+    const raw = await res.text();
+    let result = {};
+    try {
+      result = raw ? JSON.parse(raw) : {};
+    } catch (parseErr) {
+      throw new Error(`Resposta invalida do servidor (HTTP ${res.status})`);
+    }
+
+    if (!res.ok) {
+      throw new Error(result.error || result.message || `HTTP ${res.status}`);
+    }
 
     if (result.ok) {
       const clientName = result.parsed_data?.client_name || 'Cliente';
@@ -2381,7 +2391,10 @@ window.generateProposal = async function() {
       statusEl.className = 'prompt-status error';
     }
   } catch (err) {
-    statusEl.textContent = `Erro de conexao: ${err.message}. Verifique se o Mac Mini esta ligado.`;
+    const hint = isLocal
+      ? 'Verifique se o bridge local esta ligado.'
+      : 'Confira os logs da funcao /api/parse-proposal na Vercel.';
+    statusEl.textContent = `Erro ao gerar: ${err.message}. ${hint}`;
     statusEl.className = 'prompt-status error';
   }
 
