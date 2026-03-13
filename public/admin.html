@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wolf Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:       #080808;
+  --surface:  #111111;
+  --sf2:      #181818;
+  --sf3:      #1e1e1e;
+  --border:   rgba(255,255,255,.06);
+  --border2:  rgba(255,255,255,.1);
+  --wolf:     #ff402e;
+  --wolf-dim: rgba(255,64,46,.15);
+  --wolf-glow:rgba(255,64,46,.3);
+  --ink:      #f0f0f0;
+  --ink2:     #888;
+  --ink3:     #555;
+  --green:    #30d158;
+  --green-dim:rgba(48,209,88,.15);
+  --red:      #ff453a;
+  --red-dim:  rgba(255,69,58,.15);
+  --amber:    #ffd60a;
+  --amber-dim:rgba(255,214,10,.12);
+  --blue:     #0a84ff;
+  --blue-dim: rgba(10,132,255,.12);
+  --purple:   #bf5af2;
+  --f: 'Geist', system-ui, -apple-system, sans-serif;
+  --m: 'Geist Mono', monospace;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+html, body { background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 13px; -webkit-font-smoothing: antialiased; }
+
+/* ─── PIN OVERLAY ─── */
+#pin-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  transition: opacity .4s ease, visibility .4s ease;
+}
+#pin-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.pin-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 40px 48px;
+  width: 340px;
+  display: flex; flex-direction: column; align-items: center; gap: 24px;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,64,46,.08);
+  animation: pin-enter .4s cubic-bezier(.16,1,.3,1);
+}
+@keyframes pin-enter {
+  from { opacity: 0; transform: translateY(20px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+.pin-logo {
+  width: 56px; height: 56px;
+  background: var(--wolf);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.pin-title { font-size: 20px; font-weight: 700; letter-spacing: -.03em; text-align: center; }
+.pin-sub   { font-size: 13px; color: var(--ink2); text-align: center; margin-top: -16px; }
+.pin-input-wrap { position: relative; width: 100%; }
+.pin-input {
+  width: 100%; height: 48px;
+  background: var(--sf2); border: 1px solid var(--border2);
+  color: var(--ink); font-family: var(--m); font-size: 16px; letter-spacing: .1em;
+  padding: 0 44px 0 16px; border-radius: 10px; outline: none;
+  transition: border-color .2s;
+}
+.pin-input:focus { border-color: var(--wolf); box-shadow: 0 0 0 3px var(--wolf-dim); }
+.pin-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 16px; padding: 4px;
+}
+.pin-toggle:hover { color: var(--ink2); }
+.pin-submit {
+  width: 100%; height: 48px; border-radius: 10px;
+  background: var(--wolf); border: none;
+  color: #fff; font-family: var(--f); font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: opacity .13s;
+}
+.pin-submit:hover { opacity: .88; }
+.pin-error { color: var(--red); font-size: 12px; text-align: center; min-height: 18px; animation: shake .3s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+/* ─── LAYOUT ─── */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  height: 52px; flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px;
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 700; letter-spacing: -.03em;
+}
+.topbar-hex {
+  width: 28px; height: 28px;
+  background: var(--wolf);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; flex-shrink: 0;
+}
+.topbar-sep { width: 1px; height: 24px; background: var(--border); }
+.status-pills { display: flex; gap: 8px; }
+.pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500; letter-spacing: .01em;
+  border: 1px solid transparent;
+}
+.pill.green { background: var(--green-dim); color: var(--green); border-color: rgba(48,209,88,.2); }
+.pill.red   { background: var(--red-dim);   color: var(--red);   border-color: rgba(255,69,58,.2); }
+.pill.amber { background: var(--amber-dim); color: var(--amber); border-color: rgba(255,214,10,.2); }
+.pill.blue  { background: var(--blue-dim);  color: var(--blue);  border-color: rgba(10,132,255,.2); }
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.refresh-info { font-size: 11px; color: var(--ink3); font-family: var(--m); }
+.btn-sm {
+  height: 28px; padding: 0 12px; border-radius: var(--radius-sm);
+  background: var(--sf2); border: 1px solid var(--border);
+  color: var(--ink2); font-family: var(--f); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .13s; display: flex; align-items: center; gap: 6px;
+}
+.btn-sm:hover { background: var(--sf3); color: var(--ink); border-color: var(--border2); }
+.btn-sm.wolf  { background: var(--wolf-dim); color: var(--wolf); border-color: rgba(255,64,46,.25); }
+.btn-sm.wolf:hover { background: rgba(255,64,46,.25); }
+
+/* ─── MAIN CONTENT ─── */
+.main { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ─── STATS ROW ─── */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: border-color .2s;
+}
+.stat-card:hover { border-color: var(--border2); }
+.stat-label { font-size: 11px; color: var(--ink2); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+.stat-value { font-size: 26px; font-weight: 700; letter-spacing: -.04em; line-height: 1; }
+.stat-sub   { font-size: 12px; color: var(--ink2); }
+.stat-card.wolf  .stat-value { color: var(--wolf); }
+.stat-card.green .stat-value { color: var(--green); }
+.stat-card.blue  .stat-value { color: var(--blue); }
+.stat-card.amber .stat-value { color: var(--amber); }
+
+/* ─── GRID 2-COL ─── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ─── SECTION ─── */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.section-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title { font-size: 13px; font-weight: 600; letter-spacing: -.01em; }
+.section-count {
+  font-size: 11px; color: var(--ink3); font-family: var(--m);
+  background: var(--sf2); border: 1px solid var(--border);
+  padding: 2px 7px; border-radius: 20px;
+}
+.section-body { padding: 16px 18px; }
+
+/* ─── SYSTEM STATUS GRID ─── */
+.sys-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 14px; }
+.sys-card {
+  background: var(--sf2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.sys-card-top { display: flex; align-items: center; justify-content: space-between; }
+.sys-name { font-size: 12px; font-weight: 600; }
+.sys-sub  { font-size: 11px; color: var(--ink2); }
+.sys-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px;
+  letter-spacing: .03em; text-transform: uppercase;
+}
+.sys-badge.online  { background: var(--green-dim); color: var(--green); }
+.sys-badge.offline { background: var(--red-dim);   color: var(--red); }
+.sys-badge.info    { background: var(--blue-dim);  color: var(--blue); }
+.sys-badge.warn    { background: var(--amber-dim); color: var(--amber); }
+
+.cron-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 10px; }
+.cron-item {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.cron-item.ok     { border-left: 3px solid var(--green); }
+.cron-item.error  { border-left: 3px solid var(--red); }
+.cron-item.running{ border-left: 3px solid var(--amber); }
+.cron-item.unknown{ border-left: 3px solid var(--ink3); }
+.cron-name { font-size: 12px; font-weight: 600; color: var(--ink); }
+.cron-schedule { font-family: var(--m); color: var(--ink3); font-size: 10px; }
+.cron-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+.cron-last { font-size: 10px; color: var(--ink2); }
+.cron-status-dot {
+  font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 20px; letter-spacing: .03em;
+}
+.cron-status-dot.ok      { background: var(--green-dim); color: var(--green); }
+.cron-status-dot.error   { background: var(--red-dim);   color: var(--red); }
+.cron-status-dot.running { background: var(--amber-dim); color: var(--amber); }
+.cron-status-dot.unknown { background: var(--sf3);       color: var(--ink3); }
+
+/* ─── TABLE ─── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; font-size: 11px; font-weight: 600; color: var(--ink2);
+  letter-spacing: .04em; text-transform: uppercase;
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none; white-space: nowrap;
+}
+th:hover { color: var(--ink); }
+th .sort-arrow { margin-left: 4px; opacity: .4; }
+th.sorted .sort-arrow { opacity: 1; color: var(--wolf); }
+td {
+  padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.03);
+  font-size: 12px; white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+tr { cursor: pointer; transition: background .1s; }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+}
+.badge.open  { background: var(--blue-dim);  color: var(--blue); }
+.badge.sent  { background: var(--blue-dim);  color: var(--blue); }
+.badge.won   { background: var(--green-dim); color: var(--green); }
+.badge.lost  { background: var(--red-dim);   color: var(--red); }
+.badge.draft { background: var(--sf3);        color: var(--ink2); }
+
+/* ─── CONFIG TABLE ─── */
+.config-table { table-layout: fixed; width: 100%; }
+.config-table td:first-child  { font-family: var(--m); font-size: 11px; color: var(--wolf); width: 180px; }
+.config-table td:nth-child(2) { font-family: var(--m); font-size: 11px; color: var(--ink2); word-break: break-all; white-space: normal; }
+.config-table td:nth-child(3) { font-family: var(--m); font-size: 10px; color: var(--ink3); width: 130px; }
+.config-table td:last-child   { width: 130px; }
+.edit-input {
+  background: var(--sf3); border: 1px solid var(--wolf);
+  color: var(--ink); font-family: var(--m); font-size: 11px;
+  padding: 4px 8px; border-radius: 4px; width: 100%;
+  outline: none;
+}
+.btn-edit { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 11px; padding: 2px 6px; border-radius: 4px; transition: all .13s; }
+.btn-edit:hover { color: var(--wolf); background: var(--wolf-dim); }
+.btn-save { background: var(--wolf); border: none; color: #fff; cursor: pointer; font-size: 11px; padding: 3px 10px; border-radius: 4px; font-family: var(--f); font-weight: 600; transition: opacity .13s; }
+.btn-save:hover { opacity: .85; }
+.btn-cancel { background: var(--sf3); border: 1px solid var(--border2); color: var(--ink2); cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 4px; font-family: var(--f); transition: all .13s; margin-left: 4px; }
+.btn-test { background: var(--blue-dim); border: 1px solid rgba(10,132,255,.2); color: var(--blue); cursor: pointer; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-family: var(--f); font-weight: 600; margin-left: 6px; transition: all .13s; }
+.btn-test:hover { background: rgba(10,132,255,.25); }
+
+/* ─── ACTIVITY FEED ─── */
+.feed { display: flex; flex-direction: column; gap: 0; }
+.feed-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,.03);
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--sf2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.feed-body { flex: 1; min-width: 0; }
+.feed-top  { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.feed-actor { font-size: 12px; font-weight: 600; }
+.feed-client { font-size: 11px; color: var(--wolf); text-decoration: none; }
+.feed-client:hover { text-decoration: underline; }
+.feed-desc  { font-size: 12px; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feed-time  { font-size: 10px; color: var(--ink3); font-family: var(--m); flex-shrink: 0; }
+
+/* ─── AI FEATURES ─── */
+.ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.ai-item {
+  background: var(--sf2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex; align-items: flex-start; gap: 10px;
+  transition: border-color .2s;
+}
+.ai-item:hover { border-color: var(--border2); }
+.ai-check { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.ai-info {}
+.ai-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.ai-detail { font-size: 11px; color: var(--ink2); }
+
+/* ─── SKELETON ─── */
+.skeleton {
+  background: linear-gradient(90deg, var(--sf2) 25%, var(--sf3) 50%, var(--sf2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skel-line { height: 12px; margin-bottom: 8px; }
+.skel-line.short { width: 40%; }
+.skel-line.med   { width: 65%; }
+.skel-line.full  { width: 100%; }
+
+/* ─── LOG VIEWER ─── */
+.log-toolbar {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.log-filter-btn {
+  height: 26px; padding: 0 10px; border-radius: 20px;
+  background: var(--sf2); border: 1px solid var(--border);
+  color: var(--ink2); font-family: var(--f); font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: all .13s; letter-spacing: .02em;
+}
+.log-filter-btn:hover { border-color: var(--border2); color: var(--ink); }
+.log-filter-btn.active { border-color: currentColor; }
+.log-filter-btn.all    { color: var(--ink); }
+.log-filter-btn.info   { color: var(--blue);  }
+.log-filter-btn.warn   { color: var(--amber); }
+.log-filter-btn.error  { color: var(--red);   background: var(--red-dim); }
+.log-filter-btn.debug  { color: var(--ink3); }
+.log-search {
+  margin-left: auto; height: 26px; width: 200px;
+  background: var(--sf2); border: 1px solid var(--border);
+  color: var(--ink); font-family: var(--m); font-size: 11px;
+  padding: 0 10px; border-radius: 6px; outline: none;
+  transition: border-color .13s;
+}
+.log-search:focus { border-color: var(--wolf); }
+.log-search::placeholder { color: var(--ink3); }
+
+.log-list { font-family: var(--m); font-size: 11px; }
+.log-row {
+  display: grid;
+  grid-template-columns: 130px 52px 130px 1fr 22px;
+  gap: 0;
+  padding: 7px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.025);
+  align-items: center;
+  cursor: pointer;
+  transition: background .1s;
+}
+.log-row:hover { background: rgba(255,255,255,.03); }
+.log-row.expanded { background: rgba(255,255,255,.04); }
+.log-ts    { color: var(--ink3); white-space: nowrap; }
+.log-lvl   { }
+.log-src   { color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-msg   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 8px; }
+.log-chevron { color: var(--ink3); text-align: center; font-size: 10px; transition: transform .2s; }
+.log-row.expanded .log-chevron { transform: rotate(90deg); }
+.log-details {
+  display: none;
+  padding: 8px 14px 12px 14px;
+  background: rgba(255,255,255,.02);
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.log-details.vis { display: block; }
+.log-details pre {
+  font-family: var(--m); font-size: 10px; color: var(--ink2);
+  white-space: pre-wrap; word-break: break-all;
+  background: var(--sf3); padding: 8px 10px; border-radius: 6px;
+  max-height: 200px; overflow-y: auto;
+}
+.log-level-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+}
+.log-level-badge.info  { background: var(--blue-dim);  color: var(--blue);  }
+.log-level-badge.warn  { background: var(--amber-dim); color: var(--amber); }
+.log-level-badge.error { background: var(--red-dim);   color: var(--red);   }
+.log-level-badge.debug { background: var(--sf3);       color: var(--ink3);  }
+.log-row.lv-error .log-msg { color: var(--red); }
+.log-row.lv-warn  .log-msg { color: var(--amber); }
+.log-row.lv-info  .log-msg { color: var(--ink); }
+.log-row.lv-debug .log-msg { color: var(--ink3); }
+
+/* ─── MISC ─── */
+.text-wolf   { color: var(--wolf); }
+.text-green  { color: var(--green); }
+.text-red    { color: var(--red); }
+.text-ink2   { color: var(--ink2); }
+.text-ink3   { color: var(--ink3); }
+.mono        { font-family: var(--m); }
+.fw6         { font-weight: 600; }
+.text-center { text-align: center; }
+.empty-state { padding: 40px 20px; text-align: center; color: var(--ink3); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- PIN OVERLAY -->
+<div id="pin-overlay">
+  <div class="pin-card">
+    <div class="pin-logo">🐺</div>
+    <div>
+      <div class="pin-title">Wolf Admin</div>
+      <div class="pin-sub" style="margin-top:6px;">Painel de administração</div>
+    </div>
+    <div class="pin-input-wrap">
+      <input class="pin-input" id="pin-input" type="password" placeholder="Senha" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')checkPin()">
+      <button class="pin-toggle" onclick="togglePinVis()" title="Mostrar senha">👁</button>
+    </div>
+    <button class="pin-submit" onclick="checkPin()">Entrar</button>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-hex">🐺</div>
+      Wolf Admin
+    </div>
+    <div class="topbar-sep"></div>
+    <div class="status-pills">
+      <span class="pill blue" id="pill-db"><span class="pill-dot"></span>DB ✓</span>
+      <span class="pill" id="pill-bridge"><span class="pill-dot"></span>Bridge…</span>
+      <span class="pill" id="pill-errors" style="display:none"><span class="pill-dot"></span><span id="pill-errors-text">0 erros</span></span>
+    </div>
+    <div class="topbar-right">
+      <span class="refresh-info" id="refresh-info">—</span>
+      <button class="btn-sm" onclick="loadData(true)">↻ Refresh</button>
+      <button class="btn-sm wolf" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main-content">
+
+    <!-- STATS ROW -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card wolf">
+        <div class="stat-label">Pipeline Ativo</div>
+        <div class="stat-value" id="s-pipeline">—</div>
+        <div class="stat-sub" id="s-pipeline-sub">— propostas abertas</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Ganhas (total)</div>
+        <div class="stat-value" id="s-won">—</div>
+        <div class="stat-sub" id="s-won-sub">— negócios</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Taxa de Conversão</div>
+        <div class="stat-value" id="s-conv">—</div>
+        <div class="stat-sub" id="s-conv-sub">won / (won + lost)</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Views Hoje</div>
+        <div class="stat-value" id="s-views">—</div>
+        <div class="stat-sub">visualizações de propostas</div>
+      </div>
+    </div>
+
+    <!-- SYSTEM STATUS -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Status do Sistema</div>
+      </div>
+      <div class="sys-grid">
+        <div class="sys-card">
+          <div class="sys-card-top">
+            <div>
+              <div class="sys-name">Alfred / OpenClaw</div>
+              <div class="sys-sub">Mac Mini local</div>
+            </div>
+            <span class="sys-badge warn">SSH</span>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px;">Verificar via SSH:<br><span class="mono" style="color:var(--ink2);font-size:10px;">thomasgirotto@Mac-mini-de-Thomas.local</span></div>
+        </div>
+        <div class="sys-card">
+          <div class="sys-card-top">
+            <div>
+              <div class="sys-name">WhatsApp Bridge</div>
+              <div class="sys-sub" id="bridge-url-sub">—</div>
+            </div>
+            <span class="sys-badge" id="bridge-badge">…</span>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px;" id="bridge-detail">Aguardando dados…</div>
+        </div>
+        <div class="sys-card">
+          <div class="sys-card-top">
+            <div>
+              <div class="sys-name">Supabase DB</div>
+              <div class="sys-sub">dqhiafxbljujahmpcdhf · sa-east-1</div>
+            </div>
+            <span class="sys-badge online" id="db-badge">Online</span>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px;" id="db-detail">Conectado</div>
+        </div>
+        <div class="sys-card">
+          <div class="sys-card-top">
+            <div>
+              <div class="sys-name">Vercel API</div>
+              <div class="sys-sub">propostas.wolfpacks.com.br</div>
+            </div>
+            <span class="sys-badge online">Online</span>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px;">Serverless functions ativas</div>
+        </div>
+        <div class="sys-card" style="grid-column:span 4">
+          <div class="sys-card-top">
+            <div>
+              <div class="sys-name">Cron Jobs (Mac Mini)</div>
+              <div class="sys-sub">Status em tempo real via Supabase</div>
+            </div>
+            <span class="sys-badge info" id="cron-count-badge">—</span>
+          </div>
+          <div class="cron-list" id="cron-list">
+            <div style="color:var(--ink3);font-size:11px;padding:8px">Carregando…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROPOSALS + ACTIVITY FEED -->
+    <div class="grid-2">
+
+      <!-- PROPOSTAS -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Propostas Ativas</div>
+          <span class="section-count" id="prop-count">—</span>
+        </div>
+        <div class="tbl-wrap">
+          <table id="proposals-table">
+            <thead>
+              <tr>
+                <th onclick="sortTable('client_name')" data-col="client_name">Cliente <span class="sort-arrow">↕</span></th>
+                <th onclick="sortTable('seller')"      data-col="seller">Vendedor <span class="sort-arrow">↕</span></th>
+                <th onclick="sortTable('service_type')" data-col="service_type">Serviço <span class="sort-arrow">↕</span></th>
+                <th onclick="sortTable('amount')"      data-col="amount">Valor <span class="sort-arrow">↕</span></th>
+                <th onclick="sortTable('status')"      data-col="status">Status <span class="sort-arrow">↕</span></th>
+                <th onclick="sortTable('view_count')"  data-col="view_count">Views <span class="sort-arrow">↕</span></th>
+                <th onclick="sortTable('created_at')"  data-col="created_at">Data <span class="sort-arrow">↕</span></th>
+              </tr>
+            </thead>
+            <tbody id="proposals-tbody">
+              <tr><td colspan="7" class="empty-state">Carregando…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ACTIVITY FEED -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Live Activity Feed</div>
+          <span class="section-count" id="feed-count">—</span>
+        </div>
+        <div style="max-height:420px;overflow-y:auto;padding:0 18px 14px" class="feed" id="activity-feed">
+          <div class="empty-state">Carregando…</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CONFIG EDITOR -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Config Editor</div>
+        <span class="section-count" id="config-count">—</span>
+      </div>
+      <div class="tbl-wrap">
+        <table class="config-table">
+          <thead>
+            <tr>
+              <th>Chave</th>
+              <th>Valor</th>
+              <th>Atualizado</th>
+              <th style="width:120px;"></th>
+            </tr>
+          </thead>
+          <tbody id="config-tbody">
+            <tr><td colspan="4" class="empty-state">Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SYSTEM LOGS -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">🖥 System Logs</div>
+        <span class="section-count" id="logs-count">—</span>
+        <span id="logs-error-badge" style="display:none;margin-left:6px;background:var(--red-dim);color:var(--red);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;"></span>
+      </div>
+      <div class="log-toolbar">
+        <button class="log-filter-btn all active"   onclick="setLogFilter('all',this)">Todos</button>
+        <button class="log-filter-btn info"          onclick="setLogFilter('info',this)">INFO</button>
+        <button class="log-filter-btn warn"          onclick="setLogFilter('warn',this)">WARN</button>
+        <button class="log-filter-btn error"         onclick="setLogFilter('error',this)">ERROR</button>
+        <button class="log-filter-btn debug"         onclick="setLogFilter('debug',this)">DEBUG</button>
+        <select id="log-source-filter" onchange="renderLogs()" style="height:26px;background:var(--sf2);border:1px solid var(--border);color:var(--ink2);font-family:var(--m);font-size:11px;padding:0 8px;border-radius:6px;outline:none;cursor:pointer;">
+          <option value="">Todas as fontes</option>
+        </select>
+        <input class="log-search" id="log-search" placeholder="Buscar mensagem…" oninput="renderLogs()">
+      </div>
+      <div style="max-height:480px;overflow-y:auto;" id="log-list-wrap">
+        <div class="empty-state">Carregando logs…</div>
+      </div>
+    </div>
+
+    <!-- AI FEATURES -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">AI Features Status</div>
+        <span class="section-count">8 implementadas</span>
+      </div>
+      <div class="ai-grid" style="padding:14px;max-height:320px;overflow-y:auto;">
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Win Probability Score</div>
+            <div class="ai-detail">Frontend · cálculo local</div>
+          </div>
+        </div>
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Client Interest Score</div>
+            <div class="ai-detail">Frontend · views + tempo</div>
+          </div>
+        </div>
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Next Best Action</div>
+            <div class="ai-detail">Frontend · lógica estática</div>
+          </div>
+        </div>
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Follow-up Draft</div>
+            <div class="ai-detail">IA · Haiku · cron 08h</div>
+          </div>
+        </div>
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Weighted Revenue Forecast</div>
+            <div class="ai-detail">Frontend · pipeline ponderado</div>
+          </div>
+        </div>
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Lost Deal Analysis</div>
+            <div class="ai-detail">IA · Haiku · cron segunda 09h</div>
+          </div>
+        </div>
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Auto-enrich</div>
+            <div class="ai-detail">Frontend · dados automáticos</div>
+          </div>
+        </div>
+        <div class="ai-item">
+          <div class="ai-check">✅</div>
+          <div class="ai-info">
+            <div class="ai-name">Competitor Tracking</div>
+            <div class="ai-detail">DB + UI · campo dedicado</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:20px"></div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const ADMIN_KEY   = 'wolf2026';
+const CORRECT_PIN = 'wolf2026';
+const SUPABASE_URL  = 'https://dqhiafxbljujahmpcdhf.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxaGlhZnhibGp1amFobXBjZGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2ODUyNzAsImV4cCI6MjA4ODI2MTI3MH0._eYfSa0stwIysa12_AObw52hugijfMetzLzkaeNCt2g';
+
+// ─── PIN ───
+function togglePinVis() {
+  const inp = document.getElementById('pin-input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function checkPin() {
+  const val = document.getElementById('pin-input').value;
+  if (val === CORRECT_PIN) {
+    sessionStorage.setItem('wolf-admin-auth', '1');
+    document.getElementById('pin-overlay').classList.add('hidden');
+    document.getElementById('app').style.display = '';
+    initApp();
+  } else {
+    document.getElementById('pin-error').textContent = 'Senha incorreta. Tente novamente.';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('wolf-admin-auth');
+  location.reload();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem('wolf-admin-auth') === '1') {
+    document.getElementById('pin-overlay').classList.add('hidden');
+    document.getElementById('app').style.display = '';
+    initApp();
+  } else {
+    setTimeout(() => document.getElementById('pin-input')?.focus(), 100);
+  }
+});
+
+// ─── APP ───
+let allProposals = [];
+let sortCol = 'created_at';
+let sortAsc = false;
+let lastFetchTime = null;
+let refreshInterval = null;
+let refreshCounterInterval = null;
+
+function initApp() {
+  loadData(true);
+  refreshInterval = setInterval(() => loadData(false), 30000);
+  refreshCounterInterval = setInterval(updateRefreshCounter, 1000);
+}
+
+function updateRefreshCounter() {
+  if (!lastFetchTime) return;
+  const sec = Math.floor((Date.now() - lastFetchTime) / 1000);
+  document.getElementById('refresh-info').textContent =
+    sec < 5 ? 'agora mesmo' : `há ${sec}s`;
+}
+
+async function loadData(showLoading) {
+  if (showLoading) {
+    document.getElementById('proposals-tbody').innerHTML =
+      '<tr><td colspan="7" class="empty-state">Carregando…</td></tr>';
+    document.getElementById('activity-feed').innerHTML =
+      '<div class="empty-state">Carregando…</div>';
+    document.getElementById('config-tbody').innerHTML =
+      '<tr><td colspan="4" class="empty-state">Carregando…</td></tr>';
+  }
+
+  try {
+    const res = await fetch('/api/admin', { headers: { 'x-admin-key': ADMIN_KEY } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    lastFetchTime = Date.now();
+
+    renderStats(data.stats);
+    renderBridge(data.bridge);
+    renderCronStatus(data.cronStatus || []);
+    allProposals = data.proposals || [];
+    renderProposals();
+    renderActivities(data.activities || []);
+    renderConfig(data.config || []);
+
+    // Logs
+    allLogs = data.logs || [];
+    populateSourceFilter(allLogs);
+    renderLogs();
+    const ec = data.errorCount24h || 0;
+    const errPill = document.getElementById('pill-errors');
+    if (ec > 0) {
+      errPill.style.display = '';
+      errPill.className = 'pill red';
+      document.getElementById('pill-errors-text').textContent = `${ec} erro${ec!==1?'s':''} 24h`;
+      document.getElementById('logs-error-badge').style.display = '';
+      document.getElementById('logs-error-badge').textContent = `${ec} erro${ec!==1?'s':''} nas últimas 24h`;
+    } else {
+      errPill.style.display = 'none';
+      document.getElementById('logs-error-badge').style.display = 'none';
+    }
+
+    // DB pill
+    const dbPill = document.getElementById('pill-db');
+    dbPill.className = 'pill green';
+    dbPill.innerHTML = '<span class="pill-dot"></span>DB ✓';
+    document.getElementById('db-badge').className = 'sys-badge online';
+    document.getElementById('db-badge').textContent = 'Online';
+    document.getElementById('db-detail').textContent = `${(data.proposals||[]).length} propostas carregadas`;
+
+  } catch (err) {
+    console.error('loadData error:', err);
+    const dbPill = document.getElementById('pill-db');
+    dbPill.className = 'pill red';
+    dbPill.innerHTML = '<span class="pill-dot"></span>DB Erro';
+  }
+}
+
+function fmtBRL(v) {
+  const n = parseFloat(v) || 0;
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+}
+
+function renderStats(s) {
+  if (!s) return;
+  document.getElementById('s-pipeline').textContent = fmtBRL(s.total_pipeline);
+  document.getElementById('s-pipeline-sub').textContent = `${s.open_count} propostas abertas`;
+  document.getElementById('s-won').textContent = fmtBRL(s.total_revenue);
+  document.getElementById('s-won-sub').textContent = `${s.won_count} negócios`;
+
+  const closed = (s.won_count || 0) + (s.lost_count || 0);
+  const conv = closed > 0 ? Math.round((s.won_count / closed) * 100) : 0;
+  document.getElementById('s-conv').textContent = conv + '%';
+  document.getElementById('s-conv-sub').textContent = `${s.won_count} won / ${s.lost_count} lost`;
+  document.getElementById('s-views').textContent = s.views_today || 0;
+}
+
+function renderBridge(b) {
+  const pill = document.getElementById('pill-bridge');
+  const badge = document.getElementById('bridge-badge');
+  const detail = document.getElementById('bridge-detail');
+  const sub = document.getElementById('bridge-url-sub');
+
+  if (!b) return;
+
+  if (b.online) {
+    pill.className = 'pill green';
+    pill.innerHTML = '<span class="pill-dot"></span>Bridge: Online';
+    badge.className = 'sys-badge online';
+    badge.textContent = 'Online';
+    detail.textContent = 'Respondendo em /status';
+  } else {
+    pill.className = 'pill red';
+    pill.innerHTML = '<span class="pill-dot"></span>Bridge: Offline';
+    badge.className = 'sys-badge offline';
+    badge.textContent = 'Offline';
+    detail.textContent = b.url ? 'Sem resposta em 3s' : 'URL não configurada';
+  }
+  sub.textContent = b.url ? b.url.replace('https://','').replace('http://','') : '—';
+}
+
+function renderProposals() {
+  const tbody = document.getElementById('proposals-tbody');
+  document.getElementById('prop-count').textContent = allProposals.length;
+
+  if (!allProposals.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma proposta</td></tr>';
+    return;
+  }
+
+  const sorted = [...allProposals].sort((a, b) => {
+    let av = a[sortCol], bv = b[sortCol];
+    if (sortCol === 'amount') { av = parseFloat(av)||0; bv = parseFloat(bv)||0; }
+    if (sortCol === 'view_count') { av = parseInt(av)||0; bv = parseInt(bv)||0; }
+    if (av < bv) return sortAsc ? -1 : 1;
+    if (av > bv) return sortAsc ?  1 : -1;
+    return 0;
+  });
+
+  tbody.innerHTML = sorted.map(p => {
+    const date = p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '—';
+    const val  = p.amount ? fmtBRL(p.amount) : '—';
+    const href = p.slug ? `/proposta/${p.slug}` : '#';
+    return `<tr onclick="window.open('${href}','_blank')">
+      <td class="fw6">${esc(p.client_name||'—')}</td>
+      <td class="text-ink2">${esc(p.seller||'—')}</td>
+      <td class="text-ink2">${esc(p.service_type||'—')}</td>
+      <td class="mono">${val}</td>
+      <td><span class="badge ${p.status||'draft'}">${p.status||'draft'}</span></td>
+      <td class="text-ink2">${p.view_count||0}</td>
+      <td class="text-ink3 mono">${date}</td>
+    </tr>`;
+  }).join('');
+
+  // Update sort arrows
+  document.querySelectorAll('#proposals-table th').forEach(th => {
+    const col = th.dataset.col;
+    th.classList.toggle('sorted', col === sortCol);
+    const arrow = th.querySelector('.sort-arrow');
+    if (arrow) arrow.textContent = col === sortCol ? (sortAsc ? '↑' : '↓') : '↕';
+  });
+}
+
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  renderProposals();
+}
+
+const ACTIVITY_ICONS = {
+  view: '👁', edit: '✏️', follow_up: '📅', status_change: '🔄', note: '📝',
+  create: '✨', delete: '🗑', default: '📋'
+};
+
+function timeAgo(iso) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)   return `${Math.floor(diff)}s atrás`;
+  if (diff < 3600) return `${Math.floor(diff/60)}min atrás`;
+  if (diff < 86400)return `${Math.floor(diff/3600)}h atrás`;
+  return `${Math.floor(diff/86400)}d atrás`;
+}
+
+function renderActivities(acts) {
+  const feed = document.getElementById('activity-feed');
+  document.getElementById('feed-count').textContent = acts.length;
+
+  if (!acts.length) {
+    feed.innerHTML = '<div class="empty-state">Nenhuma atividade</div>';
+    return;
+  }
+
+  feed.innerHTML = acts.map(a => {
+    const icon = ACTIVITY_ICONS[a.type] || ACTIVITY_ICONS.default;
+    const client = a.proposals?.client_name || a.proposal_id || '—';
+    const ago = a.created_at ? timeAgo(a.created_at) : '';
+    return `<div class="feed-item">
+      <div class="feed-icon">${icon}</div>
+      <div class="feed-body">
+        <div class="feed-top">
+          <span class="feed-actor">${esc(a.actor||'Sistema')}</span>
+          <span class="text-ink3">→</span>
+          <span class="feed-client">${esc(client)}</span>
+        </div>
+        <div class="feed-desc">${esc(a.description||a.type||'—')}</div>
+      </div>
+      <span class="feed-time">${ago}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderConfig(cfg) {
+  const tbody = document.getElementById('config-tbody');
+  document.getElementById('config-count').textContent = cfg.length + ' chaves';
+
+  if (!cfg.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhuma configuração</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = cfg.map(row => {
+    const updated = row.updated_at
+      ? new Date(row.updated_at).toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})
+      : '—';
+    const isBridge = row.key === 'bridge_url';
+    const testBtn = isBridge
+      ? `<button class="btn-test" onclick="testBridgeUrl(this,'${esc(row.value||'')}')">Testar</button>`
+      : '';
+    return `<tr id="cfg-row-${esc(row.key)}">
+      <td>${esc(row.key)}</td>
+      <td title="${esc(row.value||'')}"><span id="cfg-val-${esc(row.key)}">${esc(row.value||'')}</span>${testBtn}</td>
+      <td>${updated}</td>
+      <td>
+        <button class="btn-edit" onclick="editConfig('${esc(row.key)}','${esc((row.value||'').replace(/'/g,"\\'"))}')">Editar</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editConfig(key, currentVal) {
+  const row = document.getElementById(`cfg-row-${key}`);
+  if (!row) return;
+  const valCell = row.cells[1];
+  const actCell = row.cells[3];
+  valCell.innerHTML = `<input class="edit-input" id="cfg-input-${key}" value="${esc(currentVal)}">`;
+  actCell.innerHTML = `<button class="btn-save" onclick="saveConfig('${key}')">Salvar</button><button class="btn-cancel" onclick="loadData(false)">✕</button>`;
+  document.getElementById(`cfg-input-${key}`).focus();
+}
+
+async function saveConfig(key) {
+  const input = document.getElementById(`cfg-input-${key}`);
+  if (!input) return;
+  const newVal = input.value;
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/config?key=eq.${encodeURIComponent(key)}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ value: newVal, updated_at: new Date().toISOString() })
+    });
+    if (res.ok || res.status === 204) {
+      await loadData(false);
+    } else {
+      alert(`Erro ao salvar: HTTP ${res.status}`);
+    }
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  }
+}
+
+async function testBridgeUrl(btn, url) {
+  if (!url) { alert('URL não configurada'); return; }
+  btn.textContent = '…';
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/admin', { headers: { 'x-admin-key': ADMIN_KEY } });
+    const data = await res.json();
+    const online = data.bridge?.online;
+    btn.textContent = online ? '✓ Online' : '✗ Offline';
+    btn.style.color = online ? 'var(--green)' : 'var(--red)';
+    setTimeout(() => { btn.textContent = 'Testar'; btn.style.color = ''; btn.disabled = false; }, 3000);
+  } catch {
+    btn.textContent = '✗ Erro';
+    btn.style.color = 'var(--red)';
+    setTimeout(() => { btn.textContent = 'Testar'; btn.style.color = ''; btn.disabled = false; }, 3000);
+  }
+}
+
+// ─── CRONS ───
+function renderCronStatus(crons) {
+  const el = document.getElementById('cron-list');
+  const badge = document.getElementById('cron-count-badge');
+  if (!crons || !crons.length) {
+    el.innerHTML = '<div style="color:var(--ink3);font-size:11px;padding:8px">Sem dados</div>';
+    return;
+  }
+  const errCount = crons.filter(c => c.last_status === 'error').length;
+  badge.textContent = errCount > 0 ? `${errCount} erro${errCount>1?'s':''}` : `${crons.length} ativos`;
+  badge.className = errCount > 0 ? 'sys-badge offline' : 'sys-badge online';
+
+  el.innerHTML = crons.map(c => {
+    const st = c.last_status || 'unknown';
+    const stLabel = { ok: 'OK', error: 'ERRO', running: 'RODANDO', unknown: '—' }[st] || st;
+    const lastRun = c.last_run
+      ? timeAgo(c.last_run)
+      : 'nunca rodou';
+    const msg = c.last_message ? `<div style="font-size:10px;color:var(--ink3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(c.last_message)}">${esc(c.last_message)}</div>` : '';
+    return `<div class="cron-item ${st}">
+      <div class="cron-meta">
+        <span class="cron-name">${esc(c.label || c.name)}</span>
+        <span class="cron-status-dot ${st}">${stLabel}</span>
+      </div>
+      <span class="cron-schedule">${esc(c.schedule || '—')}</span>
+      <span class="cron-last">Última: ${lastRun}</span>
+      ${msg}
+    </div>`;
+  }).join('');
+}
+
+// ─── LOGS ───
+let allLogs = [];
+let logFilter = 'all';
+
+function setLogFilter(level, btn) {
+  logFilter = level;
+  document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLogs();
+}
+
+function renderLogs() {
+  const wrap = document.getElementById('log-list-wrap');
+  const search = (document.getElementById('log-search')?.value || '').toLowerCase();
+  const srcFilter = document.getElementById('log-source-filter')?.value || '';
+
+  let filtered = allLogs;
+  if (logFilter !== 'all') filtered = filtered.filter(l => l.level === logFilter);
+  if (srcFilter) filtered = filtered.filter(l => l.source === srcFilter);
+  if (search) filtered = filtered.filter(l =>
+    (l.message || '').toLowerCase().includes(search) ||
+    (l.source || '').toLowerCase().includes(search)
+  );
+
+  document.getElementById('logs-count').textContent = `${filtered.length} / ${allLogs.length}`;
+
+  if (!filtered.length) {
+    wrap.innerHTML = '<div class="empty-state">Nenhum log encontrado</div>';
+    return;
+  }
+
+  wrap.innerHTML = '<div class="log-list">' + filtered.map((l, i) => {
+    const ts = l.created_at
+      ? new Date(l.created_at).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})
+      : '—';
+    const hasDetails = l.details && Object.keys(l.details).length > 0;
+    return `<div class="log-row lv-${l.level}" onclick="toggleLogRow(${i})" id="lr-${i}">
+      <span class="log-ts">${ts}</span>
+      <span class="log-lvl"><span class="log-level-badge ${l.level}">${l.level}</span></span>
+      <span class="log-src">${esc(l.source||'—')}</span>
+      <span class="log-msg">${esc(l.message||'—')}</span>
+      <span class="log-chevron">${hasDetails ? '›' : ''}</span>
+    </div>
+    ${hasDetails ? `<div class="log-details" id="ld-${i}"><pre>${esc(JSON.stringify(l.details, null, 2))}</pre></div>` : ''}`;
+  }).join('') + '</div>';
+}
+
+function toggleLogRow(i) {
+  const row = document.getElementById(`lr-${i}`);
+  const det = document.getElementById(`ld-${i}`);
+  if (!det) return;
+  const open = det.classList.toggle('vis');
+  row.classList.toggle('expanded', open);
+}
+
+function populateSourceFilter(logs) {
+  const sources = [...new Set(logs.map(l => l.source).filter(Boolean))].sort();
+  const sel = document.getElementById('log-source-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todas as fontes</option>' +
+    sources.map(s => `<option value="${esc(s)}" ${s===current?'selected':''}>${esc(s)}</option>`).join('');
+}
+
+function esc(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>

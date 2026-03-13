@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wolf — Comercial</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -35,41 +36,182 @@ body {
   font-family: var(--f);
   font-size: 13px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   -webkit-font-smoothing: antialiased;
 }
 
-/* TOPBAR */
+/* SIDEBAR */
+.sidebar {
+  width: 200px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 40;
+  overflow: hidden;
+}
+
+.sidebar-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 12px 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sidebar-toggle {
+  margin-left: auto; flex-shrink: 0;
+  width: 26px; height: 26px; border-radius: 7px; border: none;
+  background: none; cursor: pointer; color: var(--ink3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: all .13s;
+}
+.sidebar-toggle:hover { background: rgba(0,0,0,.05); color: var(--ink); }
+
+/* Collapsed sidebar */
+.sidebar.collapsed { width: 52px; }
+.sidebar.collapsed .sidebar-brand { padding: 14px; justify-content: center; }
+.sidebar.collapsed .sidebar-brand .brand-name,
+.sidebar.collapsed .sidebar-brand .brand-sub,
+.sidebar.collapsed .sidebar-brand .sidebar-toggle { display: none; }
+.sidebar.collapsed .sidebar-toggle-icon { display: flex; }
+.sidebar.collapsed .nav-item { padding: 10px; justify-content: center; gap: 0; }
+.sidebar.collapsed .nav-item span:not(.nav-icon) { display: none; }
+.sidebar.collapsed .sidebar-nav { padding: 10px 4px; align-items: center; }
+
+.sidebar-toggle-icon {
+  display: none;
+  width: 100%; padding: 10px 0; border: none; background: none;
+  cursor: pointer; justify-content: center; align-items: center;
+  color: var(--ink3); font-size: 14px; transition: color .13s;
+}
+.sidebar-toggle-icon:hover { color: var(--ink); }
+.brand-hex {
+  width: 30px; height: 30px; background: var(--wolf);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.brand-name { font-size: 14px; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
+.brand-sub  { font-size: 11px; color: var(--ink3); letter-spacing: -.01em; }
+
+.sidebar-nav {
+  flex: 1; padding: 10px 8px;
+  display: flex; flex-direction: column; gap: 2px;
+  overflow-y: auto;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 8px; border: none;
+  background: none; cursor: pointer; font-family: var(--f);
+  font-size: 13px; font-weight: 500; color: var(--ink2);
+  transition: all .13s; text-align: left; width: 100%;
+}
+.nav-item:hover { background: rgba(0,0,0,.04); color: var(--ink); }
+.nav-item.active { background: rgba(0,0,0,.07); color: var(--ink); font-weight: 600; }
+.nav-icon { font-size: 13px; opacity: .6; width: 16px; text-align: center; flex-shrink: 0; }
+.nav-item.active .nav-icon { opacity: 1; }
+
+.sidebar-kpis {
+  padding: 12px 14px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.skpi { display: flex; flex-direction: column; gap: 2px; }
+.skpi-label { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .04em; }
+.skpi-val { font-size: 14px; font-weight: 700; letter-spacing: -.03em; }
+.skpi-val.wolf { color: var(--wolf); }
+.skpi-val.jade { color: var(--jade); }
+
+/* MAIN WRAP */
+.main-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0;
+}
+
+/* TOPBAR — slim, KPIs only */
 .top {
-  height: 56px;
+  height: 44px;
   background: rgba(255,255,255,.92);
   backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 24px;
-  flex-shrink: 0; z-index: 50;
+  display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  flex-shrink: 0; z-index: 50; justify-content: space-between;
 }
-.brand { display: flex; align-items: center; gap: 9px; margin-right: auto; }
-.brand-hex {
-  width: 28px; height: 28px; background: var(--wolf);
-  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: #fff;
-}
-.brand-name { font-size: 15px; font-weight: 600; letter-spacing: -.02em; }
-.brand-sep  { width: 1px; height: 16px; background: var(--border2); margin: 0 10px; }
-.brand-sub  { font-size: 13px; color: var(--ink2); letter-spacing: -.01em; }
+.top .top-r { display: flex; align-items: center; gap: 8px; }
 
-.top-r { display: flex; align-items: center; gap: 12px; }
+/* Funnel sub-navigation */
+.funnel-subnav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+.funnel-subnav .funnel-tabs { display: flex; gap: 0; flex-wrap: nowrap; overflow-x: auto; }
+.funnel-subnav .funnel-tab {
+  background: transparent; border: none; border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding: 10px 14px; font-size: 12px; font-weight: 500;
+  color: var(--ink3); cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.funnel-subnav .funnel-tab:hover { color: var(--ink); }
+.funnel-subnav .funnel-tab.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--wolf); }
+.funnel-subnav .ftab-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* Pipeline type bar */
+.pipeline-type-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 20px;
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pt-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink3);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
+}
+.pt-tab:hover { color: var(--ink); background: var(--bg2); }
+.pt-tab.active { color: var(--ink); font-weight: 600; background: var(--bg2); border-color: var(--border); }
+
+/* Sidebar footer */
+.sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 8px;
+  flex-shrink: 0;
+}
+.sidebar-footer-btn {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 8px; border: none;
+  background: none; cursor: pointer; font-family: var(--f);
+  font-size: 13px; font-weight: 500; color: var(--ink2);
+  transition: all .13s; text-align: left; width: 100%;
+}
+.sidebar-footer-btn:hover { background: rgba(0,0,0,.04); color: var(--ink); }
+.sidebar.collapsed .sidebar-footer-btn { justify-content: center; gap: 0; }
+.sidebar.collapsed .sidebar-footer-btn span:not(.nav-icon) { display: none; }
+.top-title { font-size: 13px; font-weight: 600; color: var(--ink2); }
+.top-r { display: flex; align-items: center; gap: 8px; }
 .kpi-group { display: flex; gap: 1px; }
 .kpi {
-  padding: 4px 12px; background: rgba(0,0,0,.04);
+  padding: 3px 10px; background: rgba(0,0,0,.04);
   border: 1px solid var(--border);
-  font-size: 12px; display: flex; align-items: baseline; gap: 4px;
+  font-size: 11px; display: flex; align-items: baseline; gap: 4px;
 }
-.kpi:first-child { border-radius: 7px 0 0 7px; }
-.kpi:last-child  { border-radius: 0 7px 7px 0; }
-.kv { font-weight: 600; font-size: 14px; }
-.kl { color: var(--ink3); font-size: 11px; }
+.kpi:first-child { border-radius: 6px 0 0 6px; }
+.kpi:last-child  { border-radius: 0 6px 6px 0; }
+.kv { font-weight: 600; font-size: 13px; }
+.kl { color: var(--ink3); font-size: 10px; }
 .kv.wolf { color: var(--wolf); }
 
 /* PROMPT BAR */
@@ -115,185 +257,241 @@ body {
 .proposal-text::placeholder { color: var(--ink3); }
 .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
+/* FUNNEL BAR */
+.ftab-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+/* GERENCIAR */
+.gf-list-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--sf2); border-radius: 8px; margin-bottom: 6px; }
+.gf-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.gf-fname { font-weight: 500; flex: 1; font-size: 12px; }
+.gf-badge { font-size: 10px; color: var(--ink3); background: var(--bg); padding: 2px 7px; border-radius: 10px; }
+.gf-del { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 4px; }
+.gf-del:hover { color: var(--red); }
+.gf-origins { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0 2px; }
+.gf-check { display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; padding: 4px 8px; background: var(--sf2); border-radius: 6px; user-select: none; }
+.gf-check input { cursor: pointer; }
+.gf-add-section { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 8px; }
+.gm-tabs { display: flex; gap: 2px; background: var(--sf2); border-radius: 8px; padding: 3px; }
+.gm-tab { background: transparent; border: none; border-radius: 6px; padding: 5px 16px; font-size: 12px; font-weight: 500; color: var(--ink2); cursor: pointer; transition: .15s; font-family: var(--f); }
+.gm-tab.active { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.1); font-weight: 600; }
+.ge-stage-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--sf2); border-radius: 8px; margin-bottom: 6px; }
+.ge-stage-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.ge-stage-name { font-weight: 500; flex: 1; font-size: 12px; }
+.ge-del { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 13px; padding: 2px 5px; border-radius: 4px; }
+.ge-del:hover { background: rgba(255,59,48,.08); color: var(--red); }
+.ge-drag-handle { color: var(--ink3); cursor: grab; font-size: 16px; padding: 0 4px; user-select: none; flex-shrink: 0; }
+.ge-drag-handle:active { cursor: grabbing; }
+.ge-stage-item.ge-dragging { opacity: .4; }
+.ge-stage-item.ge-drag-over { border: 1px dashed var(--wolf); background: var(--wolf-bg); border-radius: 8px; }
+.ge-stage-input { flex: 1; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; font-size: 12px; font-weight: 500; font-family: var(--f); background: transparent; color: var(--ink); cursor: text; transition: .15s; }
+.ge-stage-input:focus { outline: none; border-color: var(--wolf); background: #fff; }
+.ge-stage-input:not([readonly]):hover { border-color: var(--border2); background: var(--bg); }
+.ge-stage-input[readonly] { cursor: default; }
+.ge-color-pick { width: 22px; height: 22px; border: none; border-radius: 50%; cursor: pointer; padding: 0; flex-shrink: 0; background: none; }
+.gf-edit-btn { background: none; border: none; color: var(--ink3); cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 4px; transition: .13s; }
+.gf-edit-btn:hover { background: rgba(0,0,0,.06); color: var(--ink); }
+.gf-list-item.gf-editing { border: 1px solid var(--wolf); background: var(--wolf-bg); border-radius: 8px; }
+
 /* KANBAN */
 .kanban {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  overflow: hidden;
-}
-
-/* COLUMN */
-.col {
-  border-right: 1px solid var(--border);
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+.kanban::-webkit-scrollbar { height: 0; }
+
+/* ── COLUMN ── */
+.col {
+  display: flex; flex-direction: column; overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: #f7f7f8;
+  flex: 1;
+  min-width: 260px;
 }
 .col:last-child { border-right: none; }
 
 .col-head {
-  padding: 14px 14px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  background: rgba(255,255,255,.6);
+  padding: 0 14px 12px; flex-shrink: 0;
   border-bottom: 1px solid var(--border);
+  background: #f7f7f8;
 }
-.col-title {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 600;
+.col-head-bar {
+  height: 3px; border-radius: 0 0 3px 3px; margin: 0 -14px 12px;
 }
-.col-dot { width: 8px; height: 8px; border-radius: 50%; }
+.col-head-row1 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.col-title { font-size: 12px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
 .col-count {
-  font-family: var(--m); font-size: 11px; color: var(--ink3);
-  background: var(--sf2); border: 1px solid var(--border);
-  padding: 1px 7px; border-radius: 10px;
+  font-family: var(--m); font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px; color: #fff;
 }
 .col-total {
-  font-family: var(--m); font-size: 10px; color: var(--ink3); margin-left: 6px;
+  font-family: var(--m); font-size: 11px; font-weight: 600;
+  color: var(--ink2);
 }
 
 .col-body {
   flex: 1; overflow-y: auto;
-  padding: 10px 10px 16px;
-  display: flex; flex-direction: column; gap: 10px;
+  padding: 10px 8px 20px;
+  display: flex; flex-direction: column; gap: 8px;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 .col-body::-webkit-scrollbar { width: 0; }
 .col-body.drag-over {
-  background: rgba(255,59,0,.03);
-  outline: 2px dashed rgba(255,59,0,.2);
-  outline-offset: -4px; border-radius: 8px;
+  background: rgba(255,79,0,.04);
+  outline: 2px dashed rgba(255,79,0,.25);
+  outline-offset: -6px;
 }
 
-/* CARD */
+/* ── CARD ── */
+@keyframes ci { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── CARD (CRM style) ── */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: #fff;
+  border: 1px solid #e9e9ef;
   border-radius: 14px;
-  cursor: grab;
-  overflow: hidden;
-  flex-shrink: 0;
-  transition: all .18s ease;
-  animation: ci .22s ease both;
+  cursor: grab; overflow: hidden; flex-shrink: 0;
+  transition: box-shadow .18s, transform .18s;
+  animation: ci .2s ease both;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
 }
-@keyframes ci { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
-.card:hover {
-  border-color: var(--border2);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0,0,0,.09);
-}
-.card.dragging { opacity: .4; transform: scale(.95); }
+.card:hover { box-shadow: 0 6px 22px rgba(0,0,0,.11); transform: translateY(-2px); }
+.card.dragging { opacity: .35; transform: scale(.97) rotate(1deg); cursor: grabbing; }
+.card.won-card { background: #f6fef9; border-color: #c9f0db; }
+.card.lost-card { opacity: .5; filter: grayscale(.25); }
 
-.card-strip { height: 3px; }
-.card-strip.c-open { background: linear-gradient(90deg, var(--blue), var(--amber)); }
-.card-strip.c-won  { background: linear-gradient(90deg, var(--jade), #6ee7b7); }
-.card-strip.c-lost { background: var(--red); opacity: .5; }
-
-.card-inner { padding: 14px 14px 12px; }
-
-.card-row1 {
-  display: flex; align-items: flex-start;
-  justify-content: space-between; gap: 8px;
-  margin-bottom: 6px;
+/* Header: colored icon + name/service + seller avatar */
+.card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 14px 10px;
 }
-.card-client {
-  font-size: 14px; font-weight: 700;
-  letter-spacing: -.03em; line-height: 1.2;
-  color: var(--ink);
-  flex: 1; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.card-amount {
-  font-family: var(--m); font-size: 14px;
-  font-weight: 700; letter-spacing: -.02em;
-  white-space: nowrap; flex-shrink: 0;
-}
-.card-amount .curr { font-size: 10px; color: var(--ink2); font-weight: 500; margin-right: 1px; }
-.card-amount .suf  { font-size: 10px; color: var(--wolf); font-weight: 600; }
-
-.card-service {
-  font-size: 11px; color: var(--ink2);
-  margin-bottom: 10px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-.card-tags {
-  display: flex; flex-wrap: wrap; gap: 5px;
-  margin-bottom: 10px;
-}
-.tag {
-  font-size: 9px; font-weight: 600; padding: 2px 8px;
-  border-radius: 5px; text-transform: uppercase;
-  letter-spacing: .04em; display: inline-flex;
-  align-items: center; gap: 4px;
-}
-.tag-seller { background: rgba(139,92,246,.08); color: var(--purple); }
-.tag-indicacao { background: rgba(52,196,122,.08); color: #1e8e50; }
-.tag-trafego   { background: rgba(0,113,227,.08); color: var(--blue); }
-.tag-base      { background: rgba(245,166,35,.08); color: #c68400; }
-.tag-outro     { background: rgba(0,0,0,.05); color: var(--ink2); }
-
-.card-notes {
-  font-size: 11px; color: var(--ink2);
-  padding: 7px 9px; margin-bottom: 10px;
-  background: var(--sf2); border-radius: 8px;
-  line-height: 1.4; border: 1px solid var(--border);
-  display: -webkit-box; -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical; overflow: hidden;
-}
-
-.card-foot {
-  display: flex; align-items: center;
-  justify-content: space-between;
-  padding-top: 10px; border-top: 1px solid var(--border);
-}
-.card-date {
-  font-family: var(--m); font-size: 10px; color: var(--ink3);
-}
-.card-foot-r { display: flex; align-items: center; gap: 6px; }
-.card-link {
-  font-family: var(--m); font-size: 10px;
-  color: var(--blue); text-decoration: none;
-  padding: 3px 8px; border-radius: 5px;
-  background: rgba(0,113,227,.06);
-  transition: background .12s;
-}
-.card-link:hover { background: rgba(0,113,227,.12); }
-.card-edit {
-  width: 26px; height: 26px; border-radius: 7px;
-  border: 1px solid var(--border); background: none;
-  cursor: pointer; font-size: 12px;
+.card-icon {
+  width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  color: var(--ink3); transition: all .12s;
+  font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.02em;
 }
-.card-edit:hover { background: rgba(0,0,0,.04); color: var(--ink2); border-color: var(--border2); }
+.card-hinfo { flex: 1; min-width: 0; }
+.card-client {
+  font-size: 13px; font-weight: 700; letter-spacing: -.02em; line-height: 1.25;
+  color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.card-service {
+  font-size: 11px; color: var(--ink3); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.card-seller-av {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+  box-shadow: 0 1px 5px rgba(0,0,0,.16);
+}
 
+/* Status row: code + origin badge */
+.card-status-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 14px 10px; flex-wrap: wrap;
+}
+/* Sem vendedor badge */
+.card-no-seller {
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 14px 8px;
+  font-size: 10px; font-weight: 600; color: #c07800;
+}
+.card-no-seller::before { content: '⚠'; font-size: 11px; }
+.no-seller-card { border-left: 3px solid #f5a623 !important; }
+/* Dashboard sem-vendedor alert */
+.dash-no-seller-alert {
+  background: #fff8ec; border: 1px solid #f5a623; border-radius: 10px;
+  padding: 10px 16px; font-size: 12px; color: #7a5500;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+  cursor: pointer;
+}
+.dash-no-seller-alert strong { color: #c07800; }
+
+/* Win probability bar */
+.card-win-bar { padding: 2px 14px 10px; }
+.card-win-bar-track { height: 4px; background: var(--bg2); border-radius: 99px; overflow: hidden; }
+.card-win-bar-fill { height: 100%; border-radius: 99px; transition: width .3s; }
+.card-win-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.card-win-pct { font-size: 10px; font-weight: 700; }
+.card-win-action { font-size: 10px; color: var(--muted); max-width: 65%; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Interest badge */
+.card-interest { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+.card-interest.hot  { background: #fff1eb; color: #c43f00; }
+.card-interest.warm { background: #fffbe6; color: #7a5500; }
+.card-interest.cold { background: var(--bg2); color: var(--muted); }
+
+/* Forecast card extended */
+.forecast-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.forecast-split-item { background: var(--bg2); border-radius: 8px; padding: 8px 10px; text-align: center; }
+.forecast-split-item .fs-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.forecast-split-item .fs-val { font-size: 15px; font-weight: 700; color: #8b5cf6; margin-top: 2px; }
+.forecast-split-item .fs-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.card-code {
+  font-family: var(--m); font-size: 10px; color: var(--ink3);
+  display: flex; align-items: center; gap: 3px;
+}
+.cmeta-origin {
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+  letter-spacing: .01em;
+}
+.tag-indicacao-bg { background: rgba(52,196,122,.12); color: #1a7a42; }
+.tag-trafego-bg   { background: rgba(0,113,227,.10); color: #005bb5; }
+.tag-base-bg      { background: rgba(245,166,35,.12); color: #a06800; }
+.tag-outro-bg     { background: rgba(0,0,0,.07); color: var(--ink2); }
+
+/* Data rows */
+.card-data {
+  border-top: 1px solid #f2f2f6;
+  padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.card-data-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.cdr-icon { font-size: 12px; width: 16px; text-align: center; flex-shrink: 0; opacity: .5; }
+.cdr-label { color: var(--ink3); flex: 1; }
+.cdr-val { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.cdr-val.urgent { color: var(--red); font-weight: 700; }
+.cdr-val .curr { font-size: 9px; color: var(--ink3); font-weight: 500; margin-right: 1px; }
+.cdr-val .suf  { font-size: 9px; color: var(--ink3); font-weight: 500; }
+.cdr-val.cdr-close { color: #8b5cf6; }
+.cdr-val.cdr-close.soon { color: var(--amber, #f5a623); font-weight: 700; }
+.cdr-val.cdr-close.overdue { color: var(--red); font-weight: 700; }
+.cdr-val.cdr-viewed { color: var(--blue); }
+.cdr-notes { color: var(--ink2); flex: 1; white-space: normal; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* CTA actions */
 .card-actions {
-  display: flex; gap: 5px; margin-top: 10px;
+  padding: 10px 14px 14px; border-top: 1px solid #f2f2f6;
+  display: flex; gap: 6px;
 }
-.card-btn {
-  flex: 1; padding: 7px 6px; border-radius: 8px;
-  border: 1px solid var(--border); background: none;
-  cursor: pointer; font-family: var(--f);
-  font-size: 11px; font-weight: 600;
-  color: var(--ink2); transition: all .13s; text-align: center;
+.card-cta {
+  flex: 1; padding: 9px 6px; border-radius: 9px;
+  border: 1.5px solid #e0e0e8; background: none; cursor: pointer;
+  font-family: var(--f); font-size: 12px; font-weight: 600; color: var(--ink2);
+  transition: all .13s; text-align: center; text-decoration: none;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  white-space: nowrap;
 }
-.card-btn:hover { background: rgba(0,0,0,.04); border-color: var(--border2); }
-.card-btn.win { background: rgba(52,196,122,.06); border-color: rgba(52,196,122,.18); color: #1e8e50; }
-.card-btn.win:hover { background: rgba(52,196,122,.12); }
-.card-btn.lose { color: var(--ink3); }
-.card-btn.lose:hover { background: rgba(255,59,48,.04); border-color: rgba(255,59,48,.15); color: var(--red); }
-
-.card.won-card { opacity: .75; }
-.card.won-card .card-client { color: var(--jade); }
-.card.lost-card { opacity: .5; }
+.card-cta:hover { background: rgba(0,0,0,.04); }
+.card-cta.cta-win { background: rgba(52,196,122,.08); border-color: rgba(52,196,122,.25); color: #1a7a42; }
+.card-cta.cta-win:hover { background: rgba(52,196,122,.16); }
+.card-cta.cta-lose:hover { background: rgba(255,59,48,.06); border-color: rgba(255,59,48,.22); color: var(--red); }
+.card-cta.cta-view { color: var(--blue); }
+.card-cta.cta-view:hover { background: rgba(0,113,227,.06); border-color: rgba(0,113,227,.2); }
+.card-cta.cta-icon { max-width: 40px; flex: none; color: var(--ink3); font-size: 13px; }
+.card-cta.cta-icon:hover { color: var(--ink); background: rgba(0,0,0,.05); }
 
 .col-empty {
-  text-align: center; padding: 40px 16px; color: var(--ink3); font-size: 12px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 48px 16px;
+  color: var(--ink3); font-size: 12px; gap: 8px; opacity: .6;
 }
-.col-empty .icon { font-size: 32px; margin-bottom: 8px; opacity: .3; }
+.col-empty-icon { font-size: 28px; opacity: .5; }
 
 /* MODAL */
 .ovl {
@@ -352,15 +550,150 @@ select.fi {
 .btn-p { background: var(--wolf); color: #fff; }
 .btn-p:hover { background: #e03400; }
 
+/* VIEWS */
+#view-pipeline { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#view-pipeline.hidden { display: none; }
+#view-dashboard { flex: 1; overflow-y: auto; padding: 24px; display: none; }
+#view-dashboard.active { display: block; }
+#view-clients { flex: 1; overflow-y: auto; padding: 24px; display: none; }
+#view-clients.active { display: block; }
+
+/* Clients view */
+.clients-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.clients-header h2 { font-size: 16px; font-weight: 700; letter-spacing: -.02em; }
+.clients-kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+.cl-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.cl-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cl-table th { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .04em; padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg2); white-space: nowrap; }
+.cl-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.cl-table tr:last-child td { border-bottom: none; }
+.cl-table tr:hover td { background: var(--bg2); cursor: pointer; }
+.cl-name { font-weight: 600; font-size: 13px; }
+.cl-service { color: var(--ink2); font-size: 11px; margin-top: 2px; }
+.cl-value { font-weight: 700; font-family: var(--m); color: var(--jade); }
+.renewal-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.renewal-badge.critical { background: #ff3b3020; color: var(--red); }
+.renewal-badge.warning  { background: #f5a62320; color: #c07800; }
+.renewal-badge.ok       { background: #34c47a20; color: #1a7a4a; }
+.renewal-badge.expired  { background: #ff3b3030; color: var(--red); font-style: italic; }
+.renewal-badge.none     { color: var(--ink3); font-size: 11px; }
+
+/* DASHBOARD */
+.dash-kpis { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; margin-bottom: 16px; }
+.dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
+.dash-kpi-label { font-size: 11px; font-weight: 600; color: var(--ink2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.dash-kpi-val { font-size: 22px; font-weight: 700; letter-spacing: -.04em; margin-bottom: 4px; }
+.dash-kpi-val.green { color: var(--jade); }
+.dash-kpi-val.wolf  { color: var(--wolf); }
+.dash-kpi-sub { font-size: 11px; color: var(--ink3); }
+.dash-row  { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 16px; }
+.dash-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.dash-card-title { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 16px; }
+
+/* Ranking */
+.rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.rank-row:last-child { border-bottom: none; }
+.rank-num  { font-size: 11px; font-weight: 700; color: var(--ink3); font-family: var(--m); width: 16px; flex-shrink:0; }
+.rank-name { font-size: 12px; font-weight: 600; min-width: 64px; flex-shrink:0; }
+.rank-bar-wrap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+.rank-bar-fill { height: 4px; border-radius: 2px; background: var(--wolf); transition: width .5s ease; }
+.rank-pct  { font-size: 10px; font-family: var(--m); color: var(--jade); min-width: 32px; text-align: right; }
+.rank-stats { font-size: 10px; font-family: var(--m); color: var(--ink3); min-width: 30px; text-align: right; }
+
+/* Seller performance table */
+.sp-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.sp-table th { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: .04em; padding: 0 8px 10px 0; text-align: right; white-space: nowrap; }
+.sp-table th:first-child { text-align: left; }
+.sp-table td { padding: 8px 8px 8px 0; border-top: 1px solid var(--border); text-align: right; vertical-align: middle; }
+.sp-table td:first-child { text-align: left; }
+.sp-table tr:first-child td { border-top: none; }
+.sp-seller-name { font-weight: 600; font-size: 12px; }
+.sp-rev { font-weight: 700; font-family: var(--m); color: var(--jade); }
+.sp-conv { font-weight: 700; font-family: var(--m); }
+.sp-conv.good { color: var(--jade); }
+.sp-conv.mid  { color: var(--amber); }
+.sp-conv.bad  { color: var(--red); }
+.sp-cycle { font-family: var(--m); color: var(--ink2); }
+.sp-stale { font-weight: 700; font-family: var(--m); }
+.sp-stale.has-stale { color: var(--red); }
+.sp-stale.no-stale  { color: var(--ink3); }
+.sp-open { font-family: var(--m); color: var(--ink2); }
+.sp-bar-cell { width: 60px; }
+.sp-mini-bar { height: 3px; border-radius: 2px; background: var(--wolf); min-width: 2px; }
+
+/* Funnel */
+.funnel-item { margin-bottom: 14px; }
+.funnel-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.funnel-name  { font-size: 12px; font-weight: 600; }
+.funnel-val   { font-family: var(--m); font-size: 11px; color: var(--ink2); }
+.funnel-bar   { height: 8px; border-radius: 4px; background: rgba(0,0,0,.06); }
+.funnel-fill  { height: 8px; border-radius: 4px; transition: width .6s ease; }
+
+/* Recent */
+.recent-item   { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.recent-item:last-child { border-bottom: none; }
+.recent-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.recent-client { font-size: 12px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-amount { font-size: 11px; font-family: var(--m); font-weight: 600; white-space: nowrap; }
+.recent-seller { font-size: 10px; color: var(--ink3); white-space: nowrap; }
+
+/* Funnel stats (cycle + conversion) */
+.funnel-stats { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); margin-top: 4px; font-size: 11px; color: var(--ink3); }
+.funnel-stats strong { color: var(--ink); }
+
+/* Activity timeline */
+.timeline-section { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+.timeline-section-title { font-size: 10px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.timeline-item { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #f5f5f7; }
+.timeline-item:last-child { border-bottom: none; }
+.timeline-icon { font-size: 13px; width: 20px; text-align: center; flex-shrink: 0; margin-top: 1px; }
+.timeline-desc { font-size: 12px; color: var(--ink); line-height: 1.4; }
+.timeline-meta { font-size: 10px; color: var(--ink3); margin-top: 2px; }
+
+/* Origin/lost reason charts */
+.dash-row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.origin-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.origin-leg-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.origin-leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.origin-leg-label { flex: 1; color: var(--ink2); }
+.origin-leg-val { font-weight: 700; color: var(--ink); font-family: var(--m); }
+.origin-leg-pct { color: var(--ink3); font-family: var(--m); }
+
 /* RESPONSIVE */
 @media (max-width: 900px) {
-  .kanban { grid-template-columns: 1fr 1fr; }
+  .sidebar { width: 56px; }
+  .sidebar-brand { padding: 14px 12px; justify-content: center; }
+  .sidebar-brand .brand-name, .sidebar-brand .brand-sub { display: none; }
+  .nav-item { padding: 10px; justify-content: center; gap: 0; }
+  .nav-item span:not(.nav-icon) { display: none; }
+  .sidebar-kpis { display: none; }
+  .col { width: 260px; min-width: 260px; }
   .kpi-group { display: none; }
+  .dash-kpis { grid-template-columns: repeat(3,1fr); }
+  .dash-row, .dash-row2, .dash-row3 { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
-  .kanban { grid-template-columns: 1fr; }
-  .top { padding: 0 12px; }
-  .prompt-bar { padding: 10px 12px; }
+  .sidebar { display: none; }
+  body { padding-bottom: 60px; }
+
+  /* Topbar mobile */
+  .top { padding: 0 14px; height: 52px; }
+  .top-title { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -.02em; }
+  .top .top-r { gap: 6px; }
+  .funnel-subnav .funnel-tab { padding: 8px 12px; font-size: 12px; }
+
+  /* Dashboard mobile padding */
+  #view-dashboard, #view-clients { padding: 0 0 8px; }
+  .dash-kpis { padding: 12px 14px 0; gap: 10px; grid-template-columns: repeat(2,1fr); }
+  .clients-kpis { padding: 12px 14px 0; gap: 10px; grid-template-columns: repeat(2,1fr); }
+  .clients-header { padding: 12px 14px 0; }
+  .cl-table-wrap { border-radius: 0; border-left: none; border-right: none; }
+  .sp-table th:nth-child(5), .sp-table td:nth-child(5) { display: none; } /* hide ciclo on mobile */
+
+  /* Kanban horizontal scroll on mobile */
+  .col { width: 82vw; min-width: 82vw; }
+  /* Cards not draggable on mobile */
+  .card { cursor: pointer; }
 
   /* Modal mobile fixes */
   .modal, .modal-lg { max-width: 100vw; width: 100vw; border-radius: 16px 16px 0 0; max-height: 95vh; }
@@ -375,61 +708,276 @@ select.fi {
   .btn { padding: 12px 20px; font-size: 13px; }
   .prompt-send { height: 40px; padding: 0 16px; font-size: 13px; }
   .mb label { font-size: 12px; margin-bottom: 6px; }
+  .card-cta { padding: 11px 6px; font-size: 12px; }
+  .card-cta.cta-icon { max-width: 44px; height: 42px; }
+  .funnel-subnav { overflow-x: auto; }
 
-  /* Card touch targets */
-  .card-edit { width: 34px; height: 34px; }
-  .card-btn { padding: 10px 8px; font-size: 12px; }
-  .card-link { padding: 6px 12px; font-size: 11px; }
+  /* Mobile bottom nav */
+  .mobile-nav { display: flex; }
+}
+
+/* Mobile bottom nav bar */
+.mobile-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(255,255,255,.96); backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  height: 64px; padding-bottom: env(safe-area-inset-bottom);
+  align-items: center;
+}
+.mobile-nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; border: none; background: none; cursor: pointer;
+  font-family: var(--f); font-size: 10px; font-weight: 500; color: var(--ink3);
+  padding: 8px 2px; transition: color .15s;
+}
+.mobile-nav-item.active { color: var(--wolf); }
+.mobile-nav-icon { font-size: 17px; line-height: 1; }
+/* FAB — botão Nova Proposta destacado */
+.mobile-nav-item.fab {
+  flex: 0 0 64px;
+  margin-top: -22px;
+}
+.mobile-nav-item.fab .mobile-nav-icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--wolf); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 300;
+  box-shadow: 0 4px 14px rgba(224,60,0,.4);
+}
+.mobile-nav-item.fab span:not(.mobile-nav-icon) { font-size: 9px; color: var(--wolf); font-weight: 600; margin-top: 2px; }
+/* btn-new-proposal always visible on mobile */
+@media (max-width: 600px) {
+  #btn-new-proposal { display: block !important; height: 32px !important; padding: 0 12px !important; font-size: 12px !important; }
+  body { padding-bottom: 70px; }
 }
 </style>
 </head>
 <body>
 
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-hex">W</div>
+    <div>
+      <div class="brand-name">Wolf</div>
+      <div class="brand-sub">Comercial</div>
+    </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Recolher menu">‹</button>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="sidebar-toggle-icon" onclick="toggleSidebar()" title="Expandir menu">›</button>
+    <button class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')">
+      <span class="nav-icon">◈</span><span>Dashboard</span>
+    </button>
+    <button class="nav-item" data-view="pipeline" onclick="switchView('pipeline')">
+      <span class="nav-icon">⊞</span><span>Pipeline</span>
+    </button>
+    <button class="nav-item" data-view="clients" onclick="switchView('clients')">
+      <span class="nav-icon">♟</span><span>Clientes</span>
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="sidebar-footer-btn" onclick="openGerenciar()" title="Gerenciar Funis">
+      <span class="nav-icon">⚙</span><span>Gerenciar</span>
+    </button>
+  </div>
+</aside>
+
+<!-- MAIN WRAP -->
+<div class="main-wrap">
+
 <!-- TOPBAR -->
 <div class="top">
-  <div class="brand">
-    <div class="brand-hex">W</div>
-    <span class="brand-name">Wolf</span>
-    <div class="brand-sep"></div>
-    <span class="brand-sub">Comercial</span>
-  </div>
+  <span class="top-title" id="top-view-title">Dashboard</span>
   <div class="top-r">
-    <div class="kpi-group">
-      <div class="kpi"><span class="kv" id="kpi-total">0</span><span class="kl">propostas</span></div>
-      <div class="kpi"><span class="kv kl" id="kpi-open-val">R$ 0</span><span class="kl">pipeline</span></div>
-      <div class="kpi"><span class="kv wolf" id="kpi-won-val">R$ 0</span><span class="kl">fechado</span></div>
-    </div>
+    <span class="prompt-status" id="prompt-status"></span>
+    <button class="prompt-send" id="btn-new-proposal" onclick="openNewProposal()" style="height:30px;padding:0 14px;font-size:11px;display:none">+ Nova Proposta</button>
   </div>
 </div>
 
-<!-- PROMPT BAR -->
-<div class="prompt-bar">
-  <button class="prompt-send" id="btn-new-proposal" onclick="openNewProposal()">+ Nova Proposta</button>
-  <div class="prompt-status" id="prompt-status"></div>
+<!-- DASHBOARD VIEW -->
+<div id="view-dashboard" class="active">
+  <div class="dash-kpis">
+    <div class="dash-card">
+      <div class="dash-kpi-label">Pipeline em Aberto</div>
+      <div class="dash-kpi-val" id="d-pipeline">R$ 0</div>
+      <div class="dash-kpi-sub" id="d-pipeline-sub">0 propostas</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-kpi-label">Fechado no Mês</div>
+      <div class="dash-kpi-val green" id="d-won-month">R$ 0</div>
+      <div class="dash-kpi-sub" id="d-won-month-sub">0 contratos</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-kpi-label">Taxa de Conversão</div>
+      <div class="dash-kpi-val" id="d-conv-rate">0%</div>
+      <div class="dash-kpi-sub" id="d-conv-sub">no mês</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-kpi-label">Ticket Médio</div>
+      <div class="dash-kpi-val wolf" id="d-ticket">R$ 0</div>
+      <div class="dash-kpi-sub">propostas ganhas</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-kpi-label">Forecast do Mês</div>
+      <div class="dash-kpi-val" id="d-forecast" style="color:#8b5cf6">R$ 0</div>
+      <div class="dash-kpi-sub" id="d-forecast-sub">sem previsão cadastrada</div>
+    </div>
+  </div>
+  <div class="dash-row">
+    <div class="dash-card">
+      <div class="dash-card-title">Receita por Mês</div>
+      <canvas id="chart-monthly" height="160"></canvas>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">Funil de Conversão</div>
+      <div id="d-funnel"></div>
+    </div>
+  </div>
+  <div class="dash-card" style="margin-bottom:16px">
+    <div class="dash-card-title">Performance de Vendedores</div>
+    <div id="d-ranking"></div>
+  </div>
+  <div class="dash-row2">
+    <div class="dash-card">
+      <div class="dash-card-title">Propostas Recentes</div>
+      <div id="d-recent"></div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">Motivos de Perda</div>
+      <div id="d-lost-reasons"></div>
+    </div>
+  </div>
+  <div class="dash-card" style="margin-bottom:16px">
+    <div class="dash-card-title">Receita por Origem</div>
+    <div id="d-origin"></div>
+  </div>
+</div>
+
+<!-- PIPELINE VIEW -->
+<div id="view-pipeline" class="hidden">
+
+<!-- PIPELINE TYPE BAR -->
+<div class="pipeline-type-bar">
+  <button class="pt-tab" id="pt-prospecting" onclick="setPipelineType('prospecting')">Prospecção</button>
+  <button class="pt-tab" id="pt-upsell" onclick="setPipelineType('upsell')">Upsell</button>
+  <button class="pt-tab" id="pt-renewal" onclick="setPipelineType('renewal')">Renovação</button>
+</div>
+
+<!-- FUNNEL SUBNAV -->
+<div class="funnel-subnav">
+  <div class="funnel-tabs" id="funnel-tabs"></div>
 </div>
 
 <!-- KANBAN -->
-<div class="kanban">
-  <div class="col">
-    <div class="col-head">
-      <div class="col-title"><span class="col-dot" style="background:var(--blue)"></span>Em Aberto</div>
-      <div><span class="col-count" id="cnt-open">0</span><span class="col-total" id="tot-open"></span></div>
-    </div>
-    <div class="col-body" id="col-open" data-status="open"></div>
+<div class="kanban" id="kanban-board"></div>
+
+</div><!-- /view-pipeline -->
+
+<!-- CLIENTS VIEW -->
+<div id="view-clients">
+  <div class="clients-header">
+    <h2>Base de Clientes</h2>
+    <button class="btn btn-p" onclick="openClientAdd()" style="height:32px;padding:0 16px;font-size:12px">+ Novo Cliente</button>
   </div>
-  <div class="col">
-    <div class="col-head">
-      <div class="col-title"><span class="col-dot" style="background:var(--jade)"></span>Fechado</div>
-      <div><span class="col-count" id="cnt-won">0</span><span class="col-total" id="tot-won"></span></div>
-    </div>
-    <div class="col-body" id="col-won" data-status="won"></div>
+  <div class="clients-kpis" id="cl-kpis"></div>
+  <div class="cl-table-wrap">
+    <table class="cl-table">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Vendedor</th>
+          <th>Valor Mensal</th>
+          <th>Início</th>
+          <th>Vencimento</th>
+          <th>Renovação</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="cl-tbody"></tbody>
+    </table>
   </div>
-  <div class="col">
-    <div class="col-head">
-      <div class="col-title"><span class="col-dot" style="background:var(--red)"></span>Perdidas</div>
-      <div><span class="col-count" id="cnt-lost">0</span><span class="col-total" id="tot-lost"></span></div>
+</div>
+
+</div><!-- /main-wrap -->
+
+<!-- GERENCIAR FUNIS MODAL -->
+<div class="ovl" id="ovl-gerenciar">
+  <div class="modal modal-lg">
+    <div class="mh">
+      <div class="gm-tabs">
+        <button class="gm-tab active" id="gmt-funis" onclick="switchGerenciarTab('funis')">Funis</button>
+        <button class="gm-tab" id="gmt-etapas" onclick="switchGerenciarTab('etapas')">Etapas</button>
+      </div>
+      <button class="xb" onclick="closeGerenciar()">&#10005;</button>
     </div>
-    <div class="col-body" id="col-lost" data-status="lost"></div>
+    <div class="mb">
+
+      <!-- PÁGINA: FUNIS -->
+      <div id="gm-page-funis">
+        <div id="gf-list"></div>
+        <div class="gf-add-section">
+          <p id="gf-form-title" style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase">Novo Funil</p>
+          <div class="row2" style="margin-bottom:10px">
+            <div>
+              <label>Nome do Funil</label>
+              <input class="fi" id="gf-name" type="text" placeholder="Ex: Tráfego Pago">
+            </div>
+            <div>
+              <label>Cor</label>
+              <input class="fi" id="gf-color" type="color" value="#8b5cf6" style="height:38px;cursor:pointer;padding:4px">
+            </div>
+          </div>
+          <label>Origens incluídas neste funil</label>
+          <div class="gf-origins">
+            <label class="gf-check"><input type="checkbox" value="indicacao"> Indicação</label>
+            <label class="gf-check"><input type="checkbox" value="trafego"> Tráfego</label>
+            <label class="gf-check"><input type="checkbox" value="base"> Base</label>
+            <label class="gf-check"><input type="checkbox" value="outro"> Outro</label>
+          </div>
+          <p style="font-size:11px;color:var(--ink3);margin:4px 0 4px">Deixe vazio para exibir todas as origens</p>
+        </div>
+      </div>
+
+      <!-- PÁGINA: ETAPAS -->
+      <div id="gm-page-etapas" style="display:none">
+        <div style="margin-bottom:16px">
+          <label>Funil</label>
+          <select class="fi" id="ge-funnel-select" onchange="renderEtapasList()" style="max-width:280px">
+            <option value="">Selecione um funil...</option>
+          </select>
+        </div>
+        <div id="ge-list"></div>
+        <div id="ge-add-section" style="display:none" class="gf-add-section">
+          <p style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase">Nova Etapa</p>
+          <div class="row2" style="margin-bottom:12px">
+            <div>
+              <label>Nome da Etapa</label>
+              <input class="fi" id="ge-name" type="text" placeholder="Ex: Proposta Enviada">
+            </div>
+            <div>
+              <label>Cor</label>
+              <input class="fi" id="ge-color" type="color" value="#0071e3" style="height:38px;cursor:pointer;padding:4px">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="mf">
+      <!-- Funis tab actions -->
+      <div id="gm-footer-funis" style="display:flex;gap:8px;align-items:center;width:100%;justify-content:flex-end">
+        <button class="btn btn-ghost" id="gf-cancel-btn" onclick="resetFunnelForm()" style="display:none">Cancelar edição</button>
+        <button class="btn btn-ghost" onclick="closeGerenciar()">Fechar</button>
+        <button class="btn btn-p" id="gf-save-btn" onclick="addNewFunnel()">+ Adicionar Funil</button>
+      </div>
+      <!-- Etapas tab actions -->
+      <div id="gm-footer-etapas" style="display:none;gap:8px;align-items:center;width:100%;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeGerenciar()">Fechar</button>
+        <button class="btn btn-p" onclick="addNewEtapa()">+ Adicionar Etapa</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -446,6 +994,7 @@ select.fi {
             <option value="Netto">Netto</option>
             <option value="Gabriela">Gabriela</option>
             <option value="Mariana">Mariana</option>
+            <option value="Natiely">Natiely</option>
           </select>
         </div>
         <div>
@@ -459,17 +1008,90 @@ select.fi {
           </select>
         </div>
       </div>
+      <div class="row2" style="margin-bottom:12px">
+        <div>
+          <label>Data de fechamento prevista</label>
+          <input type="date" class="fi" id="edit-close-date">
+        </div>
+        <div>
+          <label>Pipeline</label>
+          <select class="fi" id="edit-funnel-type">
+            <option value="prospecting">Prospecção</option>
+            <option value="upsell">Upsell</option>
+            <option value="renewal">Renovação</option>
+          </select>
+        </div>
+      </div>
       <label>Notas</label>
       <textarea class="fi" id="edit-notes" placeholder="Observacoes sobre a negociacao..."></textarea>
-      <div id="edit-lost-wrap" style="display:none">
+      <div id="edit-lost-wrap" style="display:none;margin-top:12px">
         <label>Motivo da perda</label>
-        <input type="text" class="fi" id="edit-lost-reason" placeholder="Preco, concorrente, timing...">
+        <select class="fi" id="edit-lost-reason" onchange="document.getElementById('edit-lost-to-wrap').style.display=this.value==='Foi para concorrente'?'block':'none'">
+          <option value="">Selecione o motivo</option>
+          <option value="Preço alto">Preço alto</option>
+          <option value="Sem budget no momento">Sem budget no momento</option>
+          <option value="Foi para concorrente">Foi para concorrente</option>
+          <option value="Não viu valor">Não viu valor no serviço</option>
+          <option value="Timing errado">Timing errado — voltará</option>
+          <option value="Sem retorno do cliente">Sem retorno do cliente</option>
+          <option value="outro">Outro</option>
+        </select>
+        <div id="edit-lost-to-wrap" style="display:none;margin-top:8px">
+          <label>Qual concorrente?</label>
+          <input type="text" class="fi" id="edit-lost-to" placeholder="Ex: Agência X, Freelancer, Interno...">
+        </div>
+      </div>
+      <div class="timeline-section">
+        <div class="timeline-section-title">Histórico</div>
+        <div id="edit-timeline"><div style="color:var(--ink3);font-size:11px">Carregando...</div></div>
       </div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" style="color:var(--red);margin-right:auto" onclick="confirmDelete()">Excluir</button>
+      <button class="btn btn-ghost" style="color:var(--blue)" onclick="openRegenerate()">Regenerar</button>
       <button class="btn btn-ghost" onclick="closeEdit()">Cancelar</button>
       <button class="btn btn-p" onclick="saveEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROPOSAL CONTENT MODAL -->
+<div class="ovl" id="ovl-regen">
+  <div class="modal modal-lg">
+    <div class="mh"><span>Editar Proposta — <span id="regen-title"></span></span><button class="xb" onclick="closeRegenerate()">&#10005;</button></div>
+    <div class="mb">
+      <p style="font-size:12px;color:var(--ink2);margin-bottom:14px">Edite os dados. Ao salvar, o HTML é regenerado e publicado automaticamente no mesmo link.</p>
+      <div class="row2">
+        <div>
+          <label>Nome do Cliente</label>
+          <input class="fi" id="re-client" type="text" placeholder="Nome do cliente">
+        </div>
+        <div>
+          <label>Tipo de Serviço</label>
+          <input class="fi" id="re-service" type="text" placeholder="Ex: Social Media, Branding...">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Tagline</label>
+          <input class="fi" id="re-tagline" type="text" placeholder="Frase de impacto da capa">
+        </div>
+        <div>
+          <label>Valor Mensal</label>
+          <input class="fi" id="re-amount" type="text" placeholder="1.500">
+        </div>
+      </div>
+      <label>Fechamento — frase final da proposta</label>
+      <input class="fi" id="re-close-heading" type="text" placeholder="Frase inspiracional de fechamento">
+      <label>Corpo do fechamento</label>
+      <textarea class="fi" id="re-close-body" rows="2" placeholder="Texto de apoio do fechamento..."></textarea>
+      <label>Dados completos (JSON) — edite diretamente para mudanças avançadas</label>
+      <textarea class="proposal-text" id="re-json" style="min-height:160px;max-height:260px;font-size:10px"></textarea>
+      <div class="prompt-status" id="regen-status"></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="closeRegenerate()">Cancelar</button>
+      <button class="btn btn-p" id="btn-regen" onclick="saveProposalContent()">Salvar e Publicar</button>
     </div>
   </div>
 </div>
@@ -490,19 +1112,123 @@ select.fi {
   </div>
 </div>
 
+<!-- LOST REASON MODAL -->
+<div class="ovl" id="ovl-lost-reason">
+  <div class="modal" style="width:420px">
+    <div class="mh"><span>Por que a proposta foi perdida?</span><button class="xb" onclick="cancelLost()">&#10005;</button></div>
+    <div class="mb">
+      <p style="font-size:12px;color:var(--ink2);margin-bottom:14px">Registrar o motivo ajuda a identificar onde o funil quebra.</p>
+      <label>Motivo</label>
+      <select class="fi" id="lost-reason-select" onchange="
+        document.getElementById('lost-reason-outro-wrap').style.display=this.value==='outro'?'block':'none';
+        document.getElementById('lost-competitor-wrap').style.display=this.value==='Foi para concorrente'?'block':'none';
+      ">
+        <option value="">Selecione o motivo</option>
+        <option value="Preço alto">Preço alto</option>
+        <option value="Sem budget no momento">Sem budget no momento</option>
+        <option value="Foi para concorrente">Foi para concorrente</option>
+        <option value="Não viu valor">Não viu valor no serviço</option>
+        <option value="Timing errado">Timing errado — voltará</option>
+        <option value="Sem retorno do cliente">Sem retorno do cliente</option>
+        <option value="outro">Outro (digitar)</option>
+      </select>
+      <div id="lost-competitor-wrap" style="display:none;margin-top:10px">
+        <label>Qual concorrente? <span style="font-size:11px;color:var(--muted);font-weight:400">(opcional)</span></label>
+        <input type="text" class="fi" id="lost-competitor" placeholder="Ex: Agência X, Freelancer, Interno...">
+      </div>
+      <div id="lost-reason-outro-wrap" style="display:none;margin-top:10px">
+        <label>Descreva</label>
+        <input type="text" class="fi" id="lost-reason-outro" placeholder="Descreva o motivo...">
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" onclick="cancelLost()">Cancelar</button>
+      <button class="btn btn-p" style="background:var(--red);border-color:var(--red)" onclick="executeLost()">Confirmar Perda</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT ADD/EDIT MODAL -->
+<div class="ovl" id="ovl-client">
+  <div class="modal">
+    <div class="mh"><span id="cl-modal-title">Novo Cliente</span><button class="xb" onclick="closeClientModal()">&#10005;</button></div>
+    <div class="mb">
+      <div class="row2">
+        <div>
+          <label>Nome do Cliente</label>
+          <input class="fi" id="cl-name" type="text" placeholder="Ex: Empresa XYZ">
+        </div>
+        <div>
+          <label>Serviço</label>
+          <input class="fi" id="cl-service" type="text" placeholder="Ex: Social Media, Tráfego...">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Valor Mensal (R$)</label>
+          <input class="fi" id="cl-value" type="number" placeholder="2000">
+        </div>
+        <div>
+          <label>Status</label>
+          <select class="fi" id="cl-status">
+            <option value="active">Ativo</option>
+            <option value="paused">Pausado</option>
+            <option value="churned">Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Início do Contrato</label>
+          <input type="date" class="fi" id="cl-start">
+        </div>
+        <div>
+          <label>Vencimento do Contrato</label>
+          <input type="date" class="fi" id="cl-end">
+        </div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>Vendedor Responsável</label>
+          <select class="fi" id="cl-seller" onchange="autoFillSellerPhone(this.value, 'cl-whatsapp')">
+            <option value="">Selecione</option>
+            <option value="Netto">Netto</option>
+            <option value="Gabriela">Gabriela</option>
+            <option value="Mariana">Mariana</option>
+            <option value="Natiely">Natiely</option>
+          </select>
+        </div>
+        <div>
+          <label>WhatsApp do Vendedor</label>
+          <input class="fi" id="cl-whatsapp" type="tel" placeholder="5573991484716">
+        </div>
+      </div>
+      <label>Notas</label>
+      <textarea class="fi" id="cl-notes" placeholder="Observações sobre a conta..." rows="2"></textarea>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" style="color:var(--red);margin-right:auto" id="cl-delete-btn" onclick="deleteClient()" style="display:none">Excluir</button>
+      <button class="btn btn-ghost" onclick="closeClientModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="saveClient()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- NEW PROPOSAL MODAL -->
 <div class="ovl" id="ovl-new">
   <div class="modal modal-lg">
     <div class="mh"><span>Nova Proposta</span><button class="xb" onclick="closeNewProposal()">&#10005;</button></div>
     <div class="mb">
+      <!-- CRM fields (always visible) -->
       <div class="row2">
         <div>
           <label>Vendedor (controle kanban)</label>
-          <select class="fi" id="new-seller">
+          <select class="fi" id="new-seller" onchange="autoFillSellerPhone(this.value)">
             <option value="">Selecione</option>
             <option value="Netto">Netto</option>
             <option value="Gabriela">Gabriela</option>
             <option value="Mariana">Mariana</option>
+            <option value="Natiely">Natiely</option>
           </select>
         </div>
         <div>
@@ -516,20 +1242,63 @@ select.fi {
           </select>
         </div>
       </div>
-      <div style="margin-bottom:12px">
-        <label>WhatsApp do vendedor (para botão "Aceitar proposta")</label>
-        <input class="fi" id="new-whatsapp" type="tel" placeholder="5573991484716" style="font-family:var(--font-mono,monospace);letter-spacing:.5px">
+      <div class="row2" style="margin-bottom:12px">
+        <div>
+          <label>WhatsApp do vendedor (botão "Aceitar proposta")</label>
+          <input class="fi" id="new-whatsapp" type="tel" placeholder="5573991484716" style="font-family:var(--font-mono,monospace);letter-spacing:.5px">
+        </div>
+        <div>
+          <label>Fechamento previsto</label>
+          <input type="date" class="fi" id="new-close-date">
+        </div>
       </div>
-      <label>Proposta (cole o texto completo, igual WhatsApp)</label>
-      <textarea class="proposal-text" id="new-proposal-text" placeholder="Cole aqui o texto da proposta com os slides...
+      <div class="row2" style="margin-bottom:16px">
+        <div>
+          <label>Pipeline</label>
+          <select class="fi" id="new-funnel-type">
+            <option value="prospecting">Prospecção</option>
+            <option value="upsell">Upsell</option>
+            <option value="renewal">Renovação</option>
+          </select>
+        </div>
+        <div></div>
+      </div>
 
-*Slide 1 — Capa*
-...
+      <!-- Formulário inteligente -->
+      <div class="row2">
+        <div>
+          <label>Nome do Cliente <span style="color:var(--wolf)">*</span></label>
+          <input class="fi" id="q-client-name" type="text" placeholder="Ex: João Silva">
+        </div>
+        <div>
+          <label>Tipo de Serviço <span style="color:var(--wolf)">*</span></label>
+          <select class="fi" id="q-service-type">
+            <option value="">Selecione o serviço</option>
+            <option value="Marca Pessoal">Marca Pessoal</option>
+            <option value="Gestão de Redes Sociais">Gestão de Redes Sociais</option>
+            <option value="Tráfego Pago">Tráfego Pago</option>
+            <option value="Social Media + Tráfego">Social Media + Tráfego (pacote)</option>
+            <option value="Branding">Branding + Identidade Visual</option>
+            <option value="Produção de Conteúdo">Produção de Conteúdo</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label>Sobre o cliente <span style="color:var(--wolf)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:400">— quem é, seu negócio/nicho, momento atual</span></label>
+        <textarea class="fi" id="q-about" rows="3" placeholder="Ex: João é médico ortopedista com clínica própria há 8 anos em Salvador. Quer construir autoridade no Instagram para atrair mais pacientes particulares e lançar um curso online de reabilitação." style="resize:vertical;min-height:80px;line-height:1.5"></textarea>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label>Valor mensal (R$) <span style="color:var(--wolf)">*</span></label>
+          <input class="fi" id="q-value" type="text" placeholder="Ex: 2.500">
+        </div>
+        <div>
+          <label>Observações extras <span style="font-size:11px;color:var(--muted);font-weight:400">(opcional)</span></label>
+          <input class="fi" id="q-notes" type="text" placeholder="Ex: cliente premium, incluir fotografia mensal">
+        </div>
+      </div>
 
-*Slide 12 — Investimento*
-R$ 2.000
-..."></textarea>
-      <div class="prompt-status" id="new-status"></div>
+      <div class="prompt-status" id="new-status" style="margin-top:10px"></div>
     </div>
     <div class="mf">
       <button class="btn btn-ghost" onclick="closeNewProposal()">Cancelar</button>
@@ -555,6 +1324,348 @@ let editingId = null;
 const STATUS_COLS = { open: 'col-open', won: 'col-won', lost: 'col-lost' };
 const ORIGIN_LABELS = { indicacao: 'Indicacao', trafego: 'Trafego', base: 'Base', outro: 'Outro' };
 
+// ── FUNNELS ──
+const DEFAULT_FUNNELS = [{
+  id: 'all', name: 'Todos', color: '#6e6e73', origins: null,
+  stages: [
+    { status: 'won',  label: 'Ganha',   color: 'var(--jade)' },
+    { status: 'lost', label: 'Perdida', color: 'var(--red)'  },
+  ]
+}];
+
+let funnels = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('wolf_funnels'));
+    if (!saved) return DEFAULT_FUNNELS;
+    // Migrate: remove 'open' stage from all funnels (no longer a managed stage)
+    saved.forEach(f => { if (f.stages) f.stages = f.stages.filter(s => s.status !== 'open'); });
+    // Migrate: rename old labels to new defaults on 'all' funnel
+    const allF = saved.find(f => f.id === 'all');
+    if (allF && allF.stages) {
+      const won  = allF.stages.find(s => s.status === 'won');
+      const lost = allF.stages.find(s => s.status === 'lost');
+      if (won  && won.label  === 'Fechado')   won.label  = 'Ganha';
+      if (lost && lost.label === 'Perdidas')  lost.label = 'Perdida';
+      if (!allF.stages.length) allF.stages = DEFAULT_FUNNELS[0].stages;
+    }
+    return saved;
+  } catch { return DEFAULT_FUNNELS; }
+})();
+let activeFunnelId = localStorage.getItem('wolf_active_funnel') || 'all';
+let activePipelineType = localStorage.getItem('wolf_pipeline_type') || 'prospecting';
+
+function saveFunnels() {
+  localStorage.setItem('wolf_funnels', JSON.stringify(funnels));
+  localStorage.setItem('wolf_active_funnel', activeFunnelId);
+}
+
+window.setPipelineType = function(type) {
+  activePipelineType = type;
+  localStorage.setItem('wolf_pipeline_type', type);
+  ['prospecting', 'upsell', 'renewal'].forEach(t => {
+    const btn = document.getElementById('pt-' + t);
+    if (btn) btn.classList.toggle('active', t === type);
+  });
+  render();
+};
+
+function getActiveFunnel() { return funnels.find(f => f.id === activeFunnelId) || funnels[0]; }
+
+function getFilteredProposals() {
+  const funnel = getActiveFunnel();
+  let result = proposals.filter(p => (p.funnel_type || 'prospecting') === activePipelineType);
+  if (!funnel || !funnel.origins) return result;
+  return result.filter(p => funnel.origins.includes(p.origin || ''));
+}
+
+function renderFunnelBar() {
+  const tabs = document.getElementById('funnel-tabs');
+  if (!tabs) return;
+  tabs.innerHTML = funnels.map(f => {
+    const active = f.id === activeFunnelId;
+    return `<button class="funnel-tab${active ? ' active' : ''}" onclick="setActiveFunnel('${f.id}')"><span class="ftab-dot" style="background:${f.color || '#888'}"></span>${esc(f.name)}</button>`;
+  }).join('');
+  // Sync pipeline type tabs
+  ['prospecting', 'upsell', 'renewal'].forEach(t => {
+    const btn = document.getElementById('pt-' + t);
+    if (btn) btn.classList.toggle('active', t === activePipelineType);
+  });
+}
+
+function getKanbanCols() {
+  const funnel = getActiveFunnel();
+  const stages = (funnel && funnel.stages) ? funnel.stages : [];
+  // Always start with "Em Aberto" (open), then funnel stages
+  const cols = [{ status: 'open', label: 'Em Aberto', color: 'var(--blue)' }];
+  stages.forEach(s => { if (!cols.find(c => c.status === s.status)) cols.push(s); });
+  return cols;
+}
+
+function colColorHex(color) {
+  if (!color) return '#6e6e73';
+  if (color.startsWith('#')) return color;
+  const map = { 'var(--blue)': '#0071e3', 'var(--jade)': '#34c47a', 'var(--red)': '#ff3b30', 'var(--amber)': '#f5a623', 'var(--wolf)': '#e03c00' };
+  return map[color] || '#6e6e73';
+}
+
+function renderKanbanColumns() {
+  const board = document.getElementById('kanban-board');
+  if (!board) return;
+  const cols = getKanbanCols();
+  board.style.gridTemplateColumns = '';
+  board.innerHTML = cols.map(col => {
+    const hex = colColorHex(col.color);
+    return `
+    <div class="col">
+      <div class="col-head">
+        <div class="col-head-bar" style="background:${hex}"></div>
+        <div class="col-head-row1">
+          <span class="col-title" id="label-${col.status}">${esc(col.label)}</span>
+          <span class="col-count" id="cnt-${col.status}" style="background:${hex}">0</span>
+        </div>
+        <div class="col-total" id="tot-${col.status}"></div>
+      </div>
+      <div class="col-body" id="col-${col.status}" data-status="${col.status}"></div>
+    </div>`;
+  }).join('');
+  attachKanbanDrop();
+}
+
+function updateKanbanHeaders() { renderKanbanColumns(); render(); }
+
+window.setActiveFunnel = function(id) {
+  activeFunnelId = id;
+  saveFunnels();
+  renderFunnelBar();
+  renderKanbanColumns();
+  render();
+};
+
+window.openGerenciar = function() {
+  switchGerenciarTab('funis');
+  renderGerenciarList();
+  document.getElementById('ovl-gerenciar').classList.add('vis');
+};
+window.closeGerenciar = function() {
+  document.getElementById('ovl-gerenciar').classList.remove('vis');
+};
+
+window.switchGerenciarTab = function(tab) {
+  document.getElementById('gm-page-funis').style.display  = tab === 'funis'  ? '' : 'none';
+  document.getElementById('gm-page-etapas').style.display = tab === 'etapas' ? '' : 'none';
+  document.getElementById('gmt-funis').classList.toggle('active',  tab === 'funis');
+  document.getElementById('gmt-etapas').classList.toggle('active', tab === 'etapas');
+  document.getElementById('gm-footer-funis').style.display  = tab === 'funis'  ? 'flex' : 'none';
+  document.getElementById('gm-footer-etapas').style.display = tab === 'etapas' ? 'flex' : 'none';
+  if (tab === 'etapas') populateEtapasFunnelSelect();
+};
+
+let editingFunnelId = null;
+
+function renderGerenciarList() {
+  const list = document.getElementById('gf-list');
+  if (!list) return;
+  list.innerHTML = funnels.length
+    ? `<p style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase">Funis cadastrados</p>` +
+      funnels.map(f => `
+        <div class="gf-list-item${editingFunnelId === f.id ? ' gf-editing' : ''}">
+          <span class="gf-dot" style="background:${f.color || '#888'}"></span>
+          <span class="gf-fname">${esc(f.name)}</span>
+          <span class="gf-badge">${f.stages ? f.stages.length + ' etapas' : '0 etapas'}</span>
+          <span class="gf-badge">${f.origins ? f.origins.join(', ') : 'Todas origens'}</span>
+          <button class="gf-edit-btn" onclick="startEditFunnel('${f.id}')" title="Editar">✏</button>
+          ${f.id !== 'all' ? `<button class="gf-del" onclick="deleteFunnel('${f.id}')" title="Remover">✕</button>` : ''}
+        </div>`).join('')
+    : '';
+}
+
+function resetFunnelForm() {
+  editingFunnelId = null;
+  document.getElementById('gf-name').value = '';
+  document.getElementById('gf-color').value = '#8b5cf6';
+  document.querySelectorAll('#ovl-gerenciar .gf-origins input').forEach(i => i.checked = false);
+  document.getElementById('gf-form-title').textContent = 'Novo Funil';
+  document.getElementById('gf-save-btn').textContent = '+ Adicionar Funil';
+  document.getElementById('gf-cancel-btn').style.display = 'none';
+  renderGerenciarList();
+}
+
+window.startEditFunnel = function(id) {
+  const f = funnels.find(f => f.id === id);
+  if (!f) return;
+  editingFunnelId = id;
+  document.getElementById('gf-name').value = f.name;
+  document.getElementById('gf-color').value = f.color || '#8b5cf6';
+  const origins = f.origins || [];
+  document.querySelectorAll('#ovl-gerenciar .gf-origins input').forEach(i => { i.checked = origins.includes(i.value); });
+  document.getElementById('gf-form-title').textContent = 'Editar Funil';
+  document.getElementById('gf-save-btn').textContent = 'Salvar Alterações';
+  document.getElementById('gf-cancel-btn').style.display = '';
+  renderGerenciarList();
+  document.getElementById('gf-name').focus();
+};
+
+window.addNewFunnel = function() {
+  const name = document.getElementById('gf-name').value.trim();
+  if (!name) { alert('Informe o nome do funil'); return; }
+  const color = document.getElementById('gf-color').value;
+  const origins = [...document.querySelectorAll('#ovl-gerenciar .gf-origins input:checked')].map(i => i.value);
+
+  if (editingFunnelId) {
+    const f = funnels.find(f => f.id === editingFunnelId);
+    if (f) { f.name = name; f.color = color; f.origins = origins.length > 0 ? origins : null; }
+  } else {
+    const id = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now();
+    funnels.push({ id, name, color, origins: origins.length > 0 ? origins : null,
+      stages: [
+        { status: 'won',  label: 'Ganha',   color: 'var(--jade)' },
+        { status: 'lost', label: 'Perdida', color: 'var(--red)'  },
+      ]
+    });
+  }
+  saveFunnels();
+  renderFunnelBar();
+  resetFunnelForm();
+};
+
+window.deleteFunnel = function(id) {
+  funnels = funnels.filter(f => f.id !== id);
+  if (activeFunnelId === id) activeFunnelId = 'all';
+  saveFunnels();
+  renderGerenciarList();
+  renderFunnelBar();
+  render();
+};
+
+let lastEtapasFunnelId = '';
+
+function populateEtapasFunnelSelect() {
+  const sel = document.getElementById('ge-funnel-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione um funil...</option>' +
+    funnels.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  // Restore last selected funnel
+  if (lastEtapasFunnelId && funnels.find(f => f.id === lastEtapasFunnelId)) {
+    sel.value = lastEtapasFunnelId;
+    renderEtapasList();
+  } else {
+    document.getElementById('ge-list').innerHTML = '';
+    document.getElementById('ge-add-section').style.display = 'none';
+  }
+}
+
+window.renderEtapasList = function() {
+  const funnelId = document.getElementById('ge-funnel-select').value;
+  const list = document.getElementById('ge-list');
+  const addSection = document.getElementById('ge-add-section');
+  if (!funnelId) { list.innerHTML = ''; addSection.style.display = 'none'; return; }
+  lastEtapasFunnelId = funnelId;
+  const funnel = funnels.find(f => f.id === funnelId);
+  if (!funnel) return;
+  const locked = funnelId === 'all';
+  const stages = funnel.stages || [];
+
+  list.innerHTML = stages.length
+    ? `<p style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase">Etapas de ${esc(funnel.name)}</p>` +
+      stages.map((s, i) => `
+        <div class="ge-stage-item" data-index="${i}">
+          ${!locked ? `<span class="ge-drag-handle" draggable="true" data-index="${i}" title="Arrastar para reordenar">⠿</span>` : ''}
+          <input type="color" class="ge-color-pick" value="${s.color && s.color.startsWith('#') ? s.color : '#888888'}"
+            onchange="renameEtapaColor('${funnelId}',${i},this.value)" title="Cor da etapa">
+          <input class="ge-stage-input" value="${esc(s.label)}"
+            onblur="renameEtapa('${funnelId}',${i},this.value)"
+            onkeydown="if(event.key==='Enter')this.blur()"
+            ${locked ? 'readonly' : ''}>
+          ${!locked ? `<button class="ge-del" onclick="deleteEtapa('${funnelId}',${i})" title="Remover">✕</button>` : ''}
+        </div>`).join('')
+    : `<p style="font-size:12px;color:var(--ink3);padding:12px 0">Nenhuma etapa cadastrada.</p>`;
+
+  addSection.style.display = locked ? 'none' : '';
+  if (!locked) attachEtapasDrag(funnelId);
+};
+
+function attachEtapasDrag(funnelId) {
+  let dragSrcIdx = null;
+  const handles = document.querySelectorAll('#ge-list .ge-drag-handle');
+  const items   = document.querySelectorAll('#ge-list .ge-stage-item');
+
+  handles.forEach(handle => {
+    handle.addEventListener('dragstart', e => {
+      dragSrcIdx = parseInt(handle.dataset.index);
+      handle.closest('.ge-stage-item').classList.add('ge-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.stopPropagation();
+    });
+    handle.addEventListener('dragend', () => {
+      document.querySelectorAll('#ge-list .ge-stage-item').forEach(el => el.classList.remove('ge-dragging'));
+    });
+  });
+
+  items.forEach(item => {
+    item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('ge-drag-over'); });
+    item.addEventListener('dragleave', () => item.classList.remove('ge-drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('ge-drag-over');
+      const dropIdx = parseInt(item.dataset.index);
+      if (dragSrcIdx === null || dragSrcIdx === dropIdx) return;
+      const funnel = funnels.find(f => f.id === funnelId);
+      if (!funnel) return;
+      const [moved] = funnel.stages.splice(dragSrcIdx, 1);
+      funnel.stages.splice(dropIdx, 0, moved);
+      dragSrcIdx = null;
+      saveFunnels();
+      renderEtapasList();
+    });
+  });
+}
+
+window.renameEtapa = function(funnelId, index, newLabel) {
+  const funnel = funnels.find(f => f.id === funnelId);
+  if (!funnel || !funnel.stages || !newLabel.trim()) return;
+  funnel.stages[index].label = newLabel.trim();
+  saveFunnels();
+  updateKanbanHeaders();
+};
+
+window.renameEtapaColor = function(funnelId, index, color) {
+  const funnel = funnels.find(f => f.id === funnelId);
+  if (!funnel || !funnel.stages) return;
+  funnel.stages[index].color = color;
+  saveFunnels();
+  updateKanbanHeaders();
+};
+
+window.addNewEtapa = function() {
+  const funnelId = document.getElementById('ge-funnel-select').value;
+  if (!funnelId) return;
+  const funnel = funnels.find(f => f.id === funnelId);
+  if (!funnel) return;
+  const name = document.getElementById('ge-name').value.trim();
+  if (!name) { alert('Informe o nome da etapa'); return; }
+  const color = document.getElementById('ge-color').value;
+  const status = 'custom_' + Date.now();
+  if (!funnel.stages) funnel.stages = [];
+  funnel.stages.push({ status, label: name, color });
+  saveFunnels();
+  renderEtapasList();
+  document.getElementById('ge-name').value = '';
+  document.getElementById('ge-color').value = '#0071e3';
+};
+
+window.deleteEtapa = function(funnelId, index) {
+  const funnel = funnels.find(f => f.id === funnelId);
+  if (!funnel || !funnel.stages) return;
+  // Prevent deleting the 3 base stages (open/won/lost)
+  const stage = funnel.stages[index];
+  if (stage && ['open','won','lost'].includes(stage.status)) {
+    alert('As etapas padrão (Em Aberto, Fechado, Perdidas) não podem ser removidas.'); return;
+  }
+  funnel.stages.splice(index, 1);
+  saveFunnels();
+  renderEtapasList();
+};
+
 function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function fmt(v) { return Number(v || 0).toLocaleString('pt-BR'); }
 function daysSince(d) { if (!d) return 0; return Math.floor((Date.now() - new Date(d).getTime()) / 86400000); }
@@ -567,82 +1678,208 @@ async function loadProposals() {
 }
 
 function render() {
-  Object.values(STATUS_COLS).forEach(id => { document.getElementById(id).innerHTML = ''; });
+  const cols = getKanbanCols();
+  const validStatuses = cols.map(c => c.status);
 
-  const groups = { open: [], won: [], lost: [] };
-  proposals.forEach(p => {
-    const s = groups[p.status] ? p.status : 'open';
+  // Clear all current columns
+  cols.forEach(c => { const el = document.getElementById('col-' + c.status); if (el) el.innerHTML = ''; });
+
+  const filtered = getFilteredProposals();
+  const groups = {};
+  validStatuses.forEach(s => groups[s] = []);
+  filtered.forEach(p => {
+    const s = validStatuses.includes(p.status) ? p.status : 'open';
     groups[s].push(p);
   });
 
-  Object.entries(groups).forEach(([status, items]) => {
-    const col = document.getElementById(STATUS_COLS[status]);
-    document.getElementById(`cnt-${status}`).textContent = items.length;
+  cols.forEach(({ status }) => {
+    const col = document.getElementById('col-' + status);
+    const cntEl = document.getElementById('cnt-' + status);
+    const totEl = document.getElementById('tot-' + status);
+    if (!col) return;
+    const items = groups[status] || [];
+    if (cntEl) cntEl.textContent = items.length;
     const sum = items.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    document.getElementById(`tot-${status}`).textContent = sum > 0 ? ` · R$ ${fmt(sum)}` : '';
-
+    if (totEl) totEl.textContent = sum > 0 ? ` · R$ ${fmt(sum)}` : '';
     if (items.length === 0) {
-      col.innerHTML = `<div class="col-empty"><div class="icon">&#9723;</div>Nenhuma proposta</div>`;
+      col.innerHTML = `<div class="col-empty"><div class="col-empty-icon">◻</div>Nenhuma proposta</div>`;
       return;
     }
     items.forEach(p => col.appendChild(createCard(p, status)));
   });
 
-  // KPIs
-  document.getElementById('kpi-total').textContent = proposals.length;
-  const pipeline = proposals.filter(p => p.status === 'open');
-  const won = proposals.filter(p => p.status === 'won');
-  document.getElementById('kpi-open-val').textContent = `R$ ${fmt(pipeline.reduce((s,p) => s + (Number(p.amount)||0), 0))}`;
-  document.getElementById('kpi-won-val').textContent = `R$ ${fmt(won.reduce((s,p) => s + (Number(p.amount)||0), 0))}`;
+  if (currentView === 'dashboard') renderDashboard();
 }
+
+// ── Date helpers ──
+function formatDateBR(d) {
+  if (!d) return '';
+  const date = new Date(d + 'T12:00:00');
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+function closeDateStatus(d) {
+  if (!d) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(d + 'T12:00:00');
+  const diff = Math.round((target - today) / 86400000);
+  if (diff < 0) return ' overdue';
+  if (diff <= 3) return ' soon';
+  return '';
+}
+
+// ── AI Intelligence: Win Probability Score (0-100) ──
+function winScore(p) {
+  let score = 50;
+  // Origin
+  if (p.origin === 'indicacao') score += 20;
+  else if (p.origin === 'base')  score += 10;
+  else if (p.origin === 'trafego') score += 5;
+  // View engagement
+  const views = p.view_count || 0;
+  if (views === 0)      score -= 15;
+  else if (views === 1) score += 5;
+  else if (views <= 3)  score += 12;
+  else                  score += 22;
+  // Days in funnel
+  const days = daysSince(p.sent_at || p.created_at);
+  if (days > 30)       score -= 30;
+  else if (days > 14)  score -= 20;
+  else if (days > 7)   score -= 10;
+  // Seller assigned
+  if (p.seller) score += 10; else score -= 15;
+  // Expected close date
+  if (p.expected_close_date) {
+    const closeDate = new Date(p.expected_close_date);
+    const today = new Date(); today.setHours(0,0,0,0);
+    if (closeDate < today) score -= 15; // overdue
+    else score += 5;
+  }
+  // Has value
+  if (p.amount > 0) score += 5;
+  return Math.min(95, Math.max(5, Math.round(score)));
+}
+
+// ── AI Intelligence: Client Interest Score ──
+function interestScore(p) {
+  const views = p.view_count || 0;
+  if (views === 0 || !p.last_viewed_at) return null; // never opened
+  const hoursSince = (Date.now() - new Date(p.last_viewed_at).getTime()) / 36e5;
+  if (hoursSince < 48 && views >= 3) return { label: '🔥 Muito quente', cls: 'hot' };
+  if (hoursSince < 24)               return { label: '🔥 Quente', cls: 'hot' };
+  if (hoursSince < 72)               return { label: '🟡 Morno', cls: 'warm' };
+  if (hoursSince < 168)              return { label: '🟡 Esfriando', cls: 'warm' };
+  return { label: '🧊 Frio', cls: 'cold' };
+}
+
+// ── AI Intelligence: Next Best Action ──
+function nextAction(p) {
+  const days = daysSince(p.sent_at || p.created_at);
+  const views = p.view_count || 0;
+  const score = winScore(p);
+  const interest = interestScore(p);
+  const today = new Date().toISOString().slice(0,10);
+  if (p.follow_up_date === today)              return '📅 Follow-up agendado para hoje';
+  if (p.expected_close_date) {
+    const daysToClose = Math.ceil((new Date(p.expected_close_date) - new Date()) / 864e5);
+    if (daysToClose >= 0 && daysToClose <= 3) return `⏰ Fechamento em ${daysToClose === 0 ? 'hoje' : daysToClose + ' dias'}`;
+  }
+  if (score >= 70 && interest?.cls === 'hot')  return '🎯 Momento ideal — entre em contato agora';
+  if (views >= 3 && days >= 2)                 return '💬 Viu ' + views + 'x — ofereça condição especial';
+  if (views === 0 && days >= 3)                return '📨 Proposta não aberta — envie lembrete';
+  if (days >= 14)                              return '⚠ Parada há ' + days + 'd — reative o contato';
+  return null;
+}
+
+// ── Card helper: colored initial icon ──
+function _cardIconColor(name) {
+  const palette = ['#0071e3','#8b5cf6','#06b6d4','#f59e0b','#e03c00','#34c47a','#ec4899','#6366f1'];
+  let h = 0;
+  for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return palette[Math.abs(h) % palette.length];
+}
+function _cardInitial(name) { return (name||'?').trim().charAt(0).toUpperCase(); }
 
 function createCard(p, status) {
   const card = document.createElement('div');
-  card.className = `card${status === 'won' ? ' won-card' : ''}${status === 'lost' ? ' lost-card' : ''}`;
-  card.draggable = true;
+  const statusClass = status === 'won' ? 'won-card' : status === 'lost' ? 'lost-card' : '';
+  const noSeller = !p.seller;
+  card.className = `card c-${status}${statusClass ? ' ' + statusClass : ''}${noSeller ? ' no-seller-card' : ''}`;
+  card.draggable = window.innerWidth > 600;
   card.dataset.id = p.id;
 
-  const date = p.sent_at || p.created_at ? new Date(p.sent_at || p.created_at).toLocaleDateString('pt-BR') : '-';
-  const days = daysSince(p.sent_at || p.created_at);
-  const daysLabel = days === 0 ? 'hoje' : days === 1 ? '1 dia' : `${days} dias`;
-  const amount = p.amount
-    ? `<span class="curr">R$</span>${fmt(p.amount)}<span class="suf">${esc(p.suffix || '/mes')}</span>`
+  const _dateRef = p.sent_at || p.created_at;
+  const days = daysSince(_dateRef);
+  const daysLabel = days === 0 ? 'Hoje' : days === 1 ? '1 dia atrás' : `${days} dias atrás`;
+  const isUrgent = status === 'open' && days >= 7;
+
+  const iconColor  = _cardIconColor(p.client_name);
+  const initial    = _cardInitial(p.client_name);
+  const sellerName = p.seller || 'System';
+  const selColor   = _cardIconColor(sellerName + '~');
+  const selInitial = _cardInitial(sellerName);
+
+  const amountHtml = p.amount
+    ? `<span class="curr">R$\u00a0</span>${fmt(p.amount)}<span class="suf">${esc(p.suffix || '/mês')}</span>`
+    : null;
+  const url = p.client_name
+    ? 'https://comercial.wolfpacks.com.br/proposta/' +
+      p.client_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     : '';
-  const url = p.netlify_url || '';
 
-  let tags = '';
-  if (p.seller) tags += `<span class="tag tag-seller">${esc(p.seller)}</span>`;
-  if (p.origin) tags += `<span class="tag tag-${p.origin}">${ORIGIN_LABELS[p.origin] || p.origin}</span>`;
+  const ORIG_LABELS  = { indicacao: 'Indicação', trafego: 'Tráfego', base: 'Base', outro: 'Outro' };
+  const ORIG_CLASSES = { indicacao: 'tag-indicacao-bg', trafego: 'tag-trafego-bg', base: 'tag-base-bg', outro: 'tag-outro-bg' };
+  const originTag = p.origin
+    ? `<span class="cmeta-origin ${ORIG_CLASSES[p.origin] || 'tag-outro-bg'}">${ORIG_LABELS[p.origin] || p.origin}</span>`
+    : '';
+  const codeHtml = p.proposal_code
+    ? `<span class="card-code">🔖 ${esc(p.proposal_code)}</span>`
+    : '';
 
-  let actions = '';
-  if (status === 'open') {
-    actions = `<div class="card-actions">
-      <button class="card-btn win" onclick="event.stopPropagation();moveStatus('${p.id}','won')">Fechou</button>
-      <button class="card-btn lose" onclick="event.stopPropagation();moveStatus('${p.id}','lost')">Perdeu</button>
-    </div>`;
-  }
+  // Intelligence signals
+  const ws = (status === 'open') ? winScore(p) : null;
+  const wsColor = ws >= 70 ? '#34c47a' : ws >= 40 ? '#f5a623' : '#e03c00';
+  const interest = (status === 'open') ? interestScore(p) : null;
+  const action = (status === 'open') ? nextAction(p) : null;
+  const winBarHtml = ws !== null ? `
+    <div class="card-win-bar">
+      <div class="card-win-bar-track"><div class="card-win-bar-fill" style="width:${ws}%;background:${wsColor}"></div></div>
+      <div class="card-win-meta">
+        <span class="card-win-pct" style="color:${wsColor}">${ws}% de fechar</span>
+        ${action ? `<span class="card-win-action">${action}</span>` : ''}
+      </div>
+    </div>` : '';
+  const interestBadge = interest ? `<span class="card-interest ${interest.cls}">${interest.label}</span>` : '';
 
-  const code = p.proposal_code || '';
+  const openActions = `
+    <button class="card-cta cta-win"  onclick="event.stopPropagation();moveStatus('${p.id}','won')">✓ Ganha</button>
+    <button class="card-cta cta-lose" onclick="event.stopPropagation();moveStatus('${p.id}','lost')">✗ Perdida</button>
+    <button class="card-cta cta-icon" onclick="event.stopPropagation();openEdit('${p.id}')" title="Editar">✏</button>`;
+  const closedActions = `
+    ${url ? `<a class="card-cta cta-view" href="${esc(url)}" target="_blank" onclick="event.stopPropagation()">Ver proposta</a>` : ''}
+    <button class="card-cta cta-icon" onclick="event.stopPropagation();openEdit('${p.id}')" title="Editar">✏</button>`;
 
   card.innerHTML = `
-    <div class="card-strip c-${status}"></div>
-    <div class="card-inner">
-      <div class="card-row1">
+    <div class="card-header">
+      <div class="card-icon" style="background:${iconColor}">${initial}</div>
+      <div class="card-hinfo">
         <div class="card-client">${esc(p.client_name)}</div>
-        <div class="card-amount">${amount}</div>
+        <div class="card-service">${esc(p.service_type || '\u2014')}</div>
       </div>
-      <div class="card-service">${esc(p.service_type || '')}${code ? ` <span style="color:var(--ink3);font-family:var(--m);font-size:9px;margin-left:4px">${esc(code)}</span>` : ''}</div>
-      ${tags ? `<div class="card-tags">${tags}</div>` : ''}
-      ${p.notes ? `<div class="card-notes">${esc(p.notes)}</div>` : ''}
-      <div class="card-foot">
-        <span class="card-date">${date} · ${daysLabel}</span>
-        <div class="card-foot-r">
-          ${url ? `<a class="card-link" href="${esc(url)}" target="_blank" onclick="event.stopPropagation()">Ver proposta</a>` : ''}
-          <button class="card-edit" onclick="event.stopPropagation();openEdit('${p.id}')" title="Editar">&#9998;</button>
-        </div>
-      </div>
-      ${actions}
+      <div class="card-seller-av" style="background:${selColor}" title="${esc(sellerName)}">${selInitial}</div>
     </div>
+    ${noSeller ? `<div class="card-no-seller">Sem vendedor atribuído — clique para corrigir</div>` : ''}
+    ${(codeHtml || originTag || interestBadge) ? `<div class="card-status-row">${codeHtml}${originTag}${interestBadge}</div>` : ''}
+    <div class="card-data">
+      ${amountHtml ? `<div class="card-data-row"><span class="cdr-icon">💰</span><span class="cdr-label">Valor</span><span class="cdr-val">${amountHtml}</span></div>` : ''}
+      <div class="card-data-row"><span class="cdr-icon">👤</span><span class="cdr-label">Vendedor</span><span class="cdr-val" style="font-weight:600;color:${noSeller ? '#f5a623' : 'inherit'}">${noSeller ? 'Sem vendedor' : esc(p.seller)}</span></div>
+      ${url ? `<div class="card-data-row"><span class="cdr-icon">🔗</span><span class="cdr-label">Proposta</span><a class="cdr-val cdr-link" href="${esc(url)}" target="_blank" onclick="event.stopPropagation()" style="color:var(--wolf);text-decoration:none;font-weight:500">Ver proposta ↗</a></div>` : ''}
+      <div class="card-data-row"><span class="cdr-icon">📅</span><span class="cdr-label">Enviado</span><span class="cdr-val${isUrgent ? ' urgent' : ''}">${daysLabel}</span></div>
+      ${p.expected_close_date && status === 'open' ? `<div class="card-data-row"><span class="cdr-icon">🎯</span><span class="cdr-label">Fechamento</span><span class="cdr-val cdr-close${closeDateStatus(p.expected_close_date)}">${formatDateBR(p.expected_close_date)}</span></div>` : ''}
+      ${p.view_count > 0 ? `<div class="card-data-row"><span class="cdr-icon">👁</span><span class="cdr-label">Visualizações</span><span class="cdr-val cdr-viewed">${p.view_count}x</span></div>` : ''}
+      ${p.notes ? `<div class="card-data-row"><span class="cdr-icon">📝</span><span class="cdr-notes">${esc(p.notes)}</span></div>` : ''}
+    </div>
+    ${winBarHtml}
+    <div class="card-actions">${status === 'open' ? openActions : closedActions}</div>
   `;
 
   card.addEventListener('dragstart', (e) => {
@@ -655,47 +1892,165 @@ function createCard(p, status) {
     document.querySelectorAll('.col-body').forEach(c => c.classList.remove('drag-over'));
   });
 
+  // Click card → open edit modal directly
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('.card-btn') || e.target.closest('.card-edit') || e.target.closest('.card-link')) return;
+    openEdit(p.id);
+  });
+
   return card;
 }
 
 // ── DRAG & DROP ──
-document.querySelectorAll('.col-body').forEach(col => {
-  col.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    col.classList.add('drag-over');
+function attachKanbanDrop() {
+  document.querySelectorAll('#kanban-board .col-body').forEach(col => {
+    col.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      col.classList.add('drag-over');
+    });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      const newStatus = col.dataset.status;
+      if (!id || !newStatus) return;
+      const updates = { status: newStatus };
+      if (newStatus === 'won' || newStatus === 'lost') updates.closed_at = new Date().toISOString();
+      const { error } = await sb.from('proposals').update(updates).eq('id', id);
+      if (!error) await loadProposals();
+    });
   });
-  col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
-  col.addEventListener('drop', async (e) => {
-    e.preventDefault();
-    col.classList.remove('drag-over');
-    const id = e.dataTransfer.getData('text/plain');
-    const newStatus = col.dataset.status;
-    if (!id || !newStatus) return;
-    const updates = { status: newStatus };
-    if (newStatus === 'won' || newStatus === 'lost') updates.closed_at = new Date().toISOString();
-    const { error } = await sb.from('proposals').update(updates).eq('id', id);
-    if (!error) await loadProposals();
-  });
-});
+}
 
 // ── MOVE STATUS ──
+let _pendingLostId = null;
+
 window.moveStatus = async function(id, newStatus) {
+  if (newStatus === 'lost') {
+    _pendingLostId = id;
+    document.getElementById('lost-reason-select').value = '';
+    document.getElementById('lost-reason-outro-wrap').style.display = 'none';
+    document.getElementById('ovl-lost-reason').classList.add('vis');
+    return;
+  }
+  const p = proposals.find(x => x.id === id);
   const updates = { status: newStatus };
-  if (newStatus === 'won' || newStatus === 'lost') updates.closed_at = new Date().toISOString();
+  let actType = 'stage_change';
+  let actDesc = '';
+
+  if (newStatus === 'won') {
+    updates.closed_at = new Date().toISOString();
+    actType = 'won';
+    actDesc = 'Proposta marcada como Ganha';
+  } else if (newStatus === 'open') {
+    updates.follow_up_date = null;
+    actType = 'stage_change';
+    actDesc = 'Movida de volta para Em Aberto';
+  } else {
+    // Etapa intermediária — cadência por origem
+    const daysMap = { trafego: 1, indicacao: 2 };
+    const days = daysMap[p?.origin] ?? 2;
+    const fu = new Date();
+    fu.setDate(fu.getDate() + days);
+    updates.follow_up_date = fu.toISOString().slice(0, 10);
+    actType = 'stage_change';
+    actDesc = `Movida para ${newStatus} — follow-up em ${formatDateBR(updates.follow_up_date)}`;
+  }
+
   const { error } = await sb.from('proposals').update(updates).eq('id', id);
-  if (!error) await loadProposals();
+  if (!error) {
+    await logActivity(id, actType, actDesc, p?.seller || 'Sistema');
+    await loadProposals();
+  }
+};
+
+window.cancelLost = function() {
+  _pendingLostId = null;
+  document.getElementById('ovl-lost-reason').classList.remove('vis');
+  document.getElementById('lost-competitor-wrap').style.display = 'none';
+  document.getElementById('lost-reason-outro-wrap').style.display = 'none';
+};
+
+window.executeLost = async function() {
+  const sel = document.getElementById('lost-reason-select');
+  if (!sel.value) {
+    sel.style.outline = '2px solid var(--red)';
+    setTimeout(() => sel.style.outline = '', 1500);
+    return;
+  }
+  const reason = sel.value === 'outro'
+    ? (document.getElementById('lost-reason-outro').value.trim() || 'Outro')
+    : sel.value;
+  const competitor = sel.value === 'Foi para concorrente'
+    ? (document.getElementById('lost-competitor').value.trim() || null)
+    : null;
+  document.getElementById('ovl-lost-reason').classList.remove('vis');
+  document.getElementById('lost-competitor-wrap').style.display = 'none';
+  document.getElementById('lost-reason-outro-wrap').style.display = 'none';
+  const lostId = _pendingLostId;
+  const updates = { status: 'lost', closed_at: new Date().toISOString(), lost_reason: reason };
+  if (competitor) updates.lost_to = competitor;
+  const { error } = await sb.from('proposals').update(updates).eq('id', lostId);
+  _pendingLostId = null;
+  if (!error) {
+    const p = proposals.find(x => x.id === lostId);
+    await logActivity(lostId, 'lost', `Proposta perdida — ${reason}`, p?.seller || 'Sistema');
+    await loadProposals();
+  }
 };
 
 // ── NEW PROPOSAL ──
+// ── SELLER PHONE MEMORY ──
+function getSellerPhones() {
+  try { return JSON.parse(localStorage.getItem('wolf_seller_phones') || '{}'); } catch { return {}; }
+}
+function saveSellerPhone(seller, phone) {
+  if (!seller || !phone) return;
+  const phones = getSellerPhones();
+  phones[seller] = phone;
+  localStorage.setItem('wolf_seller_phones', JSON.stringify(phones));
+}
+window.autoFillSellerPhone = function(seller, targetId) {
+  if (!seller) return;
+  const phone = getSellerPhones()[seller];
+  const fieldId = targetId || 'new-whatsapp';
+  const field = document.getElementById(fieldId);
+  if (phone && field && !field.value) field.value = phone;
+};
+
 window.openNewProposal = function() {
   document.getElementById('new-seller').value = '';
   document.getElementById('new-origin').value = '';
   document.getElementById('new-whatsapp').value = '';
-  document.getElementById('new-proposal-text').value = '';
+  document.getElementById('new-close-date').value = '';
   document.getElementById('new-status').textContent = '';
+  document.getElementById('new-funnel-type').value = activePipelineType || 'prospecting';
+  document.getElementById('q-client-name').value = '';
+  document.getElementById('q-service-type').value = '';
+  document.getElementById('q-about').value = '';
+  document.getElementById('q-value').value = '';
+  document.getElementById('q-notes').value = '';
   document.getElementById('ovl-new').classList.add('vis');
-  document.getElementById('new-proposal-text').focus();
+  const clientInput = document.getElementById('q-client-name');
+  clientInput.focus();
+  // Auto-enrich: when client name is typed, look for previous proposals
+  clientInput.oninput = function() {
+    const name = this.value.trim().toLowerCase();
+    if (name.length < 3) return;
+    const prev = proposals.find(p => p.client_name && p.client_name.toLowerCase().includes(name));
+    if (prev) {
+      const aboutEl = document.getElementById('q-about');
+      const svcEl = document.getElementById('q-service-type');
+      if (!aboutEl.value && prev.proposal_data?.context?.bio_paragraphs?.[0]) {
+        aboutEl.value = prev.proposal_data.context.bio_paragraphs[0];
+        aboutEl.style.border = '1px solid var(--wolf)';
+        setTimeout(() => aboutEl.style.border = '', 2000);
+      }
+      if (!svcEl.value && prev.service_type) svcEl.value = prev.service_type;
+    }
+  };
 };
 
 window.closeNewProposal = function() {
@@ -946,32 +2301,38 @@ window.generateProposal = async function() {
   const seller = document.getElementById('new-seller').value;
   const origin = document.getElementById('new-origin').value;
   const whatsapp = document.getElementById('new-whatsapp').value.trim().replace(/\D/g, '') || undefined;
-  const proposalText = document.getElementById('new-proposal-text').value.trim();
   const statusEl = document.getElementById('new-status');
   const btn = document.getElementById('btn-generate');
 
-  if (!proposalText) { statusEl.textContent = 'Cole o texto da proposta'; statusEl.className = 'prompt-status error'; return; }
-  if (proposalText.length < 100) { statusEl.textContent = 'Texto muito curto. Cole a proposta completa com os slides.'; statusEl.className = 'prompt-status error'; return; }
+  const clientName = document.getElementById('q-client-name').value.trim();
+  const serviceType = document.getElementById('q-service-type').value;
+  const aboutClient = document.getElementById('q-about').value.trim();
+  const value = document.getElementById('q-value').value.trim().replace(/[^\d.,]/g, '');
+  const notes = document.getElementById('q-notes').value.trim();
+
+  if (!clientName) { statusEl.textContent = 'Informe o nome do cliente'; statusEl.className = 'prompt-status error'; return; }
+  if (!serviceType) { statusEl.textContent = 'Selecione o tipo de serviço'; statusEl.className = 'prompt-status error'; return; }
+  if (!aboutClient) { statusEl.textContent = 'Descreva o cliente (quem é, negócio, momento)'; statusEl.className = 'prompt-status error'; return; }
+  if (!value) { statusEl.textContent = 'Informe o valor mensal'; statusEl.className = 'prompt-status error'; return; }
+  if (!seller) { statusEl.textContent = '⚠ Vendedor não selecionado — será criada sem responsável. Corrija depois no card.'; statusEl.className = 'prompt-status'; }
 
   const code = genProposalCode();
-
   btn.disabled = true;
   btn.textContent = 'Gerando...';
-  statusEl.textContent = `[${code}] Enviando para o Alfred interpretar...`;
+  statusEl.textContent = `[${code}] Alfred montando proposta...`;
   statusEl.className = 'prompt-status';
 
   try {
-    // Send raw text to bridge — Claude parses + builds (same quality as WhatsApp)
     const parseEndpoint = isLocal ? `${BRIDGE_API}/parse-proposal` : `/api/parse-proposal`;
     const res = await fetch(parseEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text: proposalText,
+        structured: { client_name: clientName, service_type: serviceType, about_client: aboutClient, value, notes: notes || undefined },
         seller: seller || undefined,
         origin: origin || undefined,
-        proposal_code: code,
         whatsapp: whatsapp || undefined,
+        proposal_code: code,
       }),
     });
     const result = await res.json();
@@ -979,9 +2340,11 @@ window.generateProposal = async function() {
     if (result.ok) {
       const clientName = result.parsed_data?.client_name || 'Cliente';
 
-      // Extract proposal ID from bridge response (if returned)
-      const idMatch = result.message && result.message.match(/ID:\s*([a-f0-9-]+)/);
-      const proposalId = idMatch ? idMatch[1] : null;
+      // Memorizar WhatsApp do vendedor para próximas propostas
+      if (seller && whatsapp) saveSellerPhone(seller, whatsapp);
+
+      // Get proposal ID directly from response
+      const proposalId = result.id || (result.message && result.message.match(/ID:\s*([a-f0-9-]+)/)?.[1]) || null;
 
       // Update seller/origin/code — use ID if available, fallback to name search
       setTimeout(async () => {
@@ -996,9 +2359,14 @@ window.generateProposal = async function() {
           if (code) updates.proposal_code = code;
           if (seller) updates.seller = seller;
           if (origin) updates.origin = origin;
+          const closeDate = document.getElementById('new-close-date').value;
+          if (closeDate) updates.expected_close_date = closeDate;
+          const funnelType = document.getElementById('new-funnel-type').value;
+          if (funnelType) updates.funnel_type = funnelType;
           if (Object.keys(updates).length > 0) {
             await sb.from('proposals').update(updates).eq('id', targetId);
           }
+          await logActivity(targetId, 'created', `Proposta gerada — ${result.parsed_data?.service_type || 'serviço'}`, seller || 'Sistema');
           await loadProposals();
         }
       }, 1500);
@@ -1031,13 +2399,106 @@ window.openEdit = function(id) {
   document.getElementById('edit-origin').value = p.origin || '';
   document.getElementById('edit-notes').value = p.notes || '';
   document.getElementById('edit-lost-reason').value = p.lost_reason || '';
+  document.getElementById('edit-lost-to').value = p.lost_to || '';
+  document.getElementById('edit-lost-to-wrap').style.display = p.lost_reason === 'Foi para concorrente' ? 'block' : 'none';
   document.getElementById('edit-lost-wrap').style.display = p.status === 'lost' ? 'block' : 'none';
+  document.getElementById('edit-close-date').value = p.expected_close_date ? p.expected_close_date.slice(0,10) : '';
+  document.getElementById('edit-funnel-type').value = p.funnel_type || 'prospecting';
   document.getElementById('ovl-edit').classList.add('vis');
+  loadTimeline(id);
 };
 
 window.closeEdit = function() {
   document.getElementById('ovl-edit').classList.remove('vis');
   editingId = null;
+};
+
+// ── EDIT PROPOSAL CONTENT ──
+window.openRegenerate = function() {
+  const p = proposals.find(x => x.id === editingId);
+  if (!p) return;
+  // Normalize proposal_data — might be null, string, or object
+  let raw = p.proposal_data;
+  if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch { raw = null; } }
+  const d = (raw && typeof raw === 'object') ? raw : {};
+  document.getElementById('regen-title').textContent = p.client_name;
+  document.getElementById('re-client').value  = d.client_name  || p.client_name || '';
+  document.getElementById('re-service').value = d.service_type || p.service_type || '';
+  document.getElementById('re-tagline').value = d.tagline || '';
+  document.getElementById('re-amount').value  = (d.investment || {}).amount || String(p.amount || '');
+  document.getElementById('re-close-heading').value = (d.close || {}).heading || '';
+  document.getElementById('re-close-body').value    = (d.close || {}).body    || '';
+  try {
+    document.getElementById('re-json').value = JSON.stringify(d, null, 2);
+  } catch {
+    document.getElementById('re-json').value = '{}';
+  }
+  document.getElementById('regen-status').textContent = '';
+  document.getElementById('regen-status').className = 'prompt-status';
+  document.getElementById('ovl-regen').classList.add('vis');
+};
+
+window.closeRegenerate = function() {
+  document.getElementById('ovl-regen').classList.remove('vis');
+};
+
+window.saveProposalContent = async function() {
+  const p = proposals.find(x => x.id === editingId);
+  if (!p) return;
+  const statusEl = document.getElementById('regen-status');
+  const btn = document.getElementById('btn-regen');
+
+  // Parse JSON — if invalid or empty, fallback to {} and apply fields on top
+  let data = {};
+  const jsonRaw = document.getElementById('re-json').value.trim();
+  if (jsonRaw) {
+    try { data = JSON.parse(jsonRaw); } catch { data = {}; }
+  }
+  if (!data || typeof data !== 'object') data = {};
+
+  // Apply simple field overrides
+  data.client_name  = document.getElementById('re-client').value.trim()  || data.client_name;
+  data.service_type = document.getElementById('re-service').value.trim() || data.service_type;
+  data.tagline      = document.getElementById('re-tagline').value.trim() || data.tagline;
+  const amt = document.getElementById('re-amount').value.trim();
+  if (amt) {
+    if (!data.investment) data.investment = { currency: 'R$', suffix: '/mês' };
+    data.investment.amount = amt;
+  }
+  const ch = document.getElementById('re-close-heading').value.trim();
+  const cb = document.getElementById('re-close-body').value.trim();
+  if (!data.close) data.close = {};
+  if (ch) data.close.heading = ch;
+  if (cb) data.close.body = cb;
+
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  statusEl.textContent = 'Gerando e publicando...';
+  statusEl.className = 'prompt-status';
+
+  try {
+    const endpoint = isLocal ? `${BRIDGE_API}/update-proposal` : '/api/update-proposal';
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: p.id, proposal_data: data }),
+    });
+    const result = await res.json();
+    if (result.ok) {
+      statusEl.textContent = `Publicado! ${result.url}`;
+      statusEl.className = 'prompt-status success';
+      await loadProposals();
+      setTimeout(() => { closeRegenerate(); closeEdit(); }, 2000);
+    } else {
+      statusEl.textContent = result.error || 'Erro ao salvar';
+      statusEl.className = 'prompt-status error';
+    }
+  } catch (err) {
+    statusEl.textContent = `Erro de conexão: ${err.message}`;
+    statusEl.className = 'prompt-status error';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Salvar e Publicar';
 };
 
 // ── DELETE ──
@@ -1070,13 +2531,536 @@ window.saveEdit = async function() {
     seller: document.getElementById('edit-seller').value || null,
     origin: document.getElementById('edit-origin').value || null,
     notes: document.getElementById('edit-notes').value.trim() || null,
-    lost_reason: document.getElementById('edit-lost-reason').value.trim() || null,
+    lost_reason: document.getElementById('edit-lost-reason').value || null,
+    lost_to: (document.getElementById('edit-lost-reason').value === 'Foi para concorrente')
+      ? (document.getElementById('edit-lost-to').value.trim() || null) : null,
+    expected_close_date: document.getElementById('edit-close-date').value || null,
+    funnel_type: document.getElementById('edit-funnel-type').value || 'prospecting',
   };
   const { error } = await sb.from('proposals').update(updates).eq('id', editingId);
   if (error) { alert('Erro: ' + error.message); return; }
+  const p = proposals.find(x => x.id === editingId);
+  const changed = [];
+  if (updates.seller && updates.seller !== p?.seller) changed.push(`Vendedor: ${updates.seller}`);
+  if (updates.notes && updates.notes !== p?.notes) changed.push('Nota atualizada');
+  if (updates.expected_close_date && updates.expected_close_date !== p?.expected_close_date) changed.push(`Fechamento previsto: ${formatDateBR(updates.expected_close_date)}`);
+  const ftLabels = { prospecting: 'Prospecção', upsell: 'Upsell', renewal: 'Renovação' };
+  if (updates.funnel_type && updates.funnel_type !== (p?.funnel_type || 'prospecting')) changed.push(`Pipeline: ${ftLabels[updates.funnel_type] || updates.funnel_type}`);
+  if (changed.length) await logActivity(editingId, 'edit', changed.join(' · '), updates.seller || p?.seller || 'Sistema');
   closeEdit();
   await loadProposals();
 };
+
+// ── VIEW SWITCHING ──
+let monthlyChart = null;
+let currentView = 'dashboard';
+
+const VIEW_TITLES = { dashboard: 'Dashboard', pipeline: 'Pipeline', clients: 'Clientes' };
+
+window.switchView = function(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  const titleEl = document.getElementById('top-view-title');
+  if (titleEl) titleEl.textContent = VIEW_TITLES[view] || view;
+  const pipeline = document.getElementById('view-pipeline');
+  const dash     = document.getElementById('view-dashboard');
+  const clients  = document.getElementById('view-clients');
+  const btnNew   = document.getElementById('btn-new-proposal');
+
+  pipeline.classList.add('hidden');
+  dash.classList.remove('active'); dash.style.display = 'none';
+  clients.classList.remove('active'); clients.style.display = 'none';
+
+  // No desktop: só mostra o botão no pipeline. No mobile: sempre visível via CSS
+  const isMobile = window.innerWidth <= 600;
+  if (btnNew && !isMobile) btnNew.style.display = 'none';
+
+  if (view === 'pipeline') {
+    pipeline.classList.remove('hidden');
+    if (btnNew && !isMobile) btnNew.style.display = '';
+    renderFunnelBar();
+    renderKanbanColumns();
+    render();
+  } else if (view === 'clients') {
+    clients.classList.add('active'); clients.style.display = 'block';
+    renderClientsView();
+  } else {
+    dash.classList.add('active'); dash.style.display = 'block';
+    renderDashboard();
+  }
+};
+
+window.toggleSidebar = function() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+};
+
+// ── DASHBOARD ──
+// Sellers são extraídos dinamicamente das propostas + lista base como fallback
+function getSellers() {
+  const fromProposals = [...new Set(proposals.map(p => p.seller).filter(Boolean))].sort();
+  const base = ['Netto', 'Gabriela', 'Mariana', 'Natiely'];
+  const merged = [...new Set([...fromProposals, ...base.filter(s => fromProposals.includes(s))])];
+  return merged.length ? merged : base;
+}
+const SELLERS = ['Netto', 'Gabriela', 'Mariana', 'Natiely']; // legado — não usar diretamente
+
+function renderDashboard() {
+  const now = new Date();
+  const thisMonth = now.toISOString().slice(0, 7);
+  const open = proposals.filter(p => p.status === 'open');
+  const won  = proposals.filter(p => p.status === 'won');
+  const lost = proposals.filter(p => p.status === 'lost');
+  const wonMonth  = won.filter(p  => (p.closed_at || p.created_at || '').slice(0,7) === thisMonth);
+  const lostMonth = lost.filter(p => (p.closed_at || p.created_at || '').slice(0,7) === thisMonth);
+  const closedMonth = wonMonth.length + lostMonth.length;
+
+  const pipeline    = open.reduce((s,p) => s + (Number(p.amount)||0), 0);
+  const wonMonthVal = wonMonth.reduce((s,p) => s + (Number(p.amount)||0), 0);
+  const convRate    = closedMonth > 0 ? Math.round(wonMonth.length / closedMonth * 100) : 0;
+  const wonAll      = won.filter(p => p.amount);
+  const ticket      = wonAll.length > 0 ? Math.round(wonAll.reduce((s,p) => s + Number(p.amount), 0) / wonAll.length) : 0;
+
+  document.getElementById('d-pipeline').textContent     = 'R$ ' + fmt(pipeline);
+  document.getElementById('d-pipeline-sub').textContent  = open.length + ' proposta' + (open.length !== 1 ? 's' : '');
+  document.getElementById('d-won-month').textContent     = 'R$ ' + fmt(wonMonthVal);
+  document.getElementById('d-won-month-sub').textContent = wonMonth.length + ' contrato' + (wonMonth.length !== 1 ? 's' : '');
+  document.getElementById('d-conv-rate').textContent     = convRate + '%';
+  document.getElementById('d-conv-sub').textContent      = wonMonth.length + ' de ' + closedMonth + ' fechadas no mês';
+  document.getElementById('d-ticket').textContent        = 'R$ ' + fmt(ticket);
+
+  // Weighted revenue forecast: open proposals × win probability
+  const today30 = new Date(); today30.setDate(today30.getDate() + 30);
+  const today60 = new Date(); today60.setDate(today60.getDate() + 60);
+  let forecast30 = 0, forecast60 = 0, count30 = 0, count60 = 0;
+  open.forEach(p => {
+    const amt = Number(p.amount) || 0;
+    if (!amt) return;
+    const ws = winScore(p) / 100;
+    const weighted = amt * ws;
+    if (p.expected_close_date) {
+      const cd = new Date(p.expected_close_date);
+      if (cd <= today30) { forecast30 += weighted; count30++; }
+      else if (cd <= today60) { forecast60 += weighted; count60++; }
+    } else {
+      // No date: include in 60d at lower weight
+      forecast60 += weighted * 0.5;
+    }
+  });
+  const forecastEl = document.getElementById('d-forecast');
+  const forecastSubEl = document.getElementById('d-forecast-sub');
+  forecastEl.textContent = 'R$ ' + fmt(Math.round(forecast30 + forecast60));
+  forecastSubEl.innerHTML = `
+    <div class="forecast-split">
+      <div class="forecast-split-item">
+        <div class="fs-label">30 dias</div>
+        <div class="fs-val">R$ ${fmt(Math.round(forecast30))}</div>
+        <div class="fs-sub">${count30} proposta${count30 !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="forecast-split-item">
+        <div class="fs-label">60 dias</div>
+        <div class="fs-val">R$ ${fmt(Math.round(forecast60))}</div>
+        <div class="fs-sub">${count60} proposta${count60 !== 1 ? 's' : ''}</div>
+      </div>
+    </div>`;
+
+  // Alerta propostas sem vendedor
+  const noSellerProposals = proposals.filter(p => !p.seller && p.status !== 'won' && p.status !== 'lost');
+  let alertEl = document.getElementById('d-no-seller-alert');
+  if (noSellerProposals.length > 0) {
+    if (!alertEl) {
+      alertEl = document.createElement('div');
+      alertEl.id = 'd-no-seller-alert';
+      alertEl.className = 'dash-no-seller-alert';
+      alertEl.onclick = () => switchView('pipeline');
+      document.getElementById('view-dashboard').insertBefore(alertEl, document.querySelector('.dash-kpis'));
+    }
+    alertEl.innerHTML = `⚠ <strong>${noSellerProposals.length} proposta${noSellerProposals.length > 1 ? 's' : ''} sem vendedor atribuído</strong> — clique para abrir o Pipeline e corrigir`;
+    alertEl.style.display = 'flex';
+  } else if (alertEl) {
+    alertEl.style.display = 'none';
+  }
+
+  renderMonthlyChart();
+  renderRanking();
+  renderFunnel(open, won, lost);
+  renderRecent();
+  renderOriginChart();
+  renderLostReasons();
+}
+
+function renderMonthlyChart() {
+  const now = new Date();
+  const months = [], wonData = [], pipeData = [];
+  for (let i = 5; i >= 0; i--) {
+    const d  = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = d.toISOString().slice(0, 7);
+    months.push(d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
+    wonData.push(proposals.filter(p => p.status === 'won' && (p.closed_at || p.created_at || '').slice(0,7) === ym)
+      .reduce((s,p) => s + (Number(p.amount)||0), 0));
+    pipeData.push(proposals.filter(p => p.status === 'open' && (p.created_at || '').slice(0,7) === ym)
+      .reduce((s,p) => s + (Number(p.amount)||0), 0));
+  }
+  const ctx = document.getElementById('chart-monthly').getContext('2d');
+  if (monthlyChart) monthlyChart.destroy();
+  monthlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Fechado', data: wonData, backgroundColor: 'rgba(52,196,122,.8)', borderRadius: 6, borderSkipped: false },
+        { label: 'Pipeline', data: pipeData, backgroundColor: 'rgba(0,113,227,.15)', borderRadius: 6, borderSkipped: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11, family: "'Geist',sans-serif" }, boxWidth: 10, padding: 12 } },
+        tooltip: { callbacks: { label: c => ' R$ ' + fmt(c.raw) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 10 }, callback: v => v >= 1000 ? 'R$' + Math.round(v/1000) + 'k' : 'R$' + v } }
+      }
+    }
+  });
+}
+
+function renderRanking() {
+  const staleThreshold = Date.now() - 7 * 24 * 3600 * 1000;
+  const rows = getSellers().map(seller => {
+    const sp    = proposals.filter(p => p.seller === seller);
+    const sWon  = sp.filter(p => p.status === 'won');
+    const sLost = sp.filter(p => p.status === 'lost');
+    const closed = sWon.length + sLost.length;
+    const revenue = sWon.reduce((s,p) => s + (Number(p.amount)||0), 0);
+    const conv = closed > 0 ? Math.round(sWon.length / closed * 100) : 0;
+    const open = sp.filter(p => p.status !== 'won' && p.status !== 'lost').length;
+    // Stale: em aberto sem movimento há 7+ dias
+    const stale = sp.filter(p =>
+      p.status !== 'won' && p.status !== 'lost' &&
+      p.updated_at && new Date(p.updated_at).getTime() < staleThreshold
+    ).length;
+    // Ciclo médio (created → closed_at) para ganhas
+    const cycles = sWon.filter(p => p.created_at && p.closed_at)
+      .map(p => Math.round((new Date(p.closed_at) - new Date(p.created_at)) / 86400000));
+    const avgCycle = cycles.length > 0 ? Math.round(cycles.reduce((s,d)=>s+d,0)/cycles.length) : null;
+    return { seller, total: sp.length, won: sWon.length, lost: sLost.length, revenue, conv, open, stale, avgCycle };
+  }).filter(r => r.total > 0).sort((a,b) => b.revenue - a.revenue);
+
+  if (!rows.length) {
+    document.getElementById('d-ranking').innerHTML = '<p style="color:var(--ink3);font-size:12px">Nenhuma proposta cadastrada ainda.</p>';
+    return;
+  }
+
+  const maxRev = Math.max(...rows.map(r => r.revenue), 1);
+
+  document.getElementById('d-ranking').innerHTML = `
+    <table class="sp-table">
+      <thead><tr>
+        <th>Vendedor</th>
+        <th>Receita</th>
+        <th style="text-align:left;padding-left:0"></th>
+        <th>Conv.</th>
+        <th>Ciclo</th>
+        <th>Paradas</th>
+        <th>Em aberto</th>
+      </tr></thead>
+      <tbody>${rows.map((r,i) => {
+        const convClass = r.conv >= 50 ? 'good' : r.conv >= 30 ? 'mid' : 'bad';
+        const barW = Math.round(r.revenue / maxRev * 100);
+        return `<tr>
+          <td><span class="sp-seller-name">${i+1}. ${esc(r.seller)}</span></td>
+          <td><span class="sp-rev">R$ ${fmt(r.revenue)}</span></td>
+          <td class="sp-bar-cell"><div class="sp-mini-bar" style="width:${barW}%"></div></td>
+          <td><span class="sp-conv ${convClass}">${r.conv}%</span><br><span style="font-size:9px;color:var(--ink3)">${r.won}/${r.total}</span></td>
+          <td><span class="sp-cycle">${r.avgCycle !== null ? r.avgCycle + 'd' : '—'}</span></td>
+          <td><span class="sp-stale ${r.stale > 0 ? 'has-stale' : 'no-stale'}">${r.stale > 0 ? '⚠ ' + r.stale : '—'}</span></td>
+          <td><span class="sp-open">${r.open}</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+function renderFunnel(open, won, lost) {
+  const total = proposals.length || 1;
+  const closed = won.length + lost.length;
+  const convRate = closed > 0 ? Math.round(won.length / closed * 100) : 0;
+
+  // Avg cycle time (created → closed_at) for won proposals
+  const cycles = won.filter(p => p.created_at && p.closed_at)
+    .map(p => Math.round((new Date(p.closed_at) - new Date(p.created_at)) / 86400000));
+  const avgCycle = cycles.length > 0 ? Math.round(cycles.reduce((s,d)=>s+d,0)/cycles.length) : null;
+
+  const stages = [
+    { name: 'Total enviadas', count: proposals.length, val: proposals.reduce((s,p)=>s+(Number(p.amount)||0),0), color:'var(--blue)' },
+    { name: 'Em aberto',      count: open.length,      val: open.reduce((s,p)=>s+(Number(p.amount)||0),0),      color:'#8b5cf6' },
+    { name: 'Ganhas',         count: won.length,       val: won.reduce((s,p)=>s+(Number(p.amount)||0),0),        color:'var(--jade)' },
+    { name: 'Perdidas',       count: lost.length,      val: lost.reduce((s,p)=>s+(Number(p.amount)||0),0),       color:'var(--red)' },
+  ];
+  document.getElementById('d-funnel').innerHTML = stages.map(s => `
+    <div class="funnel-item">
+      <div class="funnel-label">
+        <span class="funnel-name">${s.name}</span>
+        <span class="funnel-val">${s.count} · R$ ${fmt(s.val)}</span>
+      </div>
+      <div class="funnel-bar"><div class="funnel-fill" style="width:${Math.round(s.count/total*100)}%;background:${s.color}"></div></div>
+    </div>`).join('') + `
+    <div class="funnel-stats">
+      <span>Conversão geral: <strong>${convRate}%</strong></span>
+      ${avgCycle !== null ? `<span>Ciclo médio: <strong>${avgCycle} dias</strong></span>` : ''}
+      ${closed > 0 ? `<span>Fechadas: <strong>${won.length}/${closed}</strong></span>` : ''}
+    </div>`;
+}
+
+let originChart = null;
+function renderOriginChart() {
+  const LABELS = { indicacao:'Indicação', trafego:'Tráfego', base:'Base', outro:'Outro' };
+  const COLORS = { indicacao:'#34c47a', trafego:'#0071e3', base:'#f59e0b', outro:'#8b5cf6' };
+  const keys = ['indicacao','trafego','base','outro'];
+  const won = proposals.filter(p => p.status === 'won');
+  const totVal = won.reduce((s,p) => s + (Number(p.amount)||0), 0) || 1;
+
+  const rows = keys.map(k => ({
+    key: k, label: LABELS[k], color: COLORS[k],
+    count: won.filter(p => p.origin === k).length,
+    val:   won.filter(p => p.origin === k).reduce((s,p) => s + (Number(p.amount)||0), 0),
+  })).filter(r => r.count > 0).sort((a,b) => b.val - a.val);
+
+  if (!rows.length) {
+    document.getElementById('d-origin').innerHTML = '<div style="color:var(--ink3);font-size:12px;padding:24px 0;text-align:center">Aguardando propostas ganhas</div>';
+    return;
+  }
+  const maxVal = rows[0].val || 1;
+  document.getElementById('d-origin').innerHTML = `
+    <div class="origin-legend">${rows.map(r => `
+      <div class="origin-leg-row">
+        <span class="origin-leg-dot" style="background:${r.color}"></span>
+        <span class="origin-leg-label">${r.label}</span>
+        <span class="origin-leg-val">R$ ${fmt(r.val)}</span>
+        <span class="origin-leg-pct">${Math.round(r.val/totVal*100)}%</span>
+      </div>
+      <div class="funnel-bar" style="margin-bottom:8px"><div class="funnel-fill" style="width:${Math.round(r.val/maxVal*100)}%;background:${r.color}"></div></div>`).join('')}
+    </div>`;
+}
+
+function renderLostReasons() {
+  const lost = proposals.filter(p => p.status === 'lost' && p.lost_reason);
+  if (!lost.length) {
+    document.getElementById('d-lost-reasons').innerHTML = '<div style="color:var(--ink3);font-size:12px;padding:24px 0;text-align:center">Sem dados ainda — registre motivos ao perder propostas</div>';
+    return;
+  }
+  const counts = {};
+  lost.forEach(p => { counts[p.lost_reason] = (counts[p.lost_reason] || 0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const max = sorted[0][1];
+  const compCounts = {};
+  proposals.filter(p => p.status === 'lost' && p.lost_to).forEach(p => {
+    compCounts[p.lost_to] = (compCounts[p.lost_to] || 0) + 1;
+  });
+  const compSorted = Object.entries(compCounts).sort((a,b) => b[1]-a[1]);
+  const compHtml = compSorted.length ? `
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:8px">🏴 Concorrentes que nos venceram</div>
+      ${compSorted.map(([name, n]) => `
+      <div class="funnel-item">
+        <div class="funnel-label">
+          <span class="funnel-name">${esc(name)}</span>
+          <span class="funnel-val">${n}x</span>
+        </div>
+        <div class="funnel-bar"><div class="funnel-fill" style="width:${Math.round(n/compSorted[0][1]*100)}%;background:var(--muted)"></div></div>
+      </div>`).join('')}
+    </div>` : '';
+  document.getElementById('d-lost-reasons').innerHTML = sorted.map(([reason, count]) => `
+    <div class="funnel-item">
+      <div class="funnel-label">
+        <span class="funnel-name">${esc(reason)}</span>
+        <span class="funnel-val">${count} proposta${count!==1?'s':''} · ${Math.round(count/lost.length*100)}%</span>
+      </div>
+      <div class="funnel-bar"><div class="funnel-fill" style="width:${Math.round(count/max*100)}%;background:var(--red)"></div></div>
+    </div>`).join('')+`
+    <div class="funnel-stats"><span>Total perdidas: <strong>${lost.length}</strong></span></div>`+compHtml;
+}
+
+function renderRecent() {
+  const DOT = { open:'var(--blue)', won:'var(--jade)', lost:'var(--red)' };
+  const recent = [...proposals].slice(0, 6);
+  document.getElementById('d-recent').innerHTML = recent.length
+    ? recent.map(p => `
+      <div class="recent-item">
+        <span class="recent-dot" style="background:${DOT[p.status]||'var(--ink3)'}"></span>
+        <span class="recent-client">${esc(p.client_name)}</span>
+        ${p.amount ? `<span class="recent-amount">R$${fmt(p.amount)}</span>` : ''}
+        ${p.seller ? `<span class="recent-seller">${esc(p.seller)}</span>` : ''}
+      </div>`).join('')
+    : '<div style="color:var(--ink3);font-size:12px;padding:8px 0">Nenhuma proposta ainda</div>';
+}
+
+// ── CLIENTS ──
+let clients = [];
+let editingClientId = null;
+
+async function loadClients() {
+  const { data, error } = await sb.from('clients').select('*').order('name');
+  if (!error) clients = data || [];
+}
+
+function renewalInfo(endDate) {
+  if (!endDate) return { label: 'Sem vencimento', cls: 'none', days: null };
+  const days = Math.round((new Date(endDate) - new Date()) / 86400000);
+  if (days < 0)  return { label: 'Vencido', cls: 'expired', days };
+  if (days <= 7)  return { label: `${days}d — CRÍTICO`, cls: 'critical', days };
+  if (days <= 15) return { label: `${days}d — Urgente`, cls: 'warning', days };
+  if (days <= 30) return { label: `${days}d — Renovar`, cls: 'warning', days };
+  return { label: `${days} dias`, cls: 'ok', days };
+}
+
+async function renderClientsView() {
+  await loadClients();
+
+  // KPIs
+  const active = clients.filter(c => c.status === 'active');
+  const mrr = active.reduce((s,c) => s + (Number(c.monthly_value)||0), 0);
+  const expiring30 = active.filter(c => {
+    if (!c.contract_end) return false;
+    const d = Math.round((new Date(c.contract_end) - new Date()) / 86400000);
+    return d >= 0 && d <= 30;
+  }).length;
+  const churned = clients.filter(c => c.status === 'churned').length;
+
+  document.getElementById('cl-kpis').innerHTML = [
+    { label: 'Clientes Ativos', val: active.length, cls: '' },
+    { label: 'MRR', val: 'R$ ' + fmt(mrr), cls: 'green' },
+    { label: 'Renovando em 30d', val: expiring30, cls: expiring30 > 0 ? 'wolf' : '' },
+    { label: 'Cancelados', val: churned, cls: '' },
+  ].map(k => `<div class="dash-card">
+    <div class="dash-kpi-label">${k.label}</div>
+    <div class="dash-kpi-val${k.cls ? ' ' + k.cls : ''}">${k.val}</div>
+  </div>`).join('');
+
+  // Table
+  const statusLabel = { active: 'Ativo', paused: 'Pausado', churned: 'Cancelado' };
+  document.getElementById('cl-tbody').innerHTML = clients.length ? clients.map(c => {
+    const ri = renewalInfo(c.contract_end);
+    return `<tr onclick="openClientEdit('${c.id}')">
+      <td><div class="cl-name">${esc(c.name)}</div><div class="cl-service">${esc(c.service_type||'')}</div></td>
+      <td>${esc(c.seller||'—')}</td>
+      <td><span class="cl-value">${c.monthly_value ? 'R$ ' + fmt(Number(c.monthly_value)) : '—'}</span></td>
+      <td>${c.contract_start ? formatDateBR(c.contract_start) : '—'}</td>
+      <td>${c.contract_end ? formatDateBR(c.contract_end) : '—'}</td>
+      <td><span class="renewal-badge ${ri.cls}">${ri.label}</span></td>
+      <td><span style="font-size:10px;color:var(--ink3)">${statusLabel[c.status]||c.status}</span></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--ink3);padding:32px">Nenhum cliente cadastrado ainda.</td></tr>';
+}
+
+window.openClientAdd = function() {
+  editingClientId = null;
+  document.getElementById('cl-modal-title').textContent = 'Novo Cliente';
+  document.getElementById('cl-delete-btn').style.display = 'none';
+  ['cl-name','cl-service','cl-value','cl-start','cl-end','cl-whatsapp','cl-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('cl-seller').value = '';
+  document.getElementById('cl-status').value = 'active';
+  document.getElementById('ovl-client').classList.add('vis');
+};
+
+window.openClientEdit = function(id) {
+  editingClientId = id;
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('cl-modal-title').textContent = 'Editar Cliente';
+  document.getElementById('cl-delete-btn').style.display = '';
+  document.getElementById('cl-name').value     = c.name || '';
+  document.getElementById('cl-service').value  = c.service_type || '';
+  document.getElementById('cl-value').value    = c.monthly_value || '';
+  document.getElementById('cl-status').value   = c.status || 'active';
+  document.getElementById('cl-start').value    = c.contract_start ? c.contract_start.slice(0,10) : '';
+  document.getElementById('cl-end').value      = c.contract_end ? c.contract_end.slice(0,10) : '';
+  document.getElementById('cl-seller').value   = c.seller || '';
+  document.getElementById('cl-whatsapp').value = c.seller_whatsapp || '';
+  document.getElementById('cl-notes').value    = c.notes || '';
+  document.getElementById('ovl-client').classList.add('vis');
+};
+
+window.closeClientModal = function() {
+  document.getElementById('ovl-client').classList.remove('vis');
+  editingClientId = null;
+};
+
+window.saveClient = async function() {
+  const name = document.getElementById('cl-name').value.trim();
+  if (!name) { alert('Nome do cliente é obrigatório'); return; }
+  const payload = {
+    name,
+    service_type:      document.getElementById('cl-service').value.trim() || null,
+    monthly_value:     Number(document.getElementById('cl-value').value) || null,
+    status:            document.getElementById('cl-status').value || 'active',
+    contract_start:    document.getElementById('cl-start').value || null,
+    contract_end:      document.getElementById('cl-end').value || null,
+    seller:            document.getElementById('cl-seller').value || null,
+    seller_whatsapp:   document.getElementById('cl-whatsapp').value.trim().replace(/\D/g,'') || null,
+    notes:             document.getElementById('cl-notes').value.trim() || null,
+    updated_at:        new Date().toISOString(),
+  };
+  // Remember seller phone
+  if (payload.seller && payload.seller_whatsapp) saveSellerPhone(payload.seller, payload.seller_whatsapp);
+
+  let error;
+  if (editingClientId) {
+    ({ error } = await sb.from('clients').update(payload).eq('id', editingClientId));
+  } else {
+    ({ error } = await sb.from('clients').insert(payload));
+  }
+  if (error) { alert('Erro: ' + error.message); return; }
+  closeClientModal();
+  renderClientsView();
+};
+
+window.deleteClient = async function() {
+  if (!editingClientId) return;
+  if (!confirm('Remover este cliente? Esta ação não pode ser desfeita.')) return;
+  await sb.from('clients').delete().eq('id', editingClientId);
+  closeClientModal();
+  renderClientsView();
+};
+
+// ── ACTIVITY LOG ──
+async function logActivity(proposalId, type, description, actor) {
+  if (!proposalId) return;
+  try {
+    await sb.from('proposal_activities').insert({
+      proposal_id: proposalId,
+      type,
+      description,
+      actor: actor || 'Sistema',
+    });
+  } catch(e) { console.warn('[activity log]', e); }
+}
+
+async function loadTimeline(proposalId) {
+  const container = document.getElementById('edit-timeline');
+  if (!container) return;
+  container.innerHTML = '<div style="color:var(--ink3);font-size:11px">Carregando...</div>';
+  const { data } = await sb.from('proposal_activities')
+    .select('*')
+    .eq('proposal_id', proposalId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (!data || !data.length) {
+    container.innerHTML = '<div style="color:var(--ink3);font-size:11px">Sem histórico ainda</div>';
+    return;
+  }
+  const ICONS = { created:'✨', won:'🏆', lost:'❌', edit:'✏️', view:'👁', note:'📝', stale:'⚠️' };
+  container.innerHTML = data.map(a => `
+    <div class="timeline-item">
+      <span class="timeline-icon">${ICONS[a.type] || '•'}</span>
+      <div>
+        <div class="timeline-desc">${esc(a.description)}</div>
+        <div class="timeline-meta">${esc(a.actor || 'Sistema')} · ${new Date(a.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>`).join('');
+}
 
 // ── REALTIME ──
 sb.channel('proposals-rt')
@@ -1086,8 +3070,45 @@ sb.channel('proposals-rt')
     if (status === 'TIMED_OUT') console.warn('[RT] Timeout na conexao realtime');
   });
 
+// ── MOBILE NAV ──
+function syncMobileNav(view) {
+  document.querySelectorAll('.mobile-nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.view === view);
+  });
+}
+const _origSwitchView = window.switchView;
+window.switchView = function(view) {
+  _origSwitchView(view);
+  syncMobileNav(view);
+};
+
 // ── INIT ──
+renderKanbanColumns();
 loadProposals();
 </script>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav">
+  <button class="mobile-nav-item active" data-view="dashboard" onclick="switchView('dashboard')">
+    <span class="mobile-nav-icon">◈</span>
+    <span>Dashboard</span>
+  </button>
+  <button class="mobile-nav-item" data-view="pipeline" onclick="switchView('pipeline')">
+    <span class="mobile-nav-icon">⊞</span>
+    <span>Pipeline</span>
+  </button>
+  <button class="mobile-nav-item fab" onclick="openNewProposal()">
+    <span class="mobile-nav-icon">+</span>
+    <span>Nova</span>
+  </button>
+  <button class="mobile-nav-item" data-view="clients" onclick="switchView('clients')">
+    <span class="mobile-nav-icon">♟</span>
+    <span>Clientes</span>
+  </button>
+  <button class="mobile-nav-item" data-view="gerenciar" onclick="openGerenciar()">
+    <span class="mobile-nav-icon">⚙</span>
+    <span>Gerenciar</span>
+  </button>
+</nav>
 </body>
 </html>

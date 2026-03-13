@@ -10,17 +10,14 @@
   "rewrites": [
     {
       "source": "/proposta/:slug",
-      "destination": "https://dqhiafxbljujahmpcdhf.supabase.co/storage/v1/object/public/proposals/:slug.html"
+      "destination": "/api/proposta?slug=:slug"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
     }
   ],
   "headers": [
-    {
-      "source": "/proposta/:slug",
-      "headers": [
-        { "key": "Content-Type", "value": "text/html; charset=utf-8" },
-        { "key": "Content-Security-Policy", "value": "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;" }
-      ]
-    },
     {
       "source": "/api/(.*)",
       "headers": [
