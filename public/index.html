@@ -2327,7 +2327,7 @@ window.generateProposal = async function() {
   statusEl.className = 'prompt-status';
 
   try {
-    const parseEndpoint = isLocal ? `${BRIDGE_API}/parse-proposal` : `/api/parse-proposal`;
+    const parseEndpoint = isLocal ? `${BRIDGE_API}/parse-proposal` : `${BRIDGE_API}/api/parse-proposal`;
     const res = await fetch(parseEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2494,7 +2494,7 @@ window.saveProposalContent = async function() {
   statusEl.className = 'prompt-status';
 
   try {
-    const endpoint = isLocal ? `${BRIDGE_API}/update-proposal` : '/api/update-proposal';
+    const endpoint = isLocal ? `${BRIDGE_API}/update-proposal` : `${BRIDGE_API}/api/update-proposal`;
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
