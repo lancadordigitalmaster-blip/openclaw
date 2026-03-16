@@ -1,8 +1,9 @@
 <!DOCTYPE html>
+<!-- Wolf Comercial v20260316 -->
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Wolf — Comercial</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4/dist/chart.umd.min.js"></script>
@@ -29,7 +30,8 @@
   --m: 'Geist Mono', monospace;
 }
 
-html, body { height: 100%; overflow: hidden; }
+html { height: 100%; }
+body { height: 100%; height: 100dvh; overflow: hidden; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -674,7 +676,8 @@ select.fi {
 }
 @media (max-width: 600px) {
   .sidebar { display: none; }
-  body { padding-bottom: 60px; }
+  /* Espaço para o nav fixo inferior */
+  .main-wrap { padding-bottom: 64px; }
 
   /* Topbar mobile */
   .top { padding: 0 14px; height: 52px; }
@@ -688,14 +691,15 @@ select.fi {
   .clients-kpis { padding: 12px 14px 0; gap: 10px; grid-template-columns: repeat(2,1fr); }
   .clients-header { padding: 12px 14px 0; }
   .cl-table-wrap { border-radius: 0; border-left: none; border-right: none; }
-  .sp-table th:nth-child(5), .sp-table td:nth-child(5) { display: none; } /* hide ciclo on mobile */
+  .sp-table th:nth-child(5), .sp-table td:nth-child(5) { display: none; }
 
-  /* Kanban horizontal scroll on mobile */
+  /* Kanban mobile — colunas com 82vw, scroll horizontal por toque */
   .col { width: 82vw; min-width: 82vw; }
-  /* Cards not draggable on mobile */
-  .card { cursor: pointer; }
+  .kanban { touch-action: pan-x; -webkit-overflow-scrolling: touch; }
+  .col-body { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+  .card { cursor: pointer; touch-action: manipulation; }
 
-  /* Modal mobile fixes */
+  /* Modal mobile */
   .modal, .modal-lg { max-width: 100vw; width: 100vw; border-radius: 16px 16px 0 0; max-height: 95vh; }
   .ovl.vis { align-items: flex-end; }
   .mb { padding: 16px; }
@@ -710,9 +714,9 @@ select.fi {
   .mb label { font-size: 12px; margin-bottom: 6px; }
   .card-cta { padding: 11px 6px; font-size: 12px; }
   .card-cta.cta-icon { max-width: 44px; height: 42px; }
-  .funnel-subnav { overflow-x: auto; }
+  .funnel-subnav { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-  /* Mobile bottom nav */
+  /* Mobile bottom nav visível */
   .mobile-nav { display: flex; }
 }
 
