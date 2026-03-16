@@ -1288,7 +1288,7 @@ select.fi {
         </div>
       </div>
       <div style="margin-top:10px">
-        <label>Sobre o cliente <span style="color:var(--wolf)">*</span> <span style="font-size:11px;color:var(--muted);font-weight:400">— quem é, seu negócio/nicho, momento atual</span></label>
+        <label>Sobre o cliente <span style="font-size:11px;color:var(--muted);font-weight:400">— quem é, seu negócio/nicho, momento atual (opcional)</span></label>
         <textarea class="fi" id="q-about" rows="3" placeholder="Ex: João é médico ortopedista com clínica própria há 8 anos em Salvador. Quer construir autoridade no Instagram para atrair mais pacientes particulares e lançar um curso online de reabilitação." style="resize:vertical;min-height:80px;line-height:1.5"></textarea>
       </div>
       <div class="row2" style="margin-top:10px">
@@ -2316,7 +2316,7 @@ window.generateProposal = async function() {
 
   if (!clientName) { statusEl.textContent = 'Informe o nome do cliente'; statusEl.className = 'prompt-status error'; return; }
   if (!serviceType) { statusEl.textContent = 'Selecione o tipo de serviço'; statusEl.className = 'prompt-status error'; return; }
-  if (!aboutClient) { statusEl.textContent = 'Descreva o cliente (quem é, negócio, momento)'; statusEl.className = 'prompt-status error'; return; }
+
   if (!value) { statusEl.textContent = 'Informe o valor mensal'; statusEl.className = 'prompt-status error'; return; }
   if (!seller) { statusEl.textContent = '⚠ Vendedor não selecionado — será criada sem responsável. Corrija depois no card.'; statusEl.className = 'prompt-status'; }
 

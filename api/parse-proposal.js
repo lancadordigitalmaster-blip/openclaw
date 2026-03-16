@@ -114,13 +114,10 @@ module.exports = async function handler(req, res) {
     const templateName = String(template || 'classic').toLowerCase();
     const templateHTML = TEMPLATES[templateName] || TEMPLATES.classic;
 
-    const isStructured = !!(structured && structured.client_name && structured.service_type && structured.about_client);
+    const isStructured = !!(structured && structured.client_name && structured.service_type);
 
     if (!isStructured && (!text || text.length < 50)) {
       return jsonError(res, 400, 'Texto da proposta muito curto (minimo 50 chars)');
-    }
-    if (isStructured && !structured.about_client) {
-      return jsonError(res, 400, 'Descreva o cliente (quem é, negócio, momento)');
     }
 
     // Build prompt based on input mode
