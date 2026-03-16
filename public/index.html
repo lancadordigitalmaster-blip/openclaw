@@ -1320,7 +1320,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // Bridge API — auto-detect: local (Mac Mini) ou Vercel serverless
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const BRIDGE_API = isLocal ? 'http://127.0.0.1:3002' : '';
+const BRIDGE_API = isLocal ? 'http://127.0.0.1:3002' : window.location.origin;
 
 let proposals = [];
 let editingId = null;
