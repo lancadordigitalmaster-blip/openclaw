@@ -93,7 +93,7 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
 $METRICS"
     for i in "${ISSUES[@]}"; do MSG="$MSG
 - $i"; done
-    wolf_telegram "$MSG"
+    wolf_log "turbo" "$MSG"
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, performance critica — ${#ISSUES[@]} problema(s). ${WS_SIZE} workspace, disco ${DISK_PCT}%." "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     wolf_mission_move "$MID" "done" "$DESCRIPTION"

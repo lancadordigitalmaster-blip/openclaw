@@ -94,7 +94,7 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     MSG="Craft detectou ${#ISSUES[@]} problema(s) de qualidade:"
     for i in "${ISSUES[@]}"; do MSG="$MSG
 - $i"; done
-    wolf_telegram "$MSG"
+    wolf_log "craft" "$MSG"
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, qualidade: ${#ISSUES[@]} problema(s). $TOTAL_SCRIPTS scripts, $TOTAL_AGENTS agents verificados." "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     wolf_mission_move "$MID" "done" "$DESCRIPTION"

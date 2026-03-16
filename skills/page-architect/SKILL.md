@@ -10,7 +10,7 @@
 
 ## Description
 
-Recebe texto de proposta (formato slides) e gera página HTML cinematográfica com deploy automático no Netlify.
+Recebe texto de proposta (formato slides) e gera página HTML cinematográfica com deploy automático no Vercel.
 
 **NÃO gere HTML manualmente.** Use a ferramenta `build_proposal` que monta tudo automaticamente.
 
@@ -96,12 +96,12 @@ build_proposal({
 
 ### Passo 3 — Enviar o link
 
-A ferramenta gera o HTML, faz deploy no Netlify e retorna a URL. Envie ao solicitante:
+A ferramenta gera o HTML, faz deploy no Vercel e retorna a URL. Envie ao solicitante:
 
 ```
 ✅ Proposta gerada para [Cliente]!
 
-🔗 https://wolfpack-br.netlify.app/[slug]
+🔗 https://propostas.wolfpacks.com.br/[slug]
 
 Abra no navegador para ver a proposta completa com animações.
 ```
@@ -122,12 +122,13 @@ Abra no navegador para ver a proposta completa com animações.
 | Fechamento | `close.heading`, `close.body`, `close.cta_text` |
 ---
 
-## Sites Netlify
+## Deploy
 
-| Site | URL | Uso |
-|------|-----|-----|
-| **wolfpack-br** | `wolfpack-br.netlify.app/[slug]` | Propostas de produção (clientes reais) |
-| **wolfpack-lab** | `wolfpack-lab.netlify.app/[slug]` | Testes de novos templates |
+| URL | Uso |
+|-----|-----|
+| `propostas.wolfpacks.com.br/[slug]` | Todas as propostas |
+
+**SEMPRE** usar `propostas.wolfpacks.com.br` como URL pública. Nunca expor URLs internas (Vercel, Netlify, etc.) para o cliente.
 
 ---
 
@@ -135,13 +136,13 @@ Abra no navegador para ver a proposta completa com animações.
 
 - **NUNCA** gerar HTML manualmente — SEMPRE usar `build_proposal`
 - **NUNCA** colar código na conversa
-- **NUNCA** inventar dados — usar APENAS o que está nos slides
+- **NUNCA** inventar dados — usar APENAS o que está nos slides ou no input do vendedor
 - **NUNCA** mexer no template `proposal-template.html` sem aprovação explícita
 - WhatsApp padrão: `5573991484716` (Wolf Agency)
 - Usar `**negrito**` nos bio_paragraphs para destaques (o script converte para `<strong>`)
 - Se algum campo não estiver nos slides, omitir (o script usa defaults)
-- Deploy de produção: `wolfpack-br` | Deploy de teste: `wolfpack-lab`
+- URL pública: SEMPRE `propostas.wolfpacks.com.br` — nunca expor URLs internas
 
 ---
 
-*Agente: Pixel | Versão: 2.0 | Criado: 2026-03-09*
+*Agente: Pixel | Versão: 2.1 | Atualizado: 2026-03-13*

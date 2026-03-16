@@ -20,14 +20,6 @@ MAX_RESTARTS_PER_HOUR=3
 
 # Carregar .env (tokens, Supabase, etc)
 source "$OPENCLAW_HOME/.env" 2>/dev/null
-TELEGRAM_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
-TELEGRAM_CHAT="${TELEGRAM_CHAT_ID:-}"
-
-send_telegram() {
-  [ -z "$TELEGRAM_TOKEN" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT}" -d "text=$1" --max-time 10 2>/dev/null || true
-}
 SUPABASE_URL="${SUPABASE_URL:-}"
 SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-}"
 ALFRED_AGENT_ID="a1abe880-f1e3-40aa-bb62-0f748f5ac2c2"
@@ -187,7 +179,7 @@ lines.append('')
 lines.append('Sistema operacional. Nenhuma acao necessaria.')
 print('\n'.join(lines))
 " 2>/dev/null || echo "[Auto-Heal] $ACTIONS")
-  send_telegram "$HEAL_MSG"
+  wolf_notify "$HEAL_MSG"
   echo "HEALED: $ACTIONS"
 else
   echo "HEALTHY"

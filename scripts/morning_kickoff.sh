@@ -15,15 +15,10 @@ DAY_NAME=$(LANG=pt_BR.UTF-8 date '+%A' 2>/dev/null || date '+%A' | sed 's/Monday
 mkdir -p "$(dirname "$LOG_FILE")"
 log() { echo "[$TIMESTAMP] $1" >> "$LOG_FILE"; }
 
-source "$HOME/.openclaw/.env" 2>/dev/null
-send_telegram() {
-  [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" -d "parse_mode=Markdown" -d "text=$1" --max-time 10 2>/dev/null || true
-}
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 if [ ! -f "$QUEUE" ]; then
-  send_telegram "Netto, nao encontrei o QUEUE.md. Algo pode ter saido do lugar — preciso de uma olhada."
+  wolf_notify "Netto, nao encontrei o QUEUE.md. Algo pode ter saido do lugar — preciso de uma olhada."
   log "ERROR: QUEUE.md not found"
   exit 1
 fi
@@ -52,7 +47,7 @@ fi
 
 Tem $BLOCKED coisa(s) travada(s) esperando input teu."
 
-send_telegram "$MSG"
+wolf_notify "$MSG"
 
 # Atualizar metricas no QUEUE.md
 sed -i '' "s/- Total pendente: .*/- Total pendente: $TOTAL_OPEN/" "$QUEUE" 2>/dev/null || true

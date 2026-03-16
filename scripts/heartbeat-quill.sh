@@ -106,7 +106,7 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     MSG="Quill detectou ${#ISSUES[@]} problema(s) de documentacao:"
     for i in "${ISSUES[@]}"; do MSG="$MSG
 - $i"; done
-    wolf_telegram "$MSG"
+    wolf_log "quill" "$MSG"
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, documentacao com ${#ISSUES[@]} problema(s). $TOTAL_MD docs no workspace." "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     wolf_mission_move "$MID" "done" "$DESCRIPTION"

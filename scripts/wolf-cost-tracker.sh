@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 LOG="/tmp/wolf-cost-tracker.log"
 REPORT_FILE="/tmp/wolf-cost-report-$(date '+%Y-%m-%d').txt"
 TELEMETRY="$HOME/.openclaw/logs/token-telemetry.jsonl"
@@ -225,7 +229,7 @@ if os.path.exists(report_path):
 
 print(urllib.parse.quote('\n'.join(lines)))
 ")
-    curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${MSG}&parse_mode=" 2>/dev/null || true
+    wolf_log "cost-tracker" "${MSG}"
     echo "[$TIMESTAMP] Daily report sent to Telegram" >> "$LOG"
 
   elif [[ "$STATUS" == "ESTOURO" || "${SESSIONS:-0}" -gt "$SESSION_ALERT_THRESHOLD" ]]; then
@@ -235,7 +239,7 @@ print(urllib.parse.quote('\n'.join(lines)))
     else
       MSG="⚠️ Wolf Cost | ATENCAO%0A%0A${SESSIONS} sessoes hoje (limite: ${SESSION_ALERT_THRESHOLD})%0ACusto: \$${COST}%0A%0AVolume alto de sessoes."
     fi
-    curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${MSG}" 2>/dev/null || true
+    wolf_log "cost-tracker" "${MSG}"
     echo "[$TIMESTAMP] Alert sent to Telegram (status=$STATUS)" >> "$LOG"
   fi
 fi

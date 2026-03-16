@@ -7,6 +7,10 @@
 set -euo pipefail
 
 set -a
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 source "$HOME/.openclaw/.env"
 set +a
 TELEGRAM_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
@@ -192,9 +196,7 @@ if [[ ${#RESULT} -gt 3800 ]]; then
     part=$(echo "$part" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     if [[ -z "$part" ]]; then continue; fi
     if [[ $(( ${#MSG} + ${#part} )) -gt 3800 ]]; then
-      curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-        -d chat_id="$CHAT_ID" \
-        --data-urlencode "text=$MSG" >> "$LOG" 2>&1
+      wolf_notify "$MSG"
       MSG="$part"
     else
       MSG="$MSG
@@ -204,14 +206,10 @@ $part"
   done
   # Send remaining
   if [[ -n "$MSG" ]]; then
-    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-      -d chat_id="$CHAT_ID" \
-      --data-urlencode "text=$MSG" >> "$LOG" 2>&1
+    wolf_notify "$MSG"
   fi
 else
-  curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-    -d chat_id="$CHAT_ID" \
-    --data-urlencode "text=$RESULT" >> "$LOG" 2>&1
+  wolf_notify "$RESULT"
 fi
 
 # Cleanup temp files

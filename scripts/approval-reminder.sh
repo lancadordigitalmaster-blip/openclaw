@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 WORKSPACE="${WORKSPACE:-$HOME/.openclaw/workspace}"
 ENV_FILE="$HOME/.openclaw/.env"
 
@@ -55,8 +59,5 @@ Responde SIM ou NAO pra cada uma no Telegram."
 echo "[approval-reminder] $COUNT pendencia(s) — notificando"
 
 if [ -n "$BOT_TOKEN" ]; then
-    curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-        -H "Content-Type: application/json" \
-        -d "{\"chat_id\": \"$CHAT_ID\", \"text\": $(echo "$MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}" \
-        > /dev/null 2>&1
+    wolf_notify "$MSG"
 fi

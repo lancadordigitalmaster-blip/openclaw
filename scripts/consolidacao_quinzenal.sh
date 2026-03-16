@@ -15,12 +15,7 @@ DATE_DISPLAY=$(date '+%d/%m/%Y')
 mkdir -p "$(dirname "$LOG_FILE")" "$DAILY"
 log() { echo "[$TIMESTAMP] $1" >> "$LOG_FILE"; }
 
-source "$HOME/.openclaw/.env" 2>/dev/null
-send_telegram() {
-  [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" -d "parse_mode=Markdown" -d "text=$1" --max-time 10 2>/dev/null || true
-}
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 # Listar notas dos ultimos 15 dias
 NOTES=$(find "$DAILY" -name "*.md" -mtime -15 2>/dev/null | sort)
@@ -63,6 +58,6 @@ Passei por *$NOTE_COUNT notas* dos ultimos 15 dias e encontrei *$ITEMS_FOUND ite
 
 Tudo registrado no DONE.md."
 
-send_telegram "$MSG"
+wolf_notify "$MSG"
 log "Consolidacao concluida — $NOTE_COUNT notas, $ITEMS_FOUND itens"
 echo "OK: consolidacao_quinzenal completed at $TIMESTAMP"

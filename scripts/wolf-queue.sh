@@ -10,7 +10,9 @@ LOG="/tmp/wolf-queue.log"
 AGENDA="$HOME/.openclaw/workspace/memory/agenda-alfred.md"
 QUEUE_FILE="$HOME/.openclaw/workspace/tasks/QUEUE.md"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-GATEWAY_TOKEN="b52639408a26e05b9170423402be3068db69ae001d4b0610"
+# Load GATEWAY_TOKEN from .env
+GATEWAY_TOKEN=$(grep '^GATEWAY_TOKEN=' "$HOME/.openclaw/.env" 2>/dev/null | cut -d= -f2)
+if [[ -z "$GATEWAY_TOKEN" ]]; then echo "[$TIMESTAMP] ERRO: GATEWAY_TOKEN não encontrado no .env" >> "$LOG"; exit 1; fi
 
 # ============================================================
 # GUARD — So continua se ha trabalho real

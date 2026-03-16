@@ -8,6 +8,15 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 WORKSPACE="$HOME/.openclaw/workspace"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+# ── Error trap — notifica Telegram se script travar ────────────────────────
+trap 'EXIT_CODE=$?; if [ $EXIT_CODE -ne 0 ]; then
+  curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+    -d "chat_id=789352357" \
+    -d "text=⚠️ morning-brief.sh falhou (código $EXIT_CODE) às $(date +%H:%M). Ver log: memory/logs/morning-brief.log" \
+    > /dev/null 2>&1 || true
+  echo "[$TIMESTAMP] ERRO: script falhou com código $EXIT_CODE" >> "$LOG"
+fi' EXIT
 LOG="$WORKSPACE/memory/logs/morning-brief.log"
 mkdir -p "$(dirname "$LOG")"
 log() { echo "[$TIMESTAMP] $1" | tee -a "$LOG"; }

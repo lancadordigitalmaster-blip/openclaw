@@ -13,7 +13,7 @@ WOLF_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 WOLF_SVC_KEY="${SUPABASE_SERVICE_ROLE_KEY:-}"
 WOLF_WORKSPACE="$HOME/.openclaw/workspace"
 
-# Enviar mensagem Telegram
+# Enviar mensagem Telegram (legado — usar wolf_notify para novo código)
 wolf_telegram() {
     local msg="$1"
     local chat_id="${2:-$WOLF_CHAT_ID}"
@@ -22,6 +22,29 @@ wolf_telegram() {
         -H "Content-Type: application/json" \
         -d "{\"chat_id\": \"$chat_id\", \"text\": $(echo "$msg" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}" \
         > /dev/null 2>&1
+}
+
+# Enviar mensagem WhatsApp via Bridge API (porta 3002)
+# Uso: wolf_whatsapp "mensagem" ["557391484716"]
+WOLF_WHATSAPP_BRIDGE="http://127.0.0.1:3002/send"
+WOLF_NETTO_WHATSAPP="${NETTO_WHATSAPP:-557391484716}"
+
+wolf_whatsapp() {
+    local msg="$1"
+    local to="${2:-$WOLF_NETTO_WHATSAPP}"
+    local payload=$(python3 -c "import json; print(json.dumps({'to': '$to', 'text': '''$msg'''}))" 2>/dev/null)
+    curl -s -X POST "$WOLF_WHATSAPP_BRIDGE" \
+        -H "Content-Type: application/json" \
+        -d "$payload" \
+        --max-time 10 > /dev/null 2>&1
+}
+
+# Notificacao unificada: WhatsApp only (Telegram apenas para programar)
+# Uso: wolf_notify "mensagem"
+wolf_notify() {
+    local msg="$1"
+    local to="${2:-$WOLF_NETTO_WHATSAPP}"
+    wolf_whatsapp "$msg" "$to"
 }
 
 # ================================================================

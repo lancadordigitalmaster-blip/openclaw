@@ -517,6 +517,17 @@ select.fi {
         </div>
       </div>
       <div style="margin-bottom:12px">
+        <label>Tipo de Serviço (selecione um ou mais)</label>
+        <div id="new-services" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s"><input type="checkbox" value="social-media" style="accent-color:var(--accent)"> Gestão de Redes Sociais</label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s"><input type="checkbox" value="trafego-pago" style="accent-color:var(--accent)"> Tráfego Pago</label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s"><input type="checkbox" value="branding" style="accent-color:var(--accent)"> Branding</label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s"><input type="checkbox" value="producao-conteudo" style="accent-color:var(--accent)"> Produção de Conteúdo</label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s"><input type="checkbox" value="estrategia-digital" style="accent-color:var(--accent)"> Estratégia Digital</label>
+          <label style="display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s"><input type="checkbox" value="site-lp" style="accent-color:var(--accent)"> Site / Landing Page</label>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
         <label>WhatsApp do vendedor (para botão "Aceitar proposta")</label>
         <input class="fi" id="new-whatsapp" type="tel" placeholder="5573991484716" style="font-family:var(--font-mono,monospace);letter-spacing:.5px">
       </div>
@@ -947,6 +958,7 @@ window.generateProposal = async function() {
   const origin = document.getElementById('new-origin').value;
   const whatsapp = document.getElementById('new-whatsapp').value.trim().replace(/\D/g, '') || undefined;
   const proposalText = document.getElementById('new-proposal-text').value.trim();
+  const selectedServices = [...document.querySelectorAll('#new-services input:checked')].map(cb => cb.value);
   const statusEl = document.getElementById('new-status');
   const btn = document.getElementById('btn-generate');
 
@@ -972,6 +984,7 @@ window.generateProposal = async function() {
         origin: origin || undefined,
         proposal_code: code,
         whatsapp: whatsapp || undefined,
+        selected_services: selectedServices.length > 0 ? selectedServices : undefined,
       }),
     });
     const result = await res.json();
@@ -996,6 +1009,7 @@ window.generateProposal = async function() {
           if (code) updates.proposal_code = code;
           if (seller) updates.seller = seller;
           if (origin) updates.origin = origin;
+          if (selectedServices.length > 0) updates.service_type = selectedServices.join(' + ');
           if (Object.keys(updates).length > 0) {
             await sb.from('proposals').update(updates).eq('id', targetId);
           }

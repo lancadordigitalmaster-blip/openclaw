@@ -73,7 +73,7 @@ OpenClaw Gateway (porta 18789)
 4. **Crons usam Haiku 4.5** — nunca usar modelos sem function calling para crons com tools
 5. **delivery.mode: "none"** em todos os crons — evita duplicatas
 6. **Nunca expor API keys** em logs ou mensagens
-7. **Meta Ads token esta EXPIRADO** — Netto precisa gerar novo
+7. **Meta Ads tokens validos** — 3 tokens ativos (expiram 2026-05-12), sync automatico via wolf-traffic-command
 8. **Sessions acumulam:** se Alfred travar, limpar `~/.openclaw/agents/main/sessions/sessions.json` + restart
 9. **Ferramenta com falha:** retry 2x → abordagem alternativa → so escalar pro usuario em ultimo caso
 10. **skills/_archive/** contem 11 skills arquivadas — nao usar

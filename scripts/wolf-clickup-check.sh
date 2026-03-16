@@ -5,6 +5,13 @@
 # ============================================================
 set -euo pipefail
 
+# DESATIVADO por Netto em 2026-03-10 — dados incorretos, reorganizando ClickUp
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
+exit 0
+
 set -a
 source "$HOME/.openclaw/.env"
 set +a
@@ -210,9 +217,6 @@ if [[ -z "$TELEGRAM_TOKEN" ]]; then
   exit 1
 fi
 
-curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-  -d chat_id="$CHAT_ID" \
-  --data-urlencode "text=$RESULT" \
-  >> "$LOG" 2>&1
+wolf_notify "$RESULT"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Enviado com sucesso" >> "$LOG"

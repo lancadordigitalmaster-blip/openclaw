@@ -1,8 +1,8 @@
 # Modo Sono — Rotina de Fechamento Diario Autonomo
 
-## Status: LATENTE
-> Skill criada mas nao ativada como cron. Aguarda infraestrutura de changelogs.
-> Para ativar: criar diretorio `changelogs/` e cron entre 00:00-05:00.
+## Status: ATIVO
+> Ativado em 2026-03-13. Cron diario 00:30 via crontab.
+> Diretorio changelogs/ criado. Provider: Haiku 4.5 (via gateway).
 
 ## Identidade
 - **Nome:** modo-sono
@@ -59,7 +59,7 @@ SEMPRE: preservar changelog original, registrar execucao, ser honesto na avaliac
 
 ```yaml
 modo_sono:
-  ativo: false  # LATENTE — ativar quando changelogs/ existir
+  ativo: true  # ATIVADO 2026-03-13
   horario_inicio: "00:00"
   horario_limite: "05:00"
   inatividade_minutos: 30
@@ -69,7 +69,7 @@ modo_sono:
   log_path: "./changelogs/modo-sono.log"
   notificacao: true  # via Telegram
   idioma_relatorio: "pt-BR"
-  provider_analise: "kimi-k2.5"
+  provider_analise: "anthropic/claude-haiku-4-5-20251001"
 ```
 
 ## Pre-requisitos para Ativacao

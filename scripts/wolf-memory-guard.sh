@@ -5,6 +5,10 @@
 # ============================================================
 set -euo pipefail
 
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 WORKSPACE="$HOME/.openclaw/workspace"
 TODAY=$(date '+%Y-%m-%d')
 LOG="/tmp/wolf-memory-guard.log"
@@ -162,4 +166,42 @@ find /tmp/openclaw/ -type f -mtime +7 -delete 2>/dev/null || true
 # Trim memory-guard log
 if [[ -f "$LOG" ]] && [[ $(wc -l < "$LOG" 2>/dev/null || echo 0) -gt 200 ]]; then
   tail -100 "$LOG" > "${LOG}.tmp" && mv "${LOG}.tmp" "$LOG"
+fi
+
+# ============================================================
+# SESSION LEAK DETECTION
+# ============================================================
+
+SESSIONS_FILE="$HOME/.openclaw/agents/main/sessions/sessions.json"
+if [[ -f "$SESSIONS_FILE" ]]; then
+  # Load Telegram creds for alerts
+  _ENV="$HOME/.openclaw/.env"
+  _TG_TOKEN=$(grep '^TELEGRAM_BOT_TOKEN=' "$_ENV" 2>/dev/null | cut -d= -f2)
+  _TG_CHAT=$(grep '^TELEGRAM_CHAT_ID=' "$_ENV" 2>/dev/null | cut -d= -f2)
+  _send_tg() {
+    [[ -z "${_TG_TOKEN:-}" || -z "${_TG_CHAT:-}" ]] && return
+    wolf_notify "$1"
+  }
+
+  # Count sessions
+  SESSION_COUNT=$(python3 -c "import json; d=json.load(open('$SESSIONS_FILE')); print(len(d))" 2>/dev/null || echo 0)
+  if [[ "$SESSION_COUNT" -gt 15 ]]; then
+    _send_tg "⚠️ $SESSION_COUNT sessões acumuladas — considere limpar sessions.json"
+    echo "[$TIMESTAMP] WARN: $SESSION_COUNT sessions accumulated" >> "$LOG"
+  fi
+
+  # Check file size
+  SESS_SIZE=$(wc -c < "$SESSIONS_FILE" 2>/dev/null || echo 0)
+  if [[ "$SESS_SIZE" -gt 512000 ]]; then
+    SESS_HUMAN=$(du -h "$SESSIONS_FILE" | cut -f1)
+    _send_tg "⚠️ sessions.json com $SESS_HUMAN — risco de travamento"
+    echo "[$TIMESTAMP] WARN: sessions.json size $SESS_HUMAN" >> "$LOG"
+  fi
+
+  # Check if file not modified in 24h (may indicate stale sessions)
+  SESS_AGE=$(( $(date +%s) - $(stat -f %m "$SESSIONS_FILE" 2>/dev/null || echo 0) ))
+  if [[ "$SESS_AGE" -gt 86400 ]] && [[ "$SESSION_COUNT" -gt 0 ]]; then
+    _send_tg "⚠️ sessions.json não atualizado há $(( SESS_AGE / 3600 ))h com $SESSION_COUNT sessões — pode ter sessões antigas"
+    echo "[$TIMESTAMP] WARN: sessions.json stale (${SESS_AGE}s)" >> "$LOG"
+  fi
 fi

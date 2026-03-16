@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wolf-reminders.py — Sistema unificado de lembretes via Telegram (zero LLM)
+"""wolf-reminders.py — Sistema unificado de lembretes via WhatsApp (zero LLM)
 
 Uso:
     python3 wolf-reminders.py                  # envia lembrete da hora atual
@@ -25,6 +25,8 @@ from pathlib import Path
 ENV_FILE = Path.home() / ".openclaw" / ".env"
 WORKSPACE = Path.home() / ".openclaw" / "workspace"
 LOG_DIR = WORKSPACE / "memory" / "logs"
+WHATSAPP_BRIDGE = "http://127.0.0.1:3002/send"
+NETTO_WHATSAPP = os.environ.get("NETTO_WHATSAPP", "557391484716")
 
 def load_env():
     """Carrega variáveis do .env"""
@@ -39,25 +41,21 @@ def load_env():
                 os.environ.setdefault(key.strip(), val)
     return env
 
-def send_telegram(text, bot_token=None, chat_id=None):
-    """Envia mensagem pro Telegram sem dependências externas"""
-    token = bot_token or os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    cid = chat_id or os.environ.get("TELEGRAM_CHAT_ID", "789352357")
-
-    if not token:
-        print("[wolf-reminders] TELEGRAM_BOT_TOKEN vazio")
-        return False
-
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    data = json.dumps({"chat_id": cid, "text": text, "parse_mode": "Markdown"}).encode()
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-
+def send_whatsapp(text, to=None):
+    """Envia mensagem via WhatsApp Bridge API (porta 3002)"""
+    to = to or os.environ.get("NETTO_WHATSAPP", NETTO_WHATSAPP)
+    payload = json.dumps({"to": to, "text": text}).encode()
+    req = urllib.request.Request(WHATSAPP_BRIDGE, data=payload, headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return resp.status == 200
     except Exception as e:
-        print(f"[wolf-reminders] Erro Telegram: {e}")
+        print(f"[wolf-reminders] Erro WhatsApp Bridge: {e}")
         return False
+
+def notify(text):
+    """Envia via WhatsApp (sem fallback Telegram)"""
+    return send_whatsapp(text)
 
 # ── Lembretes de Água ──
 AGUA_MSGS = {
@@ -108,7 +106,7 @@ def lembrete_agua():
     hora = datetime.now().hour
     msgs = AGUA_MSGS.get(hora, ["Netto, bebe água."])
     msg = random.choice(msgs)
-    if send_telegram(msg):
+    if notify(msg):
         print(f"[agua] Enviado ({hora}h): {msg}")
     return True
 
@@ -135,7 +133,7 @@ def lembrete_approvals():
     names = "\n".join(f"- {p.get('actionName', p.get('name', 'sem nome'))}" for p in pending)
     msg = f"Netto, tem {len(pending)} proposta(s) esperando tua resposta:\n\n{names}\n\nResponde SIM ou NÃO pra cada uma no Telegram."
 
-    if send_telegram(msg):
+    if notify(msg):
         print(f"[approvals] {len(pending)} pendência(s) notificadas")
     return True
 

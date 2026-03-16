@@ -7,6 +7,7 @@ Zero LLM. Roda via cron a cada 15 min.
 
 import imaplib
 import email
+import socket
 from email.header import decode_header
 import json
 import os
@@ -14,6 +15,9 @@ import requests
 from datetime import datetime
 from pathlib import Path
 from dotenv import dotenv_values
+
+# Timeout global para conexoes IMAP (evita hang infinito)
+socket.setdefaulttimeout(20)
 
 # ── Configuração ─────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent.parent
@@ -88,18 +92,23 @@ def classify_email(subject, sender):
             return pattern["emoji"], pattern["label"]
     return None, None
 
-def send_telegram(message):
-    if not BOT_TOKEN or not CHAT_ID:
-        print("Telegram não configurado.")
-        return
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
+def send_whatsapp(message, to=None):
+    """Envia via WhatsApp Bridge API (porta 3002)"""
+    import urllib.request as ur
+    to = to or os.environ.get("NETTO_WHATSAPP", "557391484716")
+    import json as _json
+    payload = _json.dumps({"to": to, "text": message}).encode()
+    req = ur.Request("http://127.0.0.1:3002/send", data=payload, headers={"Content-Type": "application/json"})
     try:
-        r = requests.post(url, json=payload, timeout=10)
-        r.raise_for_status()
-        print(f"Telegram enviado: {r.status_code}")
+        with ur.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
     except Exception as e:
-        print(f"Erro Telegram: {e}")
+        print(f"Erro WhatsApp Bridge: {e}")
+        return False
+
+def send_telegram(message):
+    """Envia via WhatsApp (sem fallback Telegram)"""
+    send_whatsapp(message)
 
 def check_emails(mode="monitor"):
     """

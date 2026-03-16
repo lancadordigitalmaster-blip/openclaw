@@ -141,7 +141,7 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     MSG="Shield detectou ${#ISSUES[@]} problema(s) de seguranca:"
     for i in "${ISSUES[@]}"; do MSG="$MSG
 - $i"; done
-    wolf_telegram "$MSG"
+    wolf_notify "$MSG"
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, detectei ${#ISSUES[@]} problema(s) de seguranca. Preciso de atencao." "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     # Avisos — card vai pra done mas reporta

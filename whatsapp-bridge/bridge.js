@@ -38,6 +38,8 @@ const ALLOWED_NUMBERS = (process.env.ALLOWED_NUMBERS || "")
   .split(",")
   .filter(Boolean);
 
+let reminderInterval = null; // Track interval to prevent leaks on reconnect
+
 // ============================================================
 // REMINDERS SYSTEM
 // ============================================================
@@ -55,7 +57,8 @@ function saveReminders(reminders) {
 }
 
 function startReminderChecker() {
-  setInterval(async () => {
+  if (reminderInterval) clearInterval(reminderInterval);
+  reminderInterval = setInterval(async () => {
     try {
       const reminders = loadReminders();
       if (reminders.length === 0) return;
@@ -680,7 +683,7 @@ const customTools = [
         site_name: {
           type: "string",
           description:
-            "Nome curto para a URL (ex: proposta-wesley). Sera usado como path: vercel-wolfpack-proposals.vercel.app/proposta-wesley",
+            "Nome curto para a URL (ex: wesley-ramos). Sera usado como path: propostas.wolfpacks.com.br/wesley-ramos",
         },
       },
       required: ["filepath"],
@@ -1136,7 +1139,7 @@ async function executeCustomTool(name, input) {
         // Cleanup temp dir
         try { fs.rmSync(deployDir, { recursive: true }); } catch {}
 
-        const publicUrl = `https://vercel-wolfpack-deploy.vercel.app/${clientSlug}`;
+        const publicUrl = `https://propostas.wolfpacks.com.br/${clientSlug}`;
         log("deploy", `Proposta deployed: ${publicUrl} (${htmlSize} bytes)`);
 
         // Auto-register in Supabase proposals table
@@ -1264,7 +1267,7 @@ async function executeCustomTool(name, input) {
         }
         try { fs.rmSync(deployDir, { recursive: true }); } catch {}
 
-        const publicUrl = `https://vercel-wolfpack-deploy.vercel.app/${clientSlug}`;
+        const publicUrl = `https://propostas.wolfpacks.com.br/${clientSlug}`;
         log("deploy", `Proposta deployed: ${publicUrl}`);
         return `Deploy concluido com sucesso!\n\nURL publica: ${publicUrl}\n\nEnvie este link ao cliente. A pagina esta online e acessivel de qualquer dispositivo.`;
       } catch (err) {
@@ -1674,82 +1677,105 @@ function sanitizeHistory(history) {
 }
 
 async function callAnthropic(systemPrompt, history, retryCount = 0) {
-  const allTools = [
-    { type: "web_search_20250305", name: "web_search", max_uses: 3 },
-    ...customTools,
-  ];
+  // Route through OpenClaw Gateway (uses gateway's own Anthropic auth)
+  return callGateway(systemPrompt, history, retryCount);
+}
+
+async function callGateway(systemPrompt, history, retryCount = 0) {
+  const OPENCLAW_CLI = "/opt/homebrew/opt/node/bin/node";
+  const OPENCLAW_DIST = "/opt/homebrew/lib/node_modules/openclaw/dist/index.js";
 
   try {
-    // Refresh API key on each call (picks up .env changes without restart)
-    const freshKey = resolveAnthropicKey();
-    if (freshKey !== anthropic.apiKey) {
-      anthropic = new Anthropic({ apiKey: freshKey });
-      log("api", "API key atualizada do .env");
+    // Build the last user message from history
+    let lastUserMsg = "";
+    for (let i = history.length - 1; i >= 0; i--) {
+      const msg = history[i];
+      if (msg.role === "user") {
+        if (typeof msg.content === "string") {
+          lastUserMsg = msg.content;
+        } else if (Array.isArray(msg.content)) {
+          lastUserMsg = msg.content
+            .filter((b) => b.type === "text")
+            .map((b) => b.text)
+            .join("\n");
+        }
+        if (lastUserMsg) break;
+      }
     }
 
-    let messages = sanitizeHistory([...history]);
-    let response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 16384,
-      system: systemPrompt,
-      messages,
-      tools: allTools,
-    });
+    if (!lastUserMsg) {
+      return { text: "Desculpe, nao consegui processar sua mensagem.", extraMessages: [] };
+    }
 
-    // Tool use loop — execute tools and feed results back
-    let loopCount = 0;
-    while (response.stop_reason === "tool_use" && loopCount < 15) {
-      loopCount++;
-      const assistantContent = response.content;
+    // Build context prompt with system prompt + conversation summary
+    const contextParts = [];
+    if (systemPrompt) {
+      contextParts.push(`[SYSTEM CONTEXT]\n${systemPrompt}\n`);
+    }
 
-      // Add assistant response with tool calls to messages
-      messages.push({ role: "assistant", content: assistantContent });
-
-      // Execute each tool call
-      const toolResults = [];
-      for (const block of assistantContent) {
-        if (block.type === "tool_use") {
-          log("tool", `Executando: ${block.name}(${JSON.stringify(block.input).slice(0, 100)})`);
-          const result = await executeCustomTool(block.name, block.input);
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: result,
-          });
+    // Include recent conversation history (last 6 messages for context)
+    const recentHistory = history.slice(-6);
+    if (recentHistory.length > 1) {
+      contextParts.push("[CONVERSA RECENTE]");
+      for (const msg of recentHistory.slice(0, -1)) {
+        if (msg.role === "user" && typeof msg.content === "string") {
+          contextParts.push(`Usuario: ${msg.content}`);
+        } else if (msg.role === "assistant") {
+          const text = typeof msg.content === "string"
+            ? msg.content
+            : Array.isArray(msg.content)
+              ? msg.content.filter((b) => b.type === "text").map((b) => b.text).join(" ")
+              : "";
+          if (text) contextParts.push(`Alfred: ${text.slice(0, 500)}`);
         }
       }
-
-      // Feed tool results back
-      messages.push({ role: "user", content: toolResults });
-
-      // Call API again
-      response = await anthropic.messages.create({
-        model: MODEL,
-        max_tokens: 16384,
-        system: systemPrompt,
-        messages,
-        tools: allTools,
-      });
+      contextParts.push("");
     }
 
-    // Extract final text
-    const text = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
+    contextParts.push(`[MENSAGEM ATUAL]\n${lastUserMsg}`);
+    const fullMessage = contextParts.join("\n");
+
+    log("api", `Gateway call: ${lastUserMsg.slice(0, 80)}...`);
+
+    // Call OpenClaw CLI agent command
+    const { execFile } = require("child_process");
+    const { promisify } = require("util");
+    const execFileAsync = promisify(execFile);
+
+    const { stdout, stderr } = await execFileAsync(
+      OPENCLAW_CLI,
+      [OPENCLAW_DIST, "agent", "-m", fullMessage, "--agent", "main", "--session-id", "whatsapp-bridge"],
+      {
+        timeout: 120000, // 2 min timeout
+        maxBuffer: 1024 * 1024, // 1MB
+        env: { ...process.env, HOME: "/Users/thomasgirotto" },
+      }
+    );
+
+    // Extract response (skip config warnings/errors in stderr)
+    let text = stdout.trim();
+
+    // Remove any config warning lines that leaked into stdout
+    text = text
+      .split("\n")
+      .filter((line) => !line.includes("Config warnings") && !line.includes("Failed to read config") && !line.includes("at ") && !line.includes("normalizeAnthropicModelId"))
+      .join("\n")
+      .trim();
+
+    log("api", `Gateway resp: ${text.length} chars`);
 
     return {
       text: text || "Desculpe, nao consegui gerar uma resposta.",
-      // Return the tool interaction messages for history
-      extraMessages: messages.slice(history.length),
+      extraMessages: [],
     };
   } catch (err) {
     if (retryCount < MAX_RETRIES) {
       const delay = (retryCount + 1) * 2000;
-      logError("api", `Tentativa ${retryCount + 1} falhou, retry em ${delay}ms`, err);
+      logError("api", `Gateway tentativa ${retryCount + 1} falhou, retry em ${delay}ms`, err);
       await sleep(delay);
-      return callAnthropic(systemPrompt, history, retryCount + 1);
+      return callGateway(systemPrompt, history, retryCount + 1);
     }
+    logError("api", "Gateway falhou apos retries", err);
     throw err;
   }
 }
@@ -2657,8 +2683,63 @@ function startApiServer() {
             return;
           }
 
-          log("api", `[parse-proposal] Parsing texto (${text.length} chars) via Claude...`);
+          log("api", `[parse-proposal] Parsing texto (${text.length} chars) via Vercel API...`);
 
+          // Forward to Vercel API (has valid Anthropic key + Supabase integration)
+          // This avoids needing a local ANTHROPIC_API_KEY in the bridge
+          const vercelApiUrl = "https://comercial.wolfpacks.com.br/api/parse-proposal";
+          const forwardBody = JSON.stringify({ text, seller, origin, proposal_code, whatsapp: inputWhatsapp });
+          const vercelRes = await new Promise((resolve, reject) => {
+            const u = new URL(vercelApiUrl);
+            const options = {
+              hostname: u.hostname,
+              path: u.pathname,
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(forwardBody) },
+            };
+            const reqV = require("https").request(options, (r) => {
+              let d = "";
+              r.on("data", c => d += c);
+              r.on("end", () => resolve({ status: r.statusCode, body: d }));
+            });
+            reqV.on("error", reject);
+            reqV.setTimeout(60000, () => { reqV.destroy(); reject(new Error("Vercel API timeout")); });
+            reqV.write(forwardBody);
+            reqV.end();
+          });
+
+          if (vercelRes.status !== 200) {
+            log("api", `[parse-proposal] Vercel API erro ${vercelRes.status}: ${vercelRes.body.substring(0, 200)}`);
+            res.writeHead(vercelRes.status, { "Content-Type": "application/json" });
+            res.end(vercelRes.body);
+            return;
+          }
+
+          const vercelResult = JSON.parse(vercelRes.body);
+          log("api", `[parse-proposal] Vercel OK: ${vercelResult.url || "(sem url)"}`);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            ok: true,
+            url: vercelResult.url,
+            message: vercelResult.message,
+            parsed_data: vercelResult.parsed_data,
+          }));
+        } catch (err) {
+          logError("api-parse-proposal", "Erro", err);
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+    }
+
+    // PARSE-PROPOSAL (old direct-Anthropic path — preserved for reference but replaced above)
+    if (false && req.url === "/parse-proposal-DISABLED" && req.method === "POST") {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", async () => {
+        try {
+          const { text } = JSON.parse(body);
           // Use Claude to parse the slide text into structured JSON
           const parsePrompt = `Voce e um parser de propostas comerciais da Wolf Agency. Converta o texto abaixo (formato de slides do WhatsApp) para JSON estruturado.
 
@@ -2805,7 +2886,7 @@ ${text}`;
           // Now build the proposal
           const result = await executeCustomTool("build_proposal", data);
           const isError = result.includes("Erro");
-          const urlMatch = result.match(/https:\/\/vercel-wolfpack-deploy\.vercel\.app\/[^\s]+/) || result.match(/https:\/\/wolfpack-br\.netlify\.app\/[^\s]+/);
+          const urlMatch = result.match(/https:\/\/propostas\.wolfpacks\.com\.br\/[^\s]+/) || result.match(/https:\/\/vercel-wolfpack-deploy\.vercel\.app\/[^\s]+/);
           res.writeHead(isError ? 500 : 200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({
             ok: !isError,
@@ -2854,7 +2935,7 @@ ${text}`;
           // Run the same logic as the build_proposal tool
           const result = await executeCustomTool("build_proposal", data);
           const isError = result.includes("Erro");
-          const urlMatch = result.match(/https:\/\/vercel-wolfpack-deploy\.vercel\.app\/[^\s]+/) || result.match(/https:\/\/wolfpack-br\.netlify\.app\/[^\s]+/);
+          const urlMatch = result.match(/https:\/\/propostas\.wolfpacks\.com\.br\/[^\s]+/) || result.match(/https:\/\/vercel-wolfpack-deploy\.vercel\.app\/[^\s]+/);
           res.writeHead(isError ? 500 : 200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({
             ok: !isError,

@@ -15,12 +15,7 @@ DATE_DISPLAY=$(date '+%d/%m/%Y')
 mkdir -p "$(dirname "$LOG_FILE")"
 log() { echo "[$TIMESTAMP] $1" >> "$LOG_FILE"; }
 
-source "$HOME/.openclaw/.env" 2>/dev/null
-send_telegram() {
-  [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" -d "parse_mode=Markdown" -d "text=$1" --max-time 10 2>/dev/null || true
-}
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 OPEN=$(grep -c "^- \[ \]" "$QUEUE" 2>/dev/null || echo "0")
 DONE=$(grep -c "^- \[x\]\|^- \[X\]" "$QUEUE" 2>/dev/null || echo "0")
@@ -43,7 +38,7 @@ $NOTES nota(s) salva(s) na memoria."
 MSG="$MSG
 
 Contexto de amanha ja esta preparado. Boa noite."
-send_telegram "$MSG"
+wolf_notify "$MSG"
 
 log "Dia $DATE_TODAY encerrado — done=$DONE open=$OPEN"
 echo "OK: nota_diaria completed at $TIMESTAMP"

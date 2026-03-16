@@ -7,6 +7,10 @@
 
 set -euo pipefail
 
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 LOG="/tmp/kanban-guardian.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -139,7 +143,7 @@ for p in plugins:
   if [[ -n "$TELEGRAM_TOKEN" ]]; then
     MSG="Kanban Guardian | $TIMESTAMP%0A%0A$CLOSED missao(oes) stale fechada(s) automaticamente (>${STALE_HOURS}h sem update).%0AVerifique no Mission Control se alguma precisava continuar."
 
-    curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${MSG}" 2>/dev/null || true
+    wolf_log "kanban" "${MSG}"
   fi
 fi
 

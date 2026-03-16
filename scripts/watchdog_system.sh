@@ -14,12 +14,7 @@ WARNINGS=()
 mkdir -p "$(dirname "$LOG_FILE")"
 log() { echo "[$TIMESTAMP] $1" >> "$LOG_FILE"; }
 
-source "$HOME/.openclaw/.env" 2>/dev/null
-send_telegram() {
-  [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" -d "parse_mode=Markdown" -d "text=$1" --max-time 10 2>/dev/null || true
-}
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 # 1. Arquivos criticos
 for f in "$WORKSPACE/SOUL.md" "$WORKSPACE/tasks/QUEUE.md" "$WORKSPACE/orchestrator/ORCHESTRATOR.md" "$WORKSPACE/CLAUDE.md"; do
@@ -65,7 +60,7 @@ Atencao: $w"; done
   MSG="$MSG
 
 Disco esta em ${DISK}% e temos $OPEN tasks na fila."
-  send_telegram "$MSG"
+  wolf_notify "$MSG"
   for i in "${ISSUES[@]}"; do log "ISSUE: $i"; done
   for w in "${WARNINGS[@]}"; do log "WARNING: $w"; done
 fi

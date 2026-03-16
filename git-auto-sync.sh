@@ -14,6 +14,9 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] === Git Auto-Sync ==="
 
 cd "$REPO" || { echo "ERRO: repo nao encontrado"; exit 1; }
 
+# Pull changes from GitHub (MacBook may have pushed)
+git pull --rebase origin main 2>&1 || echo "[WARN] git pull falhou, continuando..."
+
 # Sync workspace
 rsync -a --delete --exclude='node_modules' --exclude='.venv' --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' --exclude='.DS_Store' --exclude='backups' --exclude='*.bak' --exclude='*.log' "$WS/skills/" "$REPO/skills/"
 rsync -a --delete --exclude='.DS_Store' "$WS/agents/" "$REPO/agents/"

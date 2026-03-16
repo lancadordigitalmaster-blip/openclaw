@@ -1,70 +1,171 @@
 # SKILL.md — Wolf Proposal Draft
 
-> Rascunho de propostas comerciais da Wolf Agency.
+> Gerador dinâmico de propostas comerciais da Wolf Agency.
 
 ## Agent
 
-**Nova** — especialista em estratégia e inteligência comercial.
+**Nova** — estratégia e inteligência comercial.
 
 ---
 
 ## Description
 
-Monta estrutura de propostas comerciais baseada nos dados do cliente, serviço solicitado e histórico da Wolf.
-Nova puxa contexto do cliente em `shared/memory/clients.yaml` quando disponível.
+Recebe o pedido do vendedor em **texto livre** — com itens, quantidades e preços — e transforma em proposta cinematográfica via `build_proposal`.
+
+O vendedor NÃO precisa seguir formato fixo. Ele envia o que quiser e o sistema adapta.
 
 ---
 
-## Catálogo de Serviços Wolf (Referência)
+## Biblioteca de Referência
 
-| Serviço | Descrição | Faixa de Investimento |
-|---------|-----------|----------------------|
-| Social Media | Gestão de redes, legendas, calendário | A definir |
-| Tráfego Pago | Meta Ads + Google Ads, gestão e otimização | A definir |
-| Branding | Identidade visual, logo, manual de marca | A definir |
-| Produção de Conteúdo | Fotos, vídeos, reels | A definir |
-| Estratégia Digital | Planejamento, consultoria, benchmarking | A definir |
-| Site / Landing Page | Desenvolvimento web, otimização | A definir |
+O arquivo `shared/memory/services.yaml` contém templates de serviços com bullets, entregáveis e preços sugeridos.
 
-*(Preencher valores com Netto)*
+**Use como referência, NÃO como menu obrigatório.**
+- Se o vendedor envia itens customizados → use os itens dele, não os templates
+- Se o vendedor pede "social media" sem detalhar → aí sim puxe do catálogo
+- Se o vendedor especifica preços → use os preços dele, não os do catálogo
 
 ---
 
-## Tools
+## Fluxo Dinâmico
 
-### proposal-draft
+### Passo 1 — Ler o input do vendedor
 
-Cria rascunho de proposta comercial.
+O vendedor pode enviar de QUALQUER forma:
 
-**Parameters:**
-- `client`: Nome do cliente prospecto
-- `service`: Serviço(s) oferecido(s) — pode ser múltiplo
-- `value`: Valor estimado (se já definido, caso contrário Nova sugere range)
-- `deadline`: Prazo de entrega do projeto
-- `pain_points`: Dores/desafios do cliente (opcional — enriquece a proposta)
-- `competitors`: Concorrentes mencionados (opcional)
+```
+Tipo A — Pacote detalhado com itens e preços:
+"Pacote Mensal – Divulgação
+▪️16 artes feed/stories R$ 800
+▪️2 reels R$ 400
+Total: R$ 1.200/mês"
 
-**Returns:** Proposta completa estruturada segundo o template Wolf
+Tipo B — Serviço genérico:
+"proposta de tráfego pago para cliente João"
+
+Tipo C — Múltiplos serviços:
+"proposta social media + site para empresa X, R$5.000"
+
+Tipo D — Projeto único:
+"landing page para evento dia 20, R$ 2.500"
+```
+
+### Passo 2 — Extrair os dados
+
+De qualquer input, extrair:
+
+1. **Nome do pacote/serviço** → `service_type`
+2. **Itens individuais** → cada item vira uma entrada em `services[]`
+   - Cada item: `name` (o que é), `tag` (categoria curta), `bullets` (detalhes)
+3. **Valores** → Se o vendedor deu preços por item, montar breakdown
+4. **Investimento total** → `investment.amount`
+5. **Nome do cliente** → `client_name` (se mencionado)
+
+### Passo 3 — Montar services[]
+
+Cada item do vendedor vira um objeto no array `services`:
+
+```json
+{
+  "name": "Nome do item/serviço",
+  "tag": "categoria curta",
+  "bullets": ["detalhe 1", "detalhe 2"]
+}
+```
+
+**Regra:** respeitar exatamente o que o vendedor pediu.
+- Se ele listou 4 itens → 4 entries em services
+- Se ele pediu 1 serviço → 1 entry em services
+- Se ele não detalhou bullets → puxar da biblioteca (services.yaml)
+
+### Passo 4 — Montar deliverables[]
+
+Criar fases a partir dos itens:
+- Itens mensais (recorrentes) → badge "Mensal"
+- Itens únicos → badge "Entrega Única"
+- Se há mix → separar em fases (Mensal + Único)
+
+Cada deliverable:
+```json
+{
+  "badge": "Mensal",
+  "title": "Título descritivo",
+  "rows": [
+    {"label": "Item", "value": "Quantidade"},
+    {"label": "Item 2", "value": "Quantidade"}
+  ]
+}
+```
+
+### Passo 5 — Montar investment{}
+
+Se o vendedor deu breakdown de preços:
+```json
+{
+  "currency": "R$",
+  "amount": "valor total",
+  "suffix": "/mês ou vazio",
+  "breakdown": [
+    {"item": "16 artes feed/stories", "value": "800,00"},
+    {"item": "2 reels editados", "value": "400,00"}
+  ],
+  "payment_options": [usar pagamento_padrao do services.yaml]
+}
+```
+
+Se deu só o total:
+```json
+{
+  "currency": "R$",
+  "amount": "valor total",
+  "suffix": "/mês ou vazio",
+  "payment_options": [usar pagamento_padrao do services.yaml]
+}
+```
+
+### Passo 6 — Chamar build_proposal
+
+Montar o JSON completo e encaminhar para Pixel via page-architect.
+Usar `suporte_padrao` do services.yaml para o campo `support`.
 
 ---
 
-## Template de Proposta
+## Campos do build_proposal
 
-1. **Apresentação Wolf** — quem somos, diferenciais
-2. **Entendimento do Desafio** — o que entendemos do problema do cliente
-3. **Solução Proposta** — como vamos resolver
-4. **Entregáveis** — o que será entregue, com prazos por fase
-5. **Investimento** — valores, formas de pagamento
-6. **Prazo** — cronograma de execução
-7. **Próximos Passos** — o que precisa acontecer para começar
+| Campo | Origem |
+|-------|--------|
+| `client_name` | Nome do cliente (input do vendedor) |
+| `tagline` | Gerar baseado no contexto do serviço |
+| `service_type` | Nome do pacote/serviço |
+| `year` | Ano atual |
+| `whatsapp` | "5573991484716" (Wolf padrão) |
+| `ticker_items` | Palavras-chave dos serviços selecionados |
+| `context` | Sobre o cliente (se tiver info) ou sobre a Wolf |
+| `services[]` | Itens extraídos do input |
+| `deliverables[]` | Fases montadas dos itens |
+| `investment{}` | Valores do input do vendedor |
+| `support[]` | suporte_padrao do services.yaml |
+| `close` | CTA padrão Wolf |
+| `template` | "classic" |
 
 ---
 
 ## Usage
 
 ```
-"nova, rascunha uma proposta para a Empresa X — social media + tráfego pago, orçamento ~R$5.000/mês"
-"alfred, proposta para novo cliente do segmento de saúde, foco em leads"
+"Pacote Mensal – Divulgação de Eventos
+▪️16 artes R$ 800
+▪️2 reels R$ 400
+▪️2 animações R$ 250
+▪️Identidade visual R$ 1.800
+Mensal R$ 1.450 / Total R$ 3.250"
+→ Gera proposta com 4 itens, breakdown de preços, separando mensal de único
+
+"proposta de landing page para evento dia 20, cliente Maria, R$ 2.500"
+→ Gera proposta com 1 serviço (site/LP), puxa bullets da biblioteca
+
+"social media + tráfego pago para Padaria do João, R$ 3.000/mês"
+→ Gera proposta com 2 serviços, puxando bullets da biblioteca
 ```
 
 ---
@@ -72,17 +173,11 @@ Cria rascunho de proposta comercial.
 ## Rules
 
 - NUNCA enviar proposta para cliente sem aprovação explícita do Netto
-- Sempre marcar valores estimados como "a confirmar" quando não definidos
-- Incluir validade da proposta (sugestão: 15 dias)
+- **RESPEITAR os itens e preços que o vendedor enviou** — não substituir por templates
+- Se o vendedor não detalhou → aí sim puxar bullets/preços da biblioteca
+- Validade da proposta: 7 dias
+- Sempre usar pagamento_padrao e suporte_padrao do services.yaml
 
 ---
 
-## Activity Log
-
-```
-[TIMESTAMP] [Nova] AÇÃO: proposal-draft cliente=[client] serviço=[service] | RESULTADO: rascunho gerado
-```
-
----
-
-*Agente: Nova | Versão: 2.0 | Atualizado: 2026-03-04*
+*Agente: Nova | Versão: 3.1 | Atualizado: 2026-03-13*

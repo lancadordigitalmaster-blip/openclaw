@@ -1,17 +1,12 @@
 #!/bin/bash
-# lembrete-agua.sh — Lembrete de agua via Telegram (8x/dia)
+# lembrete-agua.sh — Lembrete de agua via WhatsApp (8x/dia)
 # Cron: 0 8,10,12,14,16,18,20,22 * * * (BRT)
-# Zero LLM — texto fixo direto pro Telegram
+# Zero LLM — texto fixo direto pro WhatsApp
 
 set -euo pipefail
 
-ENV_FILE="$HOME/.openclaw/.env"
-if [ -f "$ENV_FILE" ]; then set -a; source "$ENV_FILE"; set +a; fi
-
-BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
-CHAT_ID="${TELEGRAM_CHAT_ID:-789352357}"
-
-[ -z "$BOT_TOKEN" ] && { echo "[lembrete-agua] BOT_TOKEN vazio"; exit 1; }
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib-wolf.sh" 2>/dev/null || true
 
 HORA=$(date +"%H")
 
@@ -27,9 +22,6 @@ case "$HORA" in
     *)  MSG="Netto, bebe agua.";;
 esac
 
-curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-    -H "Content-Type: application/json" \
-    -d "{\"chat_id\": \"$CHAT_ID\", \"text\": \"$MSG\"}" \
-    > /dev/null 2>&1
+wolf_notify "$MSG"
 
 echo "[lembrete-agua] Enviado: $MSG"

@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 ENV_FILE="$HOME/.openclaw/.env"
 if [ -f "$ENV_FILE" ]; then set -a; source "$ENV_FILE"; set +a; fi
 
@@ -109,8 +113,5 @@ MSG="Netto, fiz a manutencao do Mission Control.\n\n$STATUS_SUMMARY\n$REPORT"
 echo -e "$MSG"
 
 if [ -n "$BOT_TOKEN" ]; then
-    curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-        -H "Content-Type: application/json" \
-        -d "{\"chat_id\": \"$CHAT_ID\", \"text\": $(echo -e "$MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}" \
-        > /dev/null 2>&1
+    wolf_log "wmc-maint" "$MSG"
 fi

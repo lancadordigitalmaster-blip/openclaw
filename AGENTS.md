@@ -106,3 +106,17 @@ Apos cada tarefa MEDIUM ou COMPLEX, Alfred deve:
 
 *Versao: 3.0 — Wolf Agency | Atualizado: 2026-03-06*
 *Framework L0/L1/L2 inspirado em JARVIS-CORE, adaptado para arquitetura OpenClaw*
+
+---
+
+## Bloqueios Conhecidos (ver TOOLS.md para detalhes)
+
+| Integração | Status | Motivo | Ação Necessária |
+|---|---|---|---|
+| meta-ads | ⚠️ Token expirado periodicamente | Token Meta Ads vence ~60 dias | Renovar via Gerenciador de Negócios |
+| google-sheets | 🔴 Bloqueado | OAuth pendente | Aprovar OAuth Google |
+| youtube-api | 🔴 Bloqueado | OAuth pendente | Aprovar OAuth Google |
+| Evolution API (WhatsApp) | ⏳ Aguardando config | URL/key não configuradas | Netto fornecer credenciais |
+| Meta Ads Token Marcos | 🔴 Expirado | Venceu 05/03/2026 | Renovar token BM Marcos |
+
+Referência completa: `TOOLS.md` seção "Skills Bloqueados"

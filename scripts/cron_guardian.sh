@@ -18,12 +18,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 log() { echo "[$TIMESTAMP] [GUARDIAN] $1" | tee -a "$LOG_FILE"; }
 
 # Telegram via .env
-source "$HOME/.openclaw/.env" 2>/dev/null
-send_telegram() {
-  [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" -d "parse_mode=Markdown" -d "text=$1" --max-time 10 2>/dev/null || true
-}
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 [ -z "$CRON_CMD" ] && echo "USO: $0 'nome' 'comando'" && exit 1
 
@@ -42,12 +37,12 @@ echo "{\"timestamp\":\"$TIMESTAMP\",\"cron\":\"$CRON_NAME\",\"duration_s\":$DURA
   >> "$METRICS"
 
 if [ $EXIT_CODE -ne 0 ]; then
-  send_telegram "Netto, o cron *$CRON_NAME* falhou (exit $EXIT_CODE, ${DURATION}s).
+  wolf_log "cron-guardian" "Netto, o cron *$CRON_NAME* falhou (exit $EXIT_CODE, ${DURATION}s).
 
 Vou verificar os logs pra entender o que aconteceu."
   log "CRITICAL: $CRON_NAME failed in ${DURATION}s (exit $EXIT_CODE)"
 elif [ $DURATION -lt 10 ] && [ "$HAS_OK" -eq 0 ]; then
-  send_telegram "Netto, o cron *$CRON_NAME* parece suspeito — rodou em ${DURATION}s sem confirmar execucao.
+  wolf_log "cron-guardian" "Netto, o cron *$CRON_NAME* parece suspeito — rodou em ${DURATION}s sem confirmar execucao.
 
 Pode ser resposta fantasma do modelo. Vou ficar de olho."
   log "SUSPICIOUS: $CRON_NAME — ${DURATION}s sem OK (possivel fantasma)"

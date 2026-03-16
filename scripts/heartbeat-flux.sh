@@ -156,7 +156,7 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     MSG="$MSG
 
 Custo hoje: \$${COST_EST:-?}"
-    wolf_telegram "$MSG"
+    wolf_notify "$MSG"
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, ${#ISSUES[@]} LLM(s) com problema. Custo hoje: \$${COST_EST:-?}" "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     wolf_mission_move "$MID" "done" "$DESCRIPTION"

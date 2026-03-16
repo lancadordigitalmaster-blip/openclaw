@@ -15,12 +15,7 @@ ACTIONS=()
 mkdir -p "$WORKSPACE/memory/logs/archive" "$WORKSPACE/backups" "$(dirname "$LOG_FILE")"
 log() { echo "[$TIMESTAMP] $1" >> "$LOG_FILE"; }
 
-source "$HOME/.openclaw/.env" 2>/dev/null
-send_telegram() {
-  [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" -d "parse_mode=Markdown" -d "text=$1" --max-time 10 2>/dev/null || true
-}
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 # 1. Limpeza de logs > 30 dias
 OLD=$(find "$WORKSPACE/memory/logs/archive" -name "*.log" -mtime +30 2>/dev/null | wc -l | tr -d ' ')
@@ -77,7 +72,7 @@ else
 $(for a in "${ACTIONS[@]}"; do echo "- $a"; done)
 
 Tudo pronto pra amanha."
-  send_telegram "$MSG"
+  wolf_log "overnight" "$MSG"
   for a in "${ACTIONS[@]}"; do log "ACTION: $a"; done
 fi
 

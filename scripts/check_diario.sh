@@ -14,12 +14,17 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 mkdir -p "$(dirname "$LOG_FILE")"
 log() { echo "[$TIMESTAMP] $1" >> "$LOG_FILE"; }
 
-source "$HOME/.openclaw/.env" 2>/dev/null
-send_telegram() {
-  [ -z "${TELEGRAM_BOT_TOKEN:-}" ] && return
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=${TELEGRAM_CHAT_ID}" -d "parse_mode=Markdown" -d "text=$1" --max-time 10 2>/dev/null || true
-}
+# ── Error trap — notifica Telegram se script travar ────────────────────────
+set -a; source "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
+trap 'EXIT_CODE=$?; if [ $EXIT_CODE -ne 0 ]; then
+  curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+    -d "chat_id=789352357" \
+    -d "text=⚠️ check_diario.sh falhou (código $EXIT_CODE) às $(date +%H:%M). Ver log: memory/logs/check_diario.log" \
+    > /dev/null 2>&1 || true
+  log "ERRO: script falhou com código $EXIT_CODE"
+fi' EXIT
+
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 OPEN=$(grep -c "^- \[ \]" "$QUEUE" 2>/dev/null || echo "0")
 URGENT="$(awk '/## URGENT/,/## THIS WEEK/' "$QUEUE" 2>/dev/null | grep -c "^- \[ \]" 2>/dev/null || true)"
@@ -41,6 +46,6 @@ $BLOCKED travada(s) esperando teu input."
 
 Tem $OLD_NOTES nota(s) diaria(s) parada(s) ha mais de 3 dias — vale dar uma olhada."
 
-send_telegram "$MSG"
+wolf_notify "$MSG"
 log "Check diario: open=$OPEN urgent=$URGENT blocked=$BLOCKED"
 echo "OK: check_diario completed at $TIMESTAMP"

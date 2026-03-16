@@ -5,6 +5,10 @@
 # ============================================================
 set -euo pipefail
 
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 LOG="/tmp/wolf-cron-watchdog.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 source "$HOME/.openclaw/.env" 2>/dev/null
@@ -65,10 +69,7 @@ PYEOF
 if echo "$ALERT" | grep -q "^ALERT:"; then
   MSG=$(echo "$ALERT" | sed 's/^ALERT:/Cron Watchdog\n/')
   echo "[$TIMESTAMP] $ALERT" >> "$LOG"
-  curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-    -d "chat_id=${CHAT_ID}" \
-    -d "text=${MSG}" \
-    --max-time 10 2>/dev/null || true
+  wolf_notify "${MSG}"
 else
   # Log OK only every hour
   MINUTE=$(date '+%M')

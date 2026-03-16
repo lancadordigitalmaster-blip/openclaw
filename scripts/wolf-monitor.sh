@@ -199,17 +199,14 @@ if [[ ${#ALERTS[@]} -gt 0 ]]; then
   fi
 
   if [[ "$SHOULD_SEND" -eq 1 ]]; then
-    # Notificar via lib-wolf se disponivel, senao via curl direto
-    if type wolf_telegram &>/dev/null; then
-      wolf_telegram "$MSG"
+    # Notificar via WhatsApp (sem fallback Telegram)
+    if type wolf_notify &>/dev/null; then
+      wolf_notify "$MSG"
     else
-      source "$HOME/.openclaw/.env" 2>/dev/null || true
-      if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
-        curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-          -d "chat_id=789352357" \
-          -d "text=$MSG" \
-          --max-time 10 >/dev/null 2>&1 || true
-      fi
+      curl -s -X POST "http://127.0.0.1:3002/send" \
+        -H "Content-Type: application/json" \
+        -d "{\"to\": \"557391484716\", \"text\": $(echo "$MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}" \
+        --max-time 10 >/dev/null 2>&1 || true
     fi
     echo "$MSG_HASH" > "$LAST_ALERT_FILE"
     echo "$NOW_EPOCH" >> "$LAST_ALERT_FILE"

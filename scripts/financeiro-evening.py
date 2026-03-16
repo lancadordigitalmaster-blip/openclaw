@@ -11,8 +11,19 @@ import json
 import datetime
 import subprocess
 import sys
+import os
 
-TOKEN = "pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP"
+def _load_env():
+    env = {}
+    try:
+        for line in open(os.path.expanduser("~/.openclaw/.env")):
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1); env[k] = v
+    except Exception: pass
+    return env
+
+TOKEN = _load_env().get("CLICKUP_API_TOKEN", "")
 LISTS_RECEBER = ["901305981568", "901324962491"]
 TELEGRAM_TARGET = "789352357"
 TELEGRAM_ACCOUNT = "financeiro"
@@ -34,7 +45,7 @@ def get_valor(task):
             if v is not None:
                 try:
                     return float(v)
-                except:
+                except (ValueError, TypeError):
                     pass
     return None
 
@@ -43,19 +54,21 @@ def fmt_brl(v):
         return "—"
     return f"R$ {v:,.0f}".replace(",", ".")
 
-def send_telegram(message):
-    cmd = [
-        "openclaw", "message", "send",
-        "--channel", "telegram",
-        "--account", TELEGRAM_ACCOUNT,
-        "--target", TELEGRAM_TARGET,
-        "--message", message
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"[ERRO] Telegram: {result.stderr}", file=sys.stderr)
+def send_whatsapp(message, to=None):
+    """Envia via WhatsApp Bridge API (porta 3002)"""
+    to = to or os.environ.get("NETTO_WHATSAPP", "557391484716")
+    payload = json.dumps({"to": to, "text": message}).encode()
+    req = urllib.request.Request("http://127.0.0.1:3002/send", data=payload, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except Exception as e:
+        print(f"[ERRO] WhatsApp Bridge: {e}", file=sys.stderr)
         return False
-    return True
+
+def send_telegram(message):
+    """Envia via WhatsApp (sem fallback Telegram)"""
+    return send_whatsapp(message)
 
 def main():
     now = datetime.datetime.now()

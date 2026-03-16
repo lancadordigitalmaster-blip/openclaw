@@ -20,7 +20,6 @@ BRIDGE_API="http://127.0.0.1:3002/send"
 LOG_FILE="$BRIDGE_DIR/logs/sales-report.log"
 REPORT_TYPE="${1:-daily}"
 TODAY=$(TZ="America/Sao_Paulo" date +%Y-%m-%d)
-WEEKDAY=$(TZ="America/Sao_Paulo" date +%u)  # 1=Mon, 7=Sun
 
 mkdir -p "$SUMMARIES_DIR"
 
@@ -430,11 +429,6 @@ with open('$PAYLOAD_FILE', 'w') as f:
 main() {
   log "=== Início: relatório $REPORT_TYPE ==="
 
-  # Skip weekends for daily reports
-  if [ "$REPORT_TYPE" = "daily" ] && [ "$WEEKDAY" -gt 5 ]; then
-    log "Fim de semana — pulando relatório diário"
-    exit 0
-  fi
 
   # Calculate date range
   calc_date_range

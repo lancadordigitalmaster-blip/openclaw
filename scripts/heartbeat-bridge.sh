@@ -93,7 +93,7 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     MSG="Bridge detectou ${#ISSUES[@]} integracao(oes) com problema:"
     for i in "${ISSUES[@]}"; do MSG="$MSG
 - $i"; done
-    wolf_telegram "$MSG"
+    wolf_log "bridge" "$MSG"
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, ${#ISSUES[@]} integracao(oes) com problema. Verificar urgente." "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     wolf_mission_move "$MID" "done" "$DESCRIPTION"

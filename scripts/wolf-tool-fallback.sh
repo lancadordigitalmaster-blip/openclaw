@@ -7,6 +7,10 @@
 set -euo pipefail
 
 set -a
+
+SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
+
 source "$HOME/.openclaw/.env"
 set +a
 
@@ -42,10 +46,7 @@ if [[ "$RECENT_QUOTA" -gt 0 ]]; then
   if ! grep -q "quota-alert-$(date '+%Y-%m-%d')" "$FALLBACK_STATE" 2>/dev/null; then
     # Identify which API failed
     FAILED_API=$(grep "exceeded_current_quota_error\|insufficient balance" "$GATEWAY_LOG" 2>/dev/null | tail -1 | grep -o "Kimi\|Moonshot\|Gemini\|Google" || echo "desconhecida")
-    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
-      -d chat_id="$NETTO_CHAT" \
-      --data-urlencode "text=ALERTA: API $FAILED_API com erro de quota. Verificar saldo ou trocar provider." \
-      >> "$LOG" 2>&1
+    wolf_notify "ALERTA: API $FAILED_API com erro de quota. Verificar saldo ou trocar provider."
     python3 -c "
 import json
 s = json.load(open('$FALLBACK_STATE'))

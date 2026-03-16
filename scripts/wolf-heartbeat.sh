@@ -13,7 +13,9 @@ AGENDA="$HOME/.openclaw/workspace/memory/agenda-alfred.md"
 BOOT_CONTEXT="$HOME/.openclaw/workspace/memory/boot-context.md"
 ANOMALIAS="$HOME/.openclaw/workspace/memory/anomalias.md"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-GATEWAY_TOKEN="b52639408a26e05b9170423402be3068db69ae001d4b0610"
+# Load GATEWAY_TOKEN from .env
+GATEWAY_TOKEN=$(grep '^GATEWAY_TOKEN=' "$HOME/.openclaw/.env" 2>/dev/null | cut -d= -f2)
+if [[ -z "$GATEWAY_TOKEN" ]]; then echo "[$TIMESTAMP] ERRO: GATEWAY_TOKEN não encontrado no .env" >> "$LOG"; exit 1; fi
 
 # ============================================================
 # PASSO 1 — Extrair erros dos logs (ultimas 2h, regex, sem LLM)

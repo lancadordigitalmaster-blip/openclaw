@@ -1,0 +1,347 @@
+# services.yaml — Biblioteca de Serviços Wolf Agency
+# REFERÊNCIA para propostas — NÃO é menu obrigatório.
+# Usar como fallback quando o vendedor não detalha itens/preços.
+# Se o vendedor enviar itens customizados, respeitar o input dele.
+# Atualizado: 2026-03-13
+
+servicos:
+
+  social-media:
+    nome: "Gestão de Redes Sociais"
+    tag: "social"
+    aliases:
+      - "social media"
+      - "gestão de redes"
+      - "redes sociais"
+      - "instagram"
+      - "gestão de instagram"
+      - "gerenciamento de redes"
+    descricao: "Planejamento, criação e gestão de conteúdo para redes sociais."
+    bullets:
+      - "Planejamento mensal de conteúdo"
+      - "Criação de legendas estratégicas"
+      - "Calendário editorial"
+      - "Gestão de feed e stories"
+      - "Relatório mensal de performance"
+    ticker_items:
+      - "Conteúdo"
+      - "Redes Sociais"
+      - "Engajamento"
+    investimento:
+      basico:
+        valor: "1.500"
+        sufixo: "/mês"
+        descricao: "Até 12 posts/mês"
+      padrao:
+        valor: "2.500"
+        sufixo: "/mês"
+        descricao: "Até 20 posts + stories"
+      premium:
+        valor: "4.000"
+        sufixo: "/mês"
+        descricao: "20 posts + stories + reels"
+    entregaveis:
+      - badge: "Mensal"
+        title: "Conteúdo para Redes"
+        rows:
+          - { label: "Posts", value: "12-20/mês" }
+          - { label: "Stories", value: "20/mês" }
+          - { label: "Reels", value: "4/mês" }
+
+  trafego-pago:
+    nome: "Tráfego Pago"
+    tag: "tráfego"
+    aliases:
+      - "tráfego"
+      - "trafego"
+      - "tráfego pago"
+      - "trafego pago"
+      - "ads"
+      - "meta ads"
+      - "google ads"
+      - "anúncios"
+      - "anuncios"
+      - "campanhas"
+      - "gestão de tráfego"
+    descricao: "Gestão de campanhas Meta Ads + Google Ads com foco em resultado."
+    bullets:
+      - "Setup e estruturação de campanhas"
+      - "Criação de públicos e segmentações"
+      - "Otimização contínua de performance"
+      - "Relatórios semanais de métricas"
+      - "Testes A/B de criativos"
+    ticker_items:
+      - "Tráfego Pago"
+      - "Meta Ads"
+      - "Google Ads"
+    investimento:
+      basico:
+        valor: "1.500"
+        sufixo: "/mês"
+        descricao: "1 plataforma, até R$3K/mês em mídia"
+      padrao:
+        valor: "2.500"
+        sufixo: "/mês"
+        descricao: "2 plataformas, até R$10K/mês em mídia"
+      premium:
+        valor: "4.000"
+        sufixo: "/mês"
+        descricao: "Multi-plataforma, mídia ilimitada"
+    entregaveis:
+      - badge: "Mensal"
+        title: "Gestão de Tráfego"
+        rows:
+          - { label: "Campanhas ativas", value: "3-5" }
+          - { label: "Relatórios", value: "Semanal" }
+          - { label: "Otimizações", value: "Contínua" }
+
+  branding:
+    nome: "Branding & Identidade Visual"
+    tag: "branding"
+    aliases:
+      - "branding"
+      - "identidade visual"
+      - "logo"
+      - "logotipo"
+      - "marca"
+      - "manual de marca"
+      - "identidade"
+    descricao: "Criação ou reformulação da identidade visual completa."
+    bullets:
+      - "Logotipo principal + variações"
+      - "Paleta de cores e tipografia"
+      - "Manual de identidade visual"
+      - "Papelaria e aplicações"
+      - "Templates para redes sociais"
+    ticker_items:
+      - "Branding"
+      - "Identidade"
+      - "Design"
+    investimento:
+      basico:
+        valor: "3.000"
+        sufixo: ""
+        descricao: "Logo + paleta + tipografia"
+      padrao:
+        valor: "5.000"
+        sufixo: ""
+        descricao: "Identidade completa + manual"
+      premium:
+        valor: "8.000"
+        sufixo: ""
+        descricao: "Full branding + papelaria + templates"
+    entregaveis:
+      - badge: "Fase 1"
+        title: "Diagnóstico & Referências"
+        rows:
+          - { label: "Prazo", value: "1 semana" }
+          - { label: "Entregável", value: "Briefing + moodboard" }
+      - badge: "Fase 2"
+        title: "Criação"
+        highlight: true
+        rows:
+          - { label: "Prazo", value: "2-3 semanas" }
+          - { label: "Entregável", value: "Logo + identidade + manual" }
+
+  producao-conteudo:
+    nome: "Produção de Conteúdo"
+    tag: "conteúdo"
+    aliases:
+      - "produção de conteúdo"
+      - "producao de conteudo"
+      - "conteúdo"
+      - "conteudo"
+      - "fotos"
+      - "vídeos"
+      - "videos"
+      - "reels"
+      - "produção audiovisual"
+      - "fotografia"
+    descricao: "Produção profissional de fotos, vídeos e reels."
+    bullets:
+      - "Planejamento de pauta e roteiro"
+      - "Produção fotográfica profissional"
+      - "Edição de vídeos e reels"
+      - "Banco de imagens do cliente"
+    ticker_items:
+      - "Produção"
+      - "Vídeo"
+      - "Fotografia"
+    investimento:
+      basico:
+        valor: "2.000"
+        sufixo: "/mês"
+        descricao: "1 diária de produção"
+      padrao:
+        valor: "3.500"
+        sufixo: "/mês"
+        descricao: "2 diárias + edição"
+      premium:
+        valor: "6.000"
+        sufixo: "/mês"
+        descricao: "4 diárias + edição premium"
+    entregaveis:
+      - badge: "Mensal"
+        title: "Produção Audiovisual"
+        rows:
+          - { label: "Diárias", value: "1-4/mês" }
+          - { label: "Fotos editadas", value: "30-100" }
+          - { label: "Vídeos/Reels", value: "4-12" }
+
+  estrategia-digital:
+    nome: "Estratégia Digital"
+    tag: "estratégia"
+    aliases:
+      - "estratégia"
+      - "estrategia"
+      - "estratégia digital"
+      - "estrategia digital"
+      - "consultoria"
+      - "planejamento"
+      - "planejamento digital"
+      - "benchmarking"
+    descricao: "Planejamento estratégico digital com análise de mercado."
+    bullets:
+      - "Diagnóstico de presença digital"
+      - "Análise de concorrência"
+      - "Plano de ação 90 dias"
+      - "Definição de KPIs e metas"
+      - "Reuniões quinzenais de acompanhamento"
+    ticker_items:
+      - "Estratégia"
+      - "Planejamento"
+      - "Resultados"
+    investimento:
+      basico:
+        valor: "2.000"
+        sufixo: "/mês"
+        descricao: "Consultoria mensal"
+      padrao:
+        valor: "3.500"
+        sufixo: "/mês"
+        descricao: "Estratégia + acompanhamento quinzenal"
+      premium:
+        valor: "5.000"
+        sufixo: "/mês"
+        descricao: "Full strategy + relatórios semanais"
+    entregaveis:
+      - badge: "Fase 1"
+        title: "Diagnóstico"
+        rows:
+          - { label: "Prazo", value: "2 semanas" }
+          - { label: "Entregável", value: "Relatório + benchmarking" }
+      - badge: "Fase 2"
+        title: "Plano de Ação"
+        highlight: true
+        rows:
+          - { label: "Prazo", value: "1 semana" }
+          - { label: "Entregável", value: "Plano 90 dias + KPIs" }
+      - badge: "Contínuo"
+        title: "Acompanhamento"
+        rows:
+          - { label: "Reuniões", value: "Quinzenal" }
+          - { label: "Relatórios", value: "Mensal" }
+
+  site-lp:
+    nome: "Site / Landing Page"
+    tag: "web"
+    aliases:
+      - "site"
+      - "landing page"
+      - "lp"
+      - "página"
+      - "pagina"
+      - "desenvolvimento web"
+      - "website"
+      - "site institucional"
+      - "e-commerce"
+      - "loja virtual"
+    descricao: "Desenvolvimento de sites e landing pages otimizados."
+    bullets:
+      - "Design responsivo e moderno"
+      - "Otimização para SEO"
+      - "Integração com analytics"
+      - "Formulários e CTAs estratégicos"
+      - "Hospedagem e domínio (1 ano)"
+    ticker_items:
+      - "Website"
+      - "Landing Page"
+      - "Conversão"
+    investimento:
+      basico:
+        valor: "2.500"
+        sufixo: ""
+        descricao: "Landing page simples"
+      padrao:
+        valor: "5.000"
+        sufixo: ""
+        descricao: "Site institucional até 5 páginas"
+      premium:
+        valor: "10.000"
+        sufixo: ""
+        descricao: "Site completo + e-commerce"
+    entregaveis:
+      - badge: "Fase 1"
+        title: "Wireframe & Design"
+        rows:
+          - { label: "Prazo", value: "1-2 semanas" }
+          - { label: "Entregável", value: "Layout aprovado" }
+      - badge: "Fase 2"
+        title: "Desenvolvimento"
+        highlight: true
+        rows:
+          - { label: "Prazo", value: "2-3 semanas" }
+          - { label: "Entregável", value: "Site funcional" }
+      - badge: "Fase 3"
+        title: "Ajustes & Go Live"
+        rows:
+          - { label: "Prazo", value: "1 semana" }
+          - { label: "Entregável", value: "Site publicado" }
+
+# === Pacotes Combinados ===
+# Atalhos para combinações frequentes de serviços
+
+pacotes:
+  completo:
+    nome: "Pacote Completo"
+    servicos:
+      - "social-media"
+      - "trafego-pago"
+      - "producao-conteudo"
+      - "estrategia-digital"
+    desconto: "10%"
+
+  presenca-digital:
+    nome: "Presença Digital"
+    servicos:
+      - "social-media"
+      - "producao-conteudo"
+
+  performance:
+    nome: "Performance"
+    servicos:
+      - "trafego-pago"
+      - "estrategia-digital"
+
+  marca-completa:
+    nome: "Marca Completa"
+    servicos:
+      - "branding"
+      - "site-lp"
+
+# === Opções de Pagamento Padrão ===
+
+pagamento_padrao:
+  - title: "PIX"
+    desc: "Transferência bancária"
+  - title: "Cartão de Crédito"
+    desc: "Até 6x"
+    highlight: true
+
+# === Suporte Padrão (incluído em toda proposta) ===
+
+suporte_padrao:
+  - "Reuniões quinzenais de alinhamento"
+  - "Relatórios mensais de performance"
+  - "Canal direto via WhatsApp"
+  - "Suporte em horário comercial"
