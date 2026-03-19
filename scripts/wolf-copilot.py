@@ -399,23 +399,40 @@ class Brain:
         context = self.history[-12:]
 
         try:
+            import urllib.request
+            import urllib.error
+
             payload = json.dumps({
                 "model": self.model,
                 "max_tokens": 2048,
                 "system": SYSTEM_PROMPT,
                 "messages": context
-            })
+            }).encode("utf-8")
 
-            result = subprocess.run([
-                "curl", "-s", "--max-time", "30",
+            log(f"Brain: chamando API ({self.model}, key={'OK' if self.api_key else 'VAZIA'})")
+            req = urllib.request.Request(
                 "https://api.anthropic.com/v1/messages",
-                "-H", f"x-api-key: {self.api_key}",
-                "-H", "anthropic-version: 2023-06-01",
-                "-H", "content-type: application/json",
-                "-d", payload
-            ], capture_output=True, text=True, timeout=35)
+                data=payload,
+                headers={
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                method="POST"
+            )
 
-            data = json.loads(result.stdout)
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    raw = resp.read().decode("utf-8")
+            except urllib.error.HTTPError as e:
+                raw = e.read().decode("utf-8")
+                log(f"Brain: HTTP {e.code}: {raw[:200]}")
+
+            log(f"Brain: resposta={raw[:300]}")
+            if not raw or not raw.strip():
+                return "A API nao respondeu, vou tentar de novo.", []
+
+            data = json.loads(raw)
             if "error" in data:
                 log(f"LLM Error: {data['error']}")
                 return "Desculpe, tive um problema. Pode repetir?", []

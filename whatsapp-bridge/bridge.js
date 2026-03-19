@@ -1905,7 +1905,7 @@ function isAllowed(phone) {
 let copilotProcess = null;
 let copilotActive = false;
 
-const COPILOT_TRIGGERS = /^(copilot|copiloto|alfredo?[,.]?\s)/i;
+const COPILOT_TRIGGERS = /^(copilot|copiloto)[,.]?\s/i;
 const COPILOT_SCRIPT = "/Users/thomasgirotto/.openclaw/workspace/scripts/wolf-copilot.py";
 
 function isCopilotCommand(text) {
@@ -1913,7 +1913,7 @@ function isCopilotCommand(text) {
 }
 
 function extractCopilotTask(text) {
-  return text.replace(/^(copilot[oe]?|alfredo?)[,.]?\s*/i, "").trim() || text;
+  return text.replace(/^(copilot[oe]?)[,.]?\s*/i, "").trim() || text;
 }
 
 async function startCopilot(sock, from, task) {
@@ -3165,8 +3165,13 @@ async function startBridge() {
     printQRInTerminal: false,
     browser: ["Wolf Agency", "Desktop", "1.0.0"],
     connectTimeoutMs: 60000,
-    syncFullHistory: true,
-    shouldSyncHistoryMessage: () => true,
+    syncFullHistory: false,
+    shouldSyncHistoryMessage: () => false,
+    getMessage: async (key) => {
+      // Required by Baileys v6 for message retry decryption
+      // Without this, failed decryptions can't be retried → "Aguardando mensagem"
+      return { conversation: "" };
+    },
   });
 
   sock.ev.on("connection.update", async (update) => {

@@ -80,8 +80,14 @@ for lid in LIST_IDS:
 # Fetch produção do dia
 # Regra: "finalizada", "enviado ao cliente", "conferência interna" = produção do designer
 # "em alteração" criada hoje = demanda nova | criada outro dia = alteração (não conta como nova)
+# PASSO 2 — Produção do dia
+# Regra: contar tarefas que ENTRARAM no status final (finalizada/enviado/conferência) HOJE
+# "em alteração" criada hoje = demanda nova | criada outro dia = alteração
 done_today = []
 alteracoes_hoje = []
+
+# Primeiro: coletar candidatas (tarefas atualizadas hoje)
+candidates = []
 for lid in LIST_IDS:
     page = 0
     while True:
@@ -92,18 +98,44 @@ for lid in LIST_IDS:
             if status == "finalizada":
                 dc = int(t.get("date_closed") or 0)
                 if dc >= today_start_ms:
-                    done_today.append(t)
+                    done_today.append(t)  # date_closed é preciso
             elif status in ["enviado ao cliente", u"confer\u00eancia interna", "conferencia interna"]:
-                done_today.append(t)
+                candidates.append(t)  # Precisa validar se entrou no status hoje
             elif "alterac" in status or "altera\u00e7" in status:
                 date_created = int(t.get("date_created") or 0)
                 if date_created >= today_start_ms:
-                    done_today.append(t)  # Criada e produzida no mesmo dia = demanda nova
+                    candidates.append(t)  # Validar se é nova
                 else:
                     alteracoes_hoje.append(t)  # Veio de outro dia = alteração
         if data.get("last_page", True) or not tasks:
             break
         page += 1
+
+# Segundo: validar candidatas via bulk time_in_status (quando entrou no status atual)
+if candidates:
+    # Processar em lotes de 50
+    for i in range(0, len(candidates), 50):
+        batch = candidates[i:i+50]
+        ids_param = "&".join(f"task_ids={t['id']}" for t in batch)
+        try:
+            bulk_data = api(f"task/bulk_time_in_status/task_ids", ids_param)
+            for t in batch:
+                tid = t["id"]
+                info = bulk_data.get(tid, {})
+                since_ms = int(info.get("current_status", {}).get("total_time", {}).get("since", 0))
+                status = (t.get("status", {}).get("status") or "").lower()
+                if since_ms >= today_start_ms:
+                    # Entrou no status atual HOJE = produção do dia
+                    if "alterac" in status or "altera\u00e7" in status:
+                        done_today.append(t)  # Criada hoje e entrou em alteração hoje
+                    else:
+                        done_today.append(t)
+                else:
+                    # Estava nesse status ANTES de hoje — não é produção de hoje
+                    pass
+        except Exception:
+            # Fallback: se bulk falhar, contar como produção (melhor contar a mais que a menos)
+            done_today.extend(batch)
 
 # Map designer per task
 def get_designer(task):

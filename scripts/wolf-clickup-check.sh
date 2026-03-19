@@ -84,8 +84,9 @@ DONE_STATUSES = ["finalizada", "enviado ao cliente", "conferência interna", "co
 completed_tasks = []
 alteracoes_hoje = []  # em alteração mas criadas hoje = demanda nova
 
+# Coletar candidatas (tarefas atualizadas hoje)
+candidates = []
 for lid in LIST_IDS:
-    # Buscar tarefas atualizadas hoje (todas as páginas, para filtrar por status)
     page = 0
     while True:
         data = api_get(f"list/{lid}/task?include_closed=true&subtasks=false&page={page}&date_updated_gt={today_start_ms}")
@@ -93,24 +94,37 @@ for lid in LIST_IDS:
             break
         for t in data["tasks"]:
             status = (t.get("status", {}).get("status", "") or "").lower()
-            # Finalizada: precisa date_closed hoje
             if status == "finalizada":
                 date_closed = t.get("date_closed")
                 if date_closed and int(date_closed) >= today_start_ms:
                     completed_tasks.append(t)
-            # Enviado ao cliente / conferência interna: date_updated hoje já basta
             elif status in ["enviado ao cliente", u"confer\u00eancia interna", "conferencia interna"]:
-                completed_tasks.append(t)
-            # Em alteração: se foi criada hoje = demanda nova (conta). Se não = alteração (não conta como nova)
+                candidates.append(t)
             elif "alterac" in status or "altera\u00e7" in status:
                 date_created = int(t.get("date_created") or 0)
                 if date_created >= today_start_ms:
-                    completed_tasks.append(t)  # Criada e produzida no mesmo dia
+                    candidates.append(t)
                 else:
-                    alteracoes_hoje.append(t)  # Veio de outro dia, é alteração
+                    alteracoes_hoje.append(t)
         if data.get("last_page", True) or not data["tasks"]:
             break
         page += 1
+
+# Validar candidatas: só conta se ENTROU no status atual HOJE (via bulk time_in_status)
+if candidates:
+    for i in range(0, len(candidates), 50):
+        batch = candidates[i:i+50]
+        ids_param = "&".join(f"task_ids={t['id']}" for t in batch)
+        bulk_url = f"task/bulk_time_in_status/task_ids?{ids_param}"
+        bulk_data = api_get(bulk_url)
+        if bulk_data:
+            for t in batch:
+                info = bulk_data.get(t["id"], {})
+                since_ms = int(info.get("current_status", {}).get("total_time", {}).get("since", 0))
+                if since_ms >= today_start_ms:
+                    completed_tasks.append(t)
+        else:
+            completed_tasks.extend(batch)  # Fallback
 
 # Extract designer from custom fields
 def get_designer(task):
