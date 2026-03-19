@@ -1,14 +1,13 @@
 // Wolf Mission Control — Edge Function: alfred-router
-// Versão: 2.0 | 2026-03-18
-// Recebe mensagens do Telegram, usa Alfred (Anthropic Haiku 4.5) para decidir ação,
+// Versão: 1.0 | 2026-03-05
+// Recebe mensagens do Telegram, usa Alfred (Gemini) para decidir ação,
 // cria missão no WMC e aciona trigger-mission automaticamente.
-// LLM: Anthropic Haiku 4.5 (migrado de Ollama Cloud em 2026-03-18)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANTHROPIC_API_KEY    = Deno.env.get("ANTHROPIC_API_KEY")!;
+const OLLAMA_CLOUD_KEY     = Deno.env.get("OLLAMA_CLOUD_KEY")!;
 const TELEGRAM_BOT_TOKEN   = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const NETTO_TELEGRAM_ID    = Deno.env.get("NETTO_TELEGRAM_ID") ?? "789352357";
 const WOLF_KEY             = Deno.env.get("WOLF_ROUTER_KEY") ?? "wolf-secret";
@@ -35,31 +34,30 @@ const AGENT_MAP: Record<string, string> = {
 };
 
 // =============================================================
-// CHAMADA LLM (Anthropic Haiku 4.5)
+// CHAMADA LLM (Ollama Cloud)
 // =============================================================
 async function callLLM(system: string, user: string, maxTokens = 1024): Promise<string> {
   const res = await fetch(
-    "https://api.anthropic.com/v1/messages",
+    "https://ollama.com/v1/chat/completions",
     {
       method: "POST",
       headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${OLLAMA_CLOUD_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "kimi-k2.5",
         max_tokens: maxTokens,
-        system: system,
         messages: [
+          { role: "system", content: system },
           { role: "user", content: user },
         ],
       }),
     }
   );
-  if (!res.ok) throw new Error(`Anthropic API error: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error(`Ollama Cloud error: ${res.status} ${await res.text()}`);
   const json = await res.json();
-  return json.content[0].text;
+  return json.choices[0].message.content;
 }
 
 // =============================================================

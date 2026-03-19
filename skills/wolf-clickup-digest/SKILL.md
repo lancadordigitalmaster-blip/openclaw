@@ -15,13 +15,16 @@
 ## Configuração
 
 ```
-Token:   pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
-List ID: 901306028132
+Token:   Ler de ~/.openclaw/.env (variável CLICKUP_API_TOKEN)
+List ID: 901306028132 (Produção DSGN)
+List ID: 901306028133 (Núcleo Criativo)
+Team ID: 3076130
 Base URL: https://api.clickup.com/api/v2
 
-Header: Authorization: pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
+Header: Authorization: $CLICKUP_API_TOKEN
 ```
 
+> ⚠️ NUNCA hardcodar o token. Sempre ler do .env.
 > ⚠️ O header Authorization no ClickUp NÃO usa "Bearer". É o token puro.
 > ⚠️ Timestamps no ClickUp são em **milissegundos** (não segundos).
 
@@ -37,7 +40,7 @@ Alfred usa web.fetch para chamar a API. Use estes endpoints:
 GET https://api.clickup.com/api/v2/list/901306028132/task
   ?include_closed=false
   &subtasks=true
-Authorization: pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
+Authorization: $CLICKUP_API_TOKEN (ler do ~/.openclaw/.env)
 ```
 
 ### Tarefas com prazo HOJE
@@ -47,7 +50,7 @@ GET https://api.clickup.com/api/v2/list/901306028132/task
   ?due_date_gt=TIMESTAMP_INICIO_HOJE_MS
   &due_date_lt=TIMESTAMP_FIM_HOJE_MS
   &include_closed=false
-Authorization: pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
+Authorization: $CLICKUP_API_TOKEN (ler do ~/.openclaw/.env)
 ```
 
 ### Tarefas ATRASADAS
@@ -56,7 +59,7 @@ Authorization: pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
 GET https://api.clickup.com/api/v2/list/901306028132/task
   ?due_date_lt=TIMESTAMP_AGORA_MS
   &include_closed=false
-Authorization: pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
+Authorization: $CLICKUP_API_TOKEN (ler do ~/.openclaw/.env)
 ```
 
 ### Tarefas da SEMANA
@@ -66,14 +69,14 @@ GET https://api.clickup.com/api/v2/list/901306028132/task
   ?due_date_gt=TIMESTAMP_SEGUNDA_MS
   &due_date_lt=TIMESTAMP_DOMINGO_MS
   &include_closed=false
-Authorization: pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
+Authorization: $CLICKUP_API_TOKEN (ler do ~/.openclaw/.env)
 ```
 
 ### Membros da lista (para filtrar por pessoa)
 
 ```
 GET https://api.clickup.com/api/v2/list/901306028132/member
-Authorization: pk_3138195_20ML6OGADSAAXFV5S4S2PONONA5X3UGP
+Authorization: $CLICKUP_API_TOKEN (ler do ~/.openclaw/.env)
 ```
 
 ### Campos da resposta
