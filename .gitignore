@@ -12,3 +12,4 @@ auth_state/
 sessions.json
 backups/
 *.bak
+.vercel

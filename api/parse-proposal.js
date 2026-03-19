@@ -4,7 +4,23 @@ const { readFileSync } = require('fs');
 const { join } = require('path');
 const { generateHTML } = require('../_lib/builder');
 
-const TEMPLATE = readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8');
+const TEMPLATES = {
+  classic: readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8'),
+  wesley: readFileSync(join(__dirname, '../_lib/template-wesley.html'), 'utf-8'),
+};
+
+function jsonError(res, status, error, extra = {}) {
+  return res.status(status).json({ ok: false, error, ...extra });
+}
+
+function extractTextContent(content) {
+  if (!Array.isArray(content)) return '';
+  return content
+    .filter((block) => block && block.type === 'text' && typeof block.text === 'string')
+    .map((block) => block.text)
+    .join('\n')
+    .trim();
+}
 
 const PARSE_PROMPT = `Voce e um parser de propostas comerciais da Wolf Agency. Converta o texto abaixo (formato de slides do WhatsApp) para JSON estruturado.
 
@@ -79,17 +95,45 @@ TEXTO DA PROPOSTA:
 
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(204).end();
   }
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return jsonError(res, 405, 'Method not allowed');
   }
 
   try {
-    const { text, seller, origin, proposal_code, whatsapp } = req.body || {};
+    // Validar env vars
+    if (!process.env.ANTHROPIC_API_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return jsonError(res, 500, 'Variaveis de ambiente nao configuradas no servidor');
+    }
 
-    if (!text || text.length < 50) {
-      return res.status(400).json({ error: 'Texto da proposta muito curto (minimo 50 chars)' });
+    const { text, structured, seller, origin, proposal_code, whatsapp, template } = req.body || {};
+    const templateName = String(template || 'classic').toLowerCase();
+    const templateHTML = TEMPLATES[templateName] || TEMPLATES.classic;
+
+    const isStructured = !!(structured && structured.client_name && structured.service_type);
+
+    if (!isStructured && (!text || text.length < 50)) {
+      return jsonError(res, 400, 'Texto da proposta muito curto (minimo 50 chars)');
+    }
+
+    // Build prompt based on input mode
+    let prompt;
+    if (isStructured) {
+      const { client_name, service_type, about_client, value, notes } = structured;
+      prompt = PARSE_PROMPT + `
+Cliente: ${client_name}
+Serviço: ${service_type}
+Sobre o cliente: ${about_client}
+Valor mensal: R$ ${value || '0'}
+${notes ? `Observações: ${notes}` : ''}
+
+Instruções extras: gere uma proposta completa e personalizada para este cliente com base nas informações acima. Preencha todos os campos do JSON com conteúdo rico e específico ao nicho/negócio do cliente.`;
+    } else {
+      prompt = PARSE_PROMPT + text;
     }
 
     // 1. Parse with Claude
@@ -97,23 +141,26 @@ module.exports = async function handler(req, res) {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4000,
-      messages: [{ role: 'user', content: PARSE_PROMPT + text }],
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const jsonText = response.content[0].text.trim();
+    const jsonText = extractTextContent(response.content);
+    if (!jsonText) {
+      return jsonError(res, 500, 'Claude retornou resposta vazia');
+    }
     let data;
     try {
       const cleaned = jsonText.replace(/^```json?\n?/i, '').replace(/\n?```$/i, '').trim();
       data = JSON.parse(cleaned);
     } catch (parseErr) {
-      return res.status(500).json({ error: 'Claude retornou JSON invalido', raw: jsonText.substring(0, 200) });
+      return jsonError(res, 500, 'Claude retornou JSON invalido', { raw: jsonText.substring(0, 200) });
     }
 
     // Override whatsapp if provided by seller
     if (whatsapp) data.whatsapp = whatsapp;
 
     // 2. Generate HTML
-    const html = generateHTML(data, TEMPLATE);
+    const html = generateHTML(data, templateHTML, { templateName });
 
     // 3. Upload to Supabase Storage
     const supabase = createClient(
@@ -127,28 +174,27 @@ module.exports = async function handler(req, res) {
       .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
     if (!clientSlug) {
-      return res.status(400).json({ error: 'Nome do cliente invalido' });
+      return jsonError(res, 400, 'Nome do cliente invalido');
     }
 
+    const htmlBuffer = Buffer.from(html, 'utf-8');
     const { error: uploadErr } = await supabase.storage
       .from('proposals')
-      .upload(`${clientSlug}.html`, Buffer.from(html, 'utf-8'), {
+      .upload(`${clientSlug}.html`, htmlBuffer, {
         contentType: 'text/html; charset=utf-8',
         upsert: true,
       });
 
     if (uploadErr) {
-      return res.status(500).json({ error: `Erro ao salvar proposta: ${uploadErr.message}` });
+      return jsonError(res, 500, `Erro ao salvar proposta: ${uploadErr.message}`);
     }
 
     // 4. Get public URL
     const { data: urlData } = supabase.storage.from('proposals').getPublicUrl(`${clientSlug}.html`);
     const storageUrl = urlData.publicUrl;
 
-    // Clean URL via rewrite
-    const baseUrl = req.headers['x-forwarded-host'] || req.headers.host || 'comercial.wolfpacks.com.br';
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const publicUrl = `${protocol}://${baseUrl}/proposta/${clientSlug}`;
+    // Always use canonical domain
+    const publicUrl = `https://comercial.wolfpacks.com.br/proposta/${clientSlug}`;
 
     // 5. Register in Supabase DB
     let supabaseId = null;
@@ -161,8 +207,9 @@ module.exports = async function handler(req, res) {
       currency: inv.currency || 'R$',
       suffix: inv.suffix || '/mês',
       status: 'open',
-      template: 'classic',
+      template: TEMPLATES[templateName] ? templateName : 'classic',
       netlify_url: publicUrl,
+      slug: clientSlug,
       proposal_data: data,
     };
     if (seller) record.seller = seller;
@@ -180,6 +227,7 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
+      id: supabaseId,
       url: publicUrl,
       storage_url: storageUrl,
       message: `Proposta gerada e publicada com sucesso!\n\nURL publica: ${publicUrl}${supabaseId ? `\nID: ${supabaseId}` : ''}`,
@@ -187,6 +235,6 @@ module.exports = async function handler(req, res) {
     });
   } catch (err) {
     console.error('parse-proposal error:', err);
-    return res.status(500).json({ error: err.message });
+    return jsonError(res, 500, err.message);
   }
 };
