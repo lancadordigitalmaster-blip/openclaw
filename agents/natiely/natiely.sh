@@ -77,14 +77,33 @@ for lid in LIST_IDS:
             break
         page += 1
 
-# Fetch completed today
+# Fetch produção do dia
+# Regra: "finalizada", "enviado ao cliente", "conferência interna" = produção do designer
+# "em alteração" criada hoje = demanda nova | criada outro dia = alteração (não conta como nova)
 done_today = []
+alteracoes_hoje = []
 for lid in LIST_IDS:
-    data = api(f"list/{lid}/task", f"include_closed=true&statuses[]=finalizada&date_updated_gt={today_start_ms}&page=0")
-    for t in data.get("tasks", []):
-        dc = int(t.get("date_closed") or 0)
-        if dc >= today_start_ms:
-            done_today.append(t)
+    page = 0
+    while True:
+        data = api(f"list/{lid}/task", f"include_closed=true&date_updated_gt={today_start_ms}&subtasks=false&page={page}")
+        tasks = data.get("tasks", [])
+        for t in tasks:
+            status = (t.get("status", {}).get("status") or "").lower()
+            if status == "finalizada":
+                dc = int(t.get("date_closed") or 0)
+                if dc >= today_start_ms:
+                    done_today.append(t)
+            elif status in ["enviado ao cliente", u"confer\u00eancia interna", "conferencia interna"]:
+                done_today.append(t)
+            elif "alterac" in status or "altera\u00e7" in status:
+                date_created = int(t.get("date_created") or 0)
+                if date_created >= today_start_ms:
+                    done_today.append(t)  # Criada e produzida no mesmo dia = demanda nova
+                else:
+                    alteracoes_hoje.append(t)  # Veio de outro dia = alteração
+        if data.get("last_page", True) or not tasks:
+            break
+        page += 1
 
 # Map designer per task
 def get_designer(task):
@@ -98,6 +117,7 @@ def get_designer(task):
 # Count per designer
 designer_active = {}
 designer_done = {}
+designer_alter = {}
 for t in all_tasks:
     d = get_designer(t)
     if d:
@@ -106,33 +126,43 @@ for t in done_today:
     d = get_designer(t)
     if d:
         designer_done[d] = designer_done.get(d, 0) + 1
+for t in alteracoes_hoje:
+    d = get_designer(t)
+    if d:
+        designer_alter[d] = designer_alter.get(d, 0) + 1
+
+total_alter = len(alteracoes_hoje)
 
 # Output
 print(f"📊 RELATÓRIO DE DEMANDA – DESIGNERS")
 print(f"📅 {now.strftime('%d/%m/%Y')} | ⏰ {now.strftime('%H:%M')}")
 print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print(f"📦 Total ativas: {len(all_tasks)} | Finalizadas hoje: {len(done_today)}")
+print(f"📦 Total ativas: {len(all_tasks)} | Produção hoje: {len(done_today)} | Alterações: {total_alter}")
 print()
 print(f"👤 CARGA POR DESIGNER")
 
 for name in ["Pedro", "Leoneli", "Abilio", "Eliedson", "Levi"]:
     ativas = designer_active.get(name, 0)
     feitas = designer_done.get(name, 0)
+    alter = designer_alter.get(name, 0)
     meta = METAS.get(name, 0)
+    alter_str = f" +{alter}alt" if alter > 0 else ""
     if meta > 0:
         pct = int(feitas / meta * 100)
         icon = "✅" if feitas >= meta else ("⚠️" if feitas >= meta * 0.7 else "🚨")
     else:
         pct = 0
         icon = "—"
-    print(f"  {icon} {name:12s} {feitas:2d}/{meta:2d} fin ({pct}%) | {ativas} ativas")
+    print(f"  {icon} {name:12s} {feitas:2d}/{meta:2d} prod ({pct}%){alter_str} | {ativas} ativas")
 
 # Freelancers
 for name in ["Felipe", "Rodrigo Bispo", "Rodrigo Web"]:
     ativas = designer_active.get(name, 0)
     feitas = designer_done.get(name, 0)
+    alter = designer_alter.get(name, 0)
+    alter_str = f" +{alter}alt" if alter > 0 else ""
     if ativas > 0 or feitas > 0:
-        print(f"  — {name:12s} {feitas:2d} fin | {ativas} ativas (freelancer)")
+        print(f"  — {name:12s} {feitas:2d} prod{alter_str} | {ativas} ativas (freelancer)")
 
 print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 PYEOF

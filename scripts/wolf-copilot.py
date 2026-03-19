@@ -326,18 +326,26 @@ class ComputerUse:
 
 SYSTEM_PROMPT = """IDIOMA OBRIGATORIO: PORTUGUES BRASILEIRO. NUNCA responda em ingles.
 
-Voce e Alfred, o copiloto inteligente da Wolf Agency.
+Voce e o Alfred — braço direito do Netto na Wolf Agency, agencia de marketing digital.
+Voce nao e um assistente generico. Voce e um parceiro de trabalho que conhece o Netto, entende o negocio e fala de igual pra igual.
 
-CONTEXTO: Voce esta controlando o Mac do Netto em tempo real via Computer Use.
-Voce FALA pelo alto-falante (TTS) e o Netto digita ou fala de volta.
+CONTEXTO: Voce esta no Mac do Netto controlando a tela em tempo real.
+Suas respostas saem pelo alto-falante como voz. O Netto fala ou digita de volta.
 
-REGRAS DE COMUNICACAO:
-1. SEMPRE responda em PORTUGUES BRASILEIRO — sem excecao
-2. Fale de forma natural, concisa e direta — suas respostas viram audio
-3. NAO use markdown, emojis, asteriscos, ou formatacao — sera falado em voz alta
-4. Maximo 3-4 frases por resposta
-5. Narre brevemente o que esta fazendo antes de agir
-6. Quando analisar a tela, resuma as informacoes mais relevantes
+PERSONALIDADE:
+- Fale como um colega de trabalho, nao como um robo. Use linguagem natural, informal mas profissional.
+- Pode usar expressoes como "beleza", "show", "bora", "olha so", "massa", "da uma olhada nisso".
+- Seja direto e objetivo, sem enrolacao. Nada de "certamente" ou "com certeza posso ajudar".
+- Quando encontrar algo interessante, demonstre entusiasmo genuino.
+- Se algo der errado, fale naturalmente tipo "eita, deu ruim aqui" em vez de "ocorreu um erro".
+- Trate o Netto pelo nome as vezes, nao sempre.
+
+REGRAS TECNICAS:
+1. SEMPRE em PORTUGUES BRASILEIRO
+2. Suas respostas viram audio — NAO use markdown, emojis, asteriscos ou formatacao
+3. Maximo 3-4 frases por resposta — seja conciso
+4. Narre o que esta fazendo de forma natural, como se tivesse pensando em voz alta
+5. Resuma informacoes da tela de forma clara e util
 
 ACOES DISPONIVEIS:
 Retorne acoes entre tags <actions>...</actions> como JSON array.
@@ -459,7 +467,7 @@ class Copilot:
         signal.signal(signal.SIGINT, self._handle_exit)
 
     def _handle_exit(self, signum, frame):
-        print("\n\n  \033[31m🛑 Encerrando copiloto...\033[0m")
+        print("\n\n  \033[31m🛑 Encerrando Alfred...\033[0m")
         self.running = False
         self.speaker.stop()
         self.computer.close()
@@ -573,7 +581,7 @@ class Copilot:
         mode_label = {"text": "Teclado", "voice": "Microfone", "whatsapp": "WhatsApp"}
 
         print("\n" + "=" * 60)
-        print("  \033[1m🐺 Wolf Copilot — Alfred Interactive Mode\033[0m")
+        print("  \033[1m🐺 Alfred — Wolf Agency\033[0m")
         print(f"  Input: {mode_label.get(self.input_mode, self.input_mode)}")
         print(f"  Voz: {self.speaker.voice}")
         print("=" * 60)
@@ -584,7 +592,7 @@ class Copilot:
         print("  Ctrl+C tambem encerra.\n")
 
         # Saudacao
-        greeting = "Ola Netto! Copiloto ativo. Estou pronto para navegar e explorar."
+        greeting = "E ai Netto! Alfred aqui. Bora, to pronto. O que voce precisa?"
         if self.initial_task:
             greeting += f" Voce pediu: {self.initial_task}. Vou comecar agora."
         self.speaker.speak(greeting)
@@ -608,14 +616,14 @@ class Copilot:
             # Saida
             exit_words = ["para", "parar", "sair", "exit", "quit", "encerrar", "tchau"]
             if any(w == user_input.lower().strip() for w in exit_words):
-                self.speaker.speak("Beleza! Encerrando o copiloto. Ate mais, Netto!")
+                self.speaker.speak("Beleza Netto, to saindo! Qualquer coisa e so chamar. Valeu!")
                 self.speaker.wait_done()
                 break
 
             self.process_turn(user_input)
 
         self.computer.close()
-        print("\n  \033[90m👋 Copiloto encerrado.\033[0m\n")
+        print("\n  \033[90m👋 Alfred encerrado.\033[0m\n")
 
 
 # ══════════════════════════════════════════════════════════

@@ -85,9 +85,12 @@ completed_tasks = []
 alteracoes_hoje = []  # em alteração mas criadas hoje = demanda nova
 
 for lid in LIST_IDS:
-    # Buscar tarefas atualizadas hoje (todas, para filtrar por status)
-    data = api_get(f"list/{lid}/task?include_closed=true&subtasks=false&page=0&date_updated_gt={today_start_ms}")
-    if data and "tasks" in data:
+    # Buscar tarefas atualizadas hoje (todas as páginas, para filtrar por status)
+    page = 0
+    while True:
+        data = api_get(f"list/{lid}/task?include_closed=true&subtasks=false&page={page}&date_updated_gt={today_start_ms}")
+        if not data or "tasks" not in data:
+            break
         for t in data["tasks"]:
             status = (t.get("status", {}).get("status", "") or "").lower()
             # Finalizada: precisa date_closed hoje
@@ -96,15 +99,18 @@ for lid in LIST_IDS:
                 if date_closed and int(date_closed) >= today_start_ms:
                     completed_tasks.append(t)
             # Enviado ao cliente / conferência interna: date_updated hoje já basta
-            elif status in ["enviado ao cliente", "conferência interna", "conferencia interna"]:
+            elif status in ["enviado ao cliente", u"confer\u00eancia interna", "conferencia interna"]:
                 completed_tasks.append(t)
             # Em alteração: se foi criada hoje = demanda nova (conta). Se não = alteração (não conta como nova)
-            elif "alterac" in status or "alteraç" in status:
+            elif "alterac" in status or "altera\u00e7" in status:
                 date_created = int(t.get("date_created") or 0)
                 if date_created >= today_start_ms:
                     completed_tasks.append(t)  # Criada e produzida no mesmo dia
                 else:
                     alteracoes_hoje.append(t)  # Veio de outro dia, é alteração
+        if data.get("last_page", True) or not data["tasks"]:
+            break
+        page += 1
 
 # Extract designer from custom fields
 def get_designer(task):
@@ -172,10 +178,17 @@ total_active = len(active_tasks)
 total_done = len(completed_tasks)
 total_alerts = sum(alerts.values())
 
+# Alterações por designer
+designer_alter = {}
+for t in alteracoes_hoje:
+    d = get_designer(t)
+    designer_alter[d] = designer_alter.get(d, 0) + 1
+total_alter = len(alteracoes_hoje)
+
 lines = []
 lines.append(f"AUDITORIA WOLF -- {date_str}")
 lines.append("=" * 30)
-lines.append(f"Ativas: {total_active} | Finalizadas hoje: {total_done}")
+lines.append(f"Ativas: {total_active} | Producao hoje: {total_done} | Alteracoes: {total_alter}")
 lines.append("")
 
 # Designer performance
@@ -185,12 +198,14 @@ for d in all_designers:
     done = designer_done.get(d, 0)
     active = designer_active.get(d, 0)
     goal = GOALS.get(d)
+    alter = designer_alter.get(d, 0)
+    alter_str = f" +{alter}alt" if alter > 0 else ""
     if goal:
         pct = (done / goal * 100) if goal else 0
         icon = "OK" if done >= goal else ("BAIXO" if done < goal * 0.7 else "ATENCAO")
-        lines.append(f"  {d}: [{icon}] {done}fin/{goal} | {active} ativas")
+        lines.append(f"  {d}: [{icon}] {done}prod/{goal}{alter_str} | {active} ativas")
     elif d in DESIGNERS.values():
-        lines.append(f"  {d}: {done}fin | {active} ativas (freelancer)")
+        lines.append(f"  {d}: {done}prod{alter_str} | {active} ativas (freelancer)")
 
 if total_alerts > 0:
     lines.append("")

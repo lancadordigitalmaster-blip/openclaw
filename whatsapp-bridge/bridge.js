@@ -1932,7 +1932,7 @@ async function startCopilot(sock, from, task) {
   log("copilot", `Iniciando copilot: ${task.slice(0, 80)}`);
 
   await sock.sendMessage(from, {
-    text: "🐺 *Copiloto ativado!*\nNavegando e falando pelo alto-falante do Mac...\nMande mensagens para continuar interagindo.\nDigite *sair* para desativar.",
+    text: "🐺 *Alfred ativado!*\nNavegando e falando pelo alto-falante do Mac...\nMande mensagens para continuar interagindo.\nDigite *sair* para desativar.",
   });
 
   copilotProcess = spawn("python3", [COPILOT_SCRIPT, "--task", task], {
@@ -1960,10 +1960,10 @@ async function startCopilot(sock, from, task) {
   });
 
   copilotProcess.on("close", (code) => {
-    log("copilot", `Copilot encerrado (code ${code})`);
+    log("copilot", `Alfred encerrado (code ${code})`);
     copilotActive = false;
     copilotProcess = null;
-    sock.sendMessage(from, { text: "🐺 Copiloto desativado." }).catch(() => {});
+    sock.sendMessage(from, { text: "🐺 Alfred desativado." }).catch(() => {});
   });
 }
 
@@ -1992,7 +1992,7 @@ async function handleText(sock, from, body) {
   // Copilot: desativar
   if (copilotActive && /^(sair|para|parar|desativa|exit)\s*$/i.test(body.trim())) {
     stopCopilot();
-    await sock.sendMessage(from, { text: "🐺 Copiloto desativado." });
+    await sock.sendMessage(from, { text: "🐺 Alfred desativado." });
     return;
   }
 
