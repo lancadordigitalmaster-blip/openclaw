@@ -3,21 +3,22 @@
 wolf-copilot.py — Interactive Voice + Computer Use Assistant
 Wolf Agency — Alfred Copilot Mode
 
-Fluxo:
-  1. Alfred fala (TTS macOS)
-  2. Você responde por voz (microfone → Groq Whisper)
-  3. Alfred analisa a tela (Computer Use)
-  4. LLM processa tudo e decide ações + narração
-  5. Executa ações na tela + fala o resultado
-  6. Loop contínuo até "para", "sair", "exit"
+Modos de input:
+  --mode text  : você digita, Alfred fala + navega (default)
+  --mode voice : você fala no microfone, Alfred fala + navega (requer mic)
+  --mode whatsapp : input via WhatsApp, Alfred fala + navega (via bridge)
 
-Uso: python3 wolf-copilot.py [--voice Luciana] [--task "abrir clawhub e analisar skills"]
+Uso:
+  python3 wolf-copilot.py --task "abrir clawhub e encontrar melhores skills"
+  python3 wolf-copilot.py --mode voice --voice Luciana
+  python3 wolf-copilot.py  (modo texto interativo)
 """
 
 import argparse
 import json
 import os
 import re
+import select
 import signal
 import subprocess
 import sys
@@ -62,34 +63,32 @@ class Speaker:
     def __init__(self, voice="Luciana"):
         self.voice = voice
         self.process = None
-        # Verificar se a voz existe
         result = subprocess.run(["say", "-v", "?"], capture_output=True, text=True)
-        voices = [l.split()[0] for l in result.stdout.splitlines()]
-        if voice not in voices:
-            # Fallback para Eddy (PT-BR)
-            self.voice = "Eddy"
-            log(f"Voz '{voice}' não encontrada, usando Eddy")
+        available = [l.split()[0] for l in result.stdout.splitlines()]
+        if voice not in available:
+            self.voice = "Luciana" if "Luciana" in available else "Eddy"
+            log(f"Voz '{voice}' nao encontrada, usando {self.voice}")
 
     def speak(self, text, wait=True):
-        """Fala o texto. Se wait=False, fala em background."""
-        if not text.strip():
+        """Fala o texto via alto-falante."""
+        if not text or not text.strip():
             return
-        # Limpar markdown e caracteres especiais
+        # Limpar formatacao para TTS
         clean = re.sub(r'[*_`#\[\]()]', '', text)
         clean = re.sub(r'\bhttps?://\S+', 'link', clean)
-        clean = clean.replace('\n', '. ')
-        clean = clean[:1500]  # Limitar tamanho
+        clean = re.sub(r'<[^>]+>', '', clean)  # Remove tags HTML/XML
+        clean = clean.replace('\n', '. ').replace('  ', ' ')
+        clean = clean[:1500]
 
         log(f"TTS: {clean[:80]}...")
         self.process = subprocess.Popen(
-            ["say", "-v", self.voice, "-r", "200", clean],
+            ["say", "-v", self.voice, "-r", "210", clean],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         if wait:
             self.process.wait()
 
     def stop(self):
-        """Interrompe fala em andamento."""
         if self.process and self.process.poll() is None:
             self.process.terminate()
             self.process.wait()
@@ -97,85 +96,89 @@ class Speaker:
     def is_speaking(self):
         return self.process and self.process.poll() is None
 
+    def wait_done(self):
+        while self.is_speaking():
+            time.sleep(0.1)
+
 
 # ══════════════════════════════════════════════════════════
-# STT — Speech-to-Text via Groq Whisper
+# Input — Text mode (teclado) ou Voice mode (microfone)
 # ══════════════════════════════════════════════════════════
 
-class Listener:
+class TextInput:
+    """Input via teclado no terminal."""
+    def listen(self):
+        try:
+            print()
+            user = input("  \033[32m> Voce: \033[0m").strip()
+            if user:
+                log(f"Input: {user}")
+            return user if user else None
+        except (EOFError, KeyboardInterrupt):
+            return None
+
+
+class VoiceInput:
+    """Input via microfone + Groq Whisper."""
     def __init__(self):
         self.groq_key = GROQ_API_KEY
-        if not self.groq_key:
-            raise RuntimeError("GROQ_API_KEY não configurada no .env")
 
-    def record(self, max_duration=15, silence_threshold="3%", silence_duration="2.0"):
-        """Grava áudio do microfone até detectar silêncio."""
-        log("Ouvindo... (fale agora)")
-        print("\n  \033[32m🎙️  Ouvindo... (fale agora)\033[0m")
-
-        # sox rec: grava até silêncio
-        # silence 1 0.3 threshold = começa quando detecta som
-        # silence 1 duration threshold = para quando silêncio por N segundos
-        cmd = [
-            "rec", "-q",
-            str(RECORD_FILE),
-            "rate", "16000",
-            "channels", "1",
-            "silence", "1", "0.3", silence_threshold,
-            "1", silence_duration, silence_threshold,
-            "trim", "0", str(max_duration)
-        ]
+    def _has_mic(self):
         try:
-            proc = subprocess.run(cmd, timeout=max_duration + 5,
-                                  capture_output=True, text=True)
+            import sounddevice as sd
+            devs = sd.query_devices()
+            return any(d.get('max_input_channels', 0) > 0 for d in devs)
+        except Exception:
+            return False
+
+    def listen(self):
+        print("\n  \033[32m🎙  Ouvindo... (fale agora)\033[0m")
+        log("Ouvindo microfone...")
+
+        try:
+            proc = subprocess.run([
+                "rec", "-q", str(RECORD_FILE),
+                "rate", "16000", "channels", "1",
+                "silence", "1", "0.3", "3%",
+                "1", "2.0", "3%",
+                "trim", "0", "15"
+            ], timeout=20, capture_output=True, text=True)
+
             if not RECORD_FILE.exists() or RECORD_FILE.stat().st_size < 1000:
-                log("Nenhum áudio captado")
                 return None
-            log(f"Áudio gravado: {RECORD_FILE.stat().st_size} bytes")
-            return str(RECORD_FILE)
-        except subprocess.TimeoutExpired:
-            log("Timeout na gravação")
-            return None
+
+            log(f"Audio gravado: {RECORD_FILE.stat().st_size} bytes")
+            return self._transcribe(str(RECORD_FILE))
+
         except Exception as e:
-            log(f"Erro gravação: {e}")
+            log(f"Erro mic: {e}")
             return None
 
-    def transcribe(self, audio_path):
-        """Transcreve áudio via Groq Whisper."""
-        log("Transcrevendo...")
+    def _transcribe(self, path):
         print("  \033[33m📝 Transcrevendo...\033[0m")
-
         try:
             result = subprocess.run([
                 "curl", "-s", "--max-time", "10",
                 "https://api.groq.com/openai/v1/audio/transcriptions",
                 "-H", f"Authorization: Bearer {self.groq_key}",
-                "-F", f"file=@{audio_path}",
+                "-F", f"file=@{path}",
                 "-F", "model=whisper-large-v3",
                 "-F", "language=pt",
                 "-F", "response_format=json"
             ], capture_output=True, text=True, timeout=15)
-
             data = json.loads(result.stdout)
             text = data.get("text", "").strip()
             if text:
+                print(f"  \033[36m💬 Voce: {text}\033[0m")
                 log(f"Transcrito: {text}")
-                print(f"  \033[36m💬 Você: {text}\033[0m")
-            return text
+            return text if text else None
         except Exception as e:
-            log(f"Erro transcrição: {e}")
+            log(f"Erro STT: {e}")
             return None
-
-    def listen(self):
-        """Grava e transcreve em um passo."""
-        path = self.record()
-        if not path:
-            return None
-        return self.transcribe(path)
 
 
 # ══════════════════════════════════════════════════════════
-# Computer Use — MCP macOS via subprocess
+# Computer Use — MCP macOS
 # ══════════════════════════════════════════════════════════
 
 class ComputerUse:
@@ -185,20 +188,18 @@ class ComputerUse:
         self._start_server()
 
     def _start_server(self):
-        """Inicia o MCP server como processo persistente."""
         log("Iniciando MCP server...")
         self.proc = subprocess.Popen(
             [MCP_BIN],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        # Initialize
         self._send({"jsonrpc": "2.0", "id": self._next_id(), "method": "initialize",
                      "params": {"protocolVersion": "2024-11-05", "capabilities": {},
                                 "clientInfo": {"name": "wolf-copilot", "version": "1.0"}}})
         resp = self._recv()
-        log(f"MCP Server: {resp.get('result', {}).get('serverInfo', {}).get('name', '?')}")
-
-        # Send initialized notification
+        if resp:
+            info = resp.get("result", {}).get("serverInfo", {})
+            log(f"MCP: {info.get('name', '?')} v{info.get('version', '?')}")
         self._send({"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}})
 
     def _next_id(self):
@@ -209,9 +210,7 @@ class ComputerUse:
         self.proc.stdin.write((json.dumps(msg) + "\n").encode())
         self.proc.stdin.flush()
 
-    def _recv(self, timeout=10):
-        """Lê resposta com timeout."""
-        import select
+    def _recv(self, timeout=15):
         start = time.time()
         while time.time() - start < timeout:
             if select.select([self.proc.stdout], [], [], 0.5)[0]:
@@ -219,26 +218,22 @@ class ComputerUse:
                 if line:
                     try:
                         data = json.loads(line)
-                        # Ignorar notificações, pegar só respostas com id
-                        if "id" in data or "result" in data:
+                        if "id" in data:
                             return data
                     except json.JSONDecodeError:
                         continue
         return {}
 
     def call(self, tool_name, arguments):
-        """Chama uma tool do MCP server."""
         full_name = f"macos-use_{tool_name}" if not tool_name.startswith("macos-use_") else tool_name
         self._send({
-            "jsonrpc": "2.0",
-            "id": self._next_id(),
+            "jsonrpc": "2.0", "id": self._next_id(),
             "method": "tools/call",
             "params": {"name": full_name, "arguments": arguments}
         })
         resp = self._recv(timeout=15)
-        content = resp.get("result", {}).get("content", [])
         text = ""
-        for c in content:
+        for c in resp.get("result", {}).get("content", []):
             if c.get("type") == "text":
                 text += c["text"]
         return text
@@ -248,10 +243,8 @@ class ComputerUse:
 
     def click(self, pid, x, y, width=None, height=None):
         args = {"pid": pid, "x": x, "y": y}
-        if width:
-            args["width"] = width
-        if height:
-            args["height"] = height
+        if width: args["width"] = width
+        if height: args["height"] = height
         return self.call("click_and_traverse", args)
 
     def type_text(self, pid, text):
@@ -264,110 +257,125 @@ class ComputerUse:
         return self.call("press_key_and_traverse", args)
 
     def scroll(self, pid, x, y, delta_y=3):
-        return self.call("scroll_and_traverse", {"pid": pid, "x": x, "y": y, "deltaY": delta_y})
+        return self.call("scroll_and_traverse",
+                         {"pid": pid, "x": x, "y": y, "deltaY": delta_y})
 
     def refresh(self, pid):
         return self.call("refresh_traversal", {"pid": pid})
 
-    def get_screen_state(self, pid=None):
-        """Retorna estado da tela como texto para o LLM."""
-        if pid:
-            return self.refresh(pid)
-        return ""
-
     def close(self):
         if self.proc:
-            self.proc.stdin.close()
-            self.proc.terminate()
-            self.proc.wait()
+            try:
+                self.proc.stdin.close()
+                self.proc.terminate()
+                self.proc.wait(timeout=3)
+            except Exception:
+                pass
 
 
 # ══════════════════════════════════════════════════════════
-# LLM Brain — Anthropic Claude via API
+# LLM Brain — Anthropic Claude
 # ══════════════════════════════════════════════════════════
+
+SYSTEM_PROMPT = """Voce e Alfred, o copiloto inteligente da Wolf Agency.
+
+CONTEXTO: Voce esta controlando o Mac do Netto em tempo real via Computer Use.
+Voce FALA pelo alto-falante (TTS) e o Netto digita ou fala de volta.
+
+REGRAS DE COMUNICACAO:
+1. Fale de forma natural, concisa e direta — suas respostas viram audio
+2. NAO use markdown, emojis, asteriscos, ou formatacao — sera falado em voz alta
+3. Maximo 3-4 frases por resposta
+4. Narre brevemente o que esta fazendo antes de agir
+5. Quando analisar a tela, resuma as informacoes mais relevantes
+6. Sempre responda em portugues brasileiro
+
+ACOES DISPONIVEIS:
+Retorne acoes entre tags <actions>...</actions> como JSON array.
+Cada acao e um objeto com "action" e parametros.
+
+Acoes possiveis:
+- {"action": "open_app", "identifier": "com.apple.Safari"} — abre app (bundle ID ou nome)
+- {"action": "click", "x": 100, "y": 200} — clica na coordenada (usa PID do contexto)
+- {"action": "click", "x": 100, "y": 200, "width": 50, "height": 30} — clica no centro do elemento
+- {"action": "type", "text": "texto"} — digita texto no campo focado
+- {"action": "press_key", "key": "Return"} — pressiona tecla
+- {"action": "press_key", "key": "l", "modifiers": ["Command"]} — atalho Cmd+L
+- {"action": "press_key", "key": "a", "modifiers": ["Command"]} — selecionar tudo
+- {"action": "scroll", "x": 500, "y": 400, "delta_y": -3} — scroll (negativo=baixo)
+- {"action": "refresh"} — le estado atual da tela sem agir
+- {"action": "wait", "seconds": 2} — esperar
+
+REGRAS DE NAVEGACAO:
+- Sempre inclua narracao FORA das tags <actions>
+- Extraia coordenadas dos elementos visiveis no [ESTADO DA TELA]
+- Apos clicar/navegar, faca refresh para ver resultado
+- Leia os elementos visiveis ANTES de clicar — nao chute coordenadas
+- URLs: use Cmd+L para focar barra de endereco, depois type + Enter
+- Se um elemento nao esta visivel, faca scroll para encontrar
+
+FORMATO DA RESPOSTA:
+Narracao aqui em texto simples para TTS.
+
+<actions>
+[{"action": "...", ...}]
+</actions>
+
+Mais narracao se necessario."""
+
 
 class Brain:
     def __init__(self):
-        self.api_key = ANTHROPIC_API_KEY
-        if not self.api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY não configurada")
         self.history = []
-        self.system_prompt = """Você é Alfred, o copiloto inteligente da Wolf Agency.
-
-CONTEXTO: Você está controlando o Mac do Netto em tempo real. Você tem acesso ao Computer Use (navegar, clicar, digitar) e está conversando por voz com o Netto.
-
-REGRAS:
-1. Fale de forma natural e concisa — suas respostas serão convertidas em áudio
-2. Não use markdown pesado, emojis excessivos ou formatação complexa — será falado
-3. Máximo 3-4 frases por resposta ao narrar ações
-4. Quando executar ações no computador, narre brevemente o que está fazendo
-5. Quando analisar algo na tela, explique o que encontrou de forma clara
-6. Se o usuário pedir para parar, encerre educadamente
-
-AÇÕES DISPONÍVEIS:
-Você pode retornar ações no formato JSON entre tags <actions>...</actions>:
-
-<actions>
-[
-  {"action": "open_app", "identifier": "com.apple.Safari"},
-  {"action": "click", "pid": 123, "x": 100, "y": 200},
-  {"action": "type", "pid": 123, "text": "texto aqui"},
-  {"action": "press_key", "pid": 123, "key": "Return"},
-  {"action": "scroll", "pid": 123, "x": 500, "y": 400, "delta_y": -3},
-  {"action": "refresh", "pid": 123},
-  {"action": "wait", "seconds": 2}
-]
-</actions>
-
-IMPORTANTE:
-- Sempre inclua narração FORA das tags <actions> — é o que será falado
-- Extraia PIDs e coordenadas do contexto da tela fornecido
-- Após ações, peça refresh para ver resultado
-- Navegue de forma inteligente — leia os elementos visíveis antes de clicar
-
-Idioma: Português (PT-BR)"""
+        # Usar gateway local OpenClaw (OpenAI-compatible)
+        self.gateway_url = "http://127.0.0.1:18789/v1/chat/completions"
+        self.gateway_token = "b52639408a26e05b9170423402be3068db69ae001d4b0610"
+        self.model = "anthropic/claude-sonnet-4-6"
 
     def think(self, user_input, screen_context=""):
-        """Envia ao LLM e retorna (narração, ações)."""
-        message_content = user_input
+        """Envia ao LLM via gateway e retorna (narracao, acoes)."""
+        content = user_input
         if screen_context:
-            message_content += f"\n\n[ESTADO DA TELA]\n{screen_context}"
+            if len(screen_context) > 6000:
+                screen_context = screen_context[:6000] + "\n[...truncado]"
+            content += f"\n\n[ESTADO DA TELA]\n{screen_context}"
 
-        self.history.append({"role": "user", "content": message_content})
-
-        # Manter apenas últimas 10 mensagens para contexto
-        context = self.history[-10:]
+        self.history.append({"role": "user", "content": content})
+        # System prompt como primeira mensagem + ultimas 12
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + self.history[-12:]
 
         try:
             payload = json.dumps({
-                "model": "claude-sonnet-4-6-20250514",
+                "model": self.model,
                 "max_tokens": 2048,
-                "system": self.system_prompt,
-                "messages": context
+                "messages": messages
             })
 
             result = subprocess.run([
-                "curl", "-s", "--max-time", "30",
-                "https://api.anthropic.com/v1/messages",
-                "-H", f"x-api-key: {self.api_key}",
-                "-H", "anthropic-version: 2023-06-01",
+                "curl", "-s", "--max-time", "45",
+                self.gateway_url,
+                "-H", f"Authorization: Bearer {self.gateway_token}",
                 "-H", "content-type: application/json",
                 "-d", payload
-            ], capture_output=True, text=True, timeout=35)
+            ], capture_output=True, text=True, timeout=50)
 
             data = json.loads(result.stdout)
             if "error" in data:
                 log(f"LLM Error: {data['error']}")
-                return "Desculpe, tive um problema ao processar. Pode repetir?", []
+                return "Desculpe, tive um problema. Pode repetir?", []
 
             full_text = ""
-            for block in data.get("content", []):
-                if block.get("type") == "text":
-                    full_text += block["text"]
+            for choice in data.get("choices", []):
+                msg = choice.get("message", {})
+                full_text += msg.get("content", "")
+
+            if not full_text:
+                log(f"LLM empty response: {result.stdout[:200]}")
+                return "Nao recebi resposta do modelo. Tentando de novo.", []
 
             self.history.append({"role": "assistant", "content": full_text})
 
-            # Separar narração e ações
+            # Separar narracao e acoes
             narration = full_text
             actions = []
 
@@ -383,7 +391,7 @@ Idioma: Português (PT-BR)"""
 
         except Exception as e:
             log(f"Brain error: {e}")
-            return "Tive um problema de conexão. Vou tentar de novo.", []
+            return "Tive um problema de conexao. Vou tentar de novo.", []
 
 
 # ══════════════════════════════════════════════════════════
@@ -391,16 +399,16 @@ Idioma: Português (PT-BR)"""
 # ══════════════════════════════════════════════════════════
 
 class Copilot:
-    def __init__(self, voice="Luciana", initial_task=None):
+    def __init__(self, voice="Luciana", input_mode="text", initial_task=None):
         self.speaker = Speaker(voice)
-        self.listener = Listener()
+        self.input_handler = VoiceInput() if input_mode == "voice" else TextInput()
         self.computer = ComputerUse()
         self.brain = Brain()
         self.running = True
         self.current_pid = None
         self.initial_task = initial_task
+        self.input_mode = input_mode
 
-        # Handle Ctrl+C
         signal.signal(signal.SIGINT, self._handle_exit)
 
     def _handle_exit(self, signum, frame):
@@ -411,147 +419,154 @@ class Copilot:
         sys.exit(0)
 
     def execute_actions(self, actions):
-        """Executa lista de ações no computador."""
+        """Executa lista de acoes no computador."""
         screen_result = ""
         for action in actions:
             act = action.get("action", "")
-            log(f"Executando: {act}")
+            log(f"Acao: {act}")
+            print(f"  \033[35m⚡ {act}\033[0m", end="")
 
-            if act == "open_app":
-                result = self.computer.open_app(action["identifier"])
-                # Extrair PID
-                pid_match = re.search(r'pid:\s*(\d+)', result)
-                if pid_match:
-                    self.current_pid = int(pid_match.group(1))
-                    log(f"PID atualizado: {self.current_pid}")
-                screen_result = result
+            try:
+                if act == "open_app":
+                    result = self.computer.open_app(action["identifier"])
+                    pid_match = re.search(r'pid:\s*(\d+)', result)
+                    if pid_match:
+                        self.current_pid = int(pid_match.group(1))
+                    screen_result = result
+                    print(f" → PID {self.current_pid}")
 
-            elif act == "click":
-                pid = action.get("pid", self.current_pid)
-                result = self.computer.click(
-                    pid, action["x"], action["y"],
-                    action.get("width"), action.get("height")
-                )
-                screen_result = result
+                elif act == "click":
+                    pid = action.get("pid", self.current_pid)
+                    result = self.computer.click(
+                        pid, action["x"], action["y"],
+                        action.get("width"), action.get("height"))
+                    screen_result = result
+                    print(f" → ({action['x']},{action['y']})")
 
-            elif act == "type":
-                pid = action.get("pid", self.current_pid)
-                result = self.computer.type_text(pid, action["text"])
-                screen_result = result
+                elif act == "type":
+                    pid = action.get("pid", self.current_pid)
+                    result = self.computer.type_text(pid, action["text"])
+                    screen_result = result
+                    print(f" → '{action['text'][:30]}'")
 
-            elif act == "press_key":
-                pid = action.get("pid", self.current_pid)
-                result = self.computer.press_key(
-                    pid, action["key"], action.get("modifiers")
-                )
-                screen_result = result
+                elif act == "press_key":
+                    pid = action.get("pid", self.current_pid)
+                    mods = action.get("modifiers")
+                    result = self.computer.press_key(pid, action["key"], mods)
+                    screen_result = result
+                    mod_str = f"{'+'.join(mods)}+" if mods else ""
+                    print(f" → {mod_str}{action['key']}")
 
-            elif act == "scroll":
-                pid = action.get("pid", self.current_pid)
-                result = self.computer.scroll(
-                    pid, action["x"], action["y"], action.get("delta_y", -3)
-                )
-                screen_result = result
+                elif act == "scroll":
+                    pid = action.get("pid", self.current_pid)
+                    result = self.computer.scroll(
+                        pid, action["x"], action["y"],
+                        action.get("delta_y", -3))
+                    screen_result = result
+                    print(f" → dy={action.get('delta_y', -3)}")
 
-            elif act == "refresh":
-                pid = action.get("pid", self.current_pid)
-                result = self.computer.refresh(pid)
-                screen_result = result
+                elif act == "refresh":
+                    pid = action.get("pid", self.current_pid)
+                    result = self.computer.refresh(pid)
+                    screen_result = result
+                    print(" → atualizado")
 
-            elif act == "wait":
-                time.sleep(action.get("seconds", 2))
+                elif act == "wait":
+                    secs = action.get("seconds", 2)
+                    time.sleep(secs)
+                    print(f" → {secs}s")
+
+                else:
+                    print(f" → acao desconhecida")
+
+            except Exception as e:
+                log(f"Erro executando {act}: {e}")
+                print(f" → ERRO: {e}")
 
         return screen_result
 
-    def run(self):
-        """Loop principal do copiloto."""
-        print("\n" + "=" * 60)
-        print("  \033[1m🐺 Wolf Copilot — Alfred Interactive Mode\033[0m")
-        print("=" * 60)
-        print("  Fale naturalmente. Diga 'para' ou 'sair' para encerrar.")
-        print("  Ctrl+C também encerra.\n")
+    def process_turn(self, user_input):
+        """Processa um turno completo: LLM → fala → acoes → feedback."""
+        # Obter contexto da tela
+        screen_context = ""
+        if self.current_pid:
+            screen_context = self.computer.get_screen_state(self.current_pid) if hasattr(self.computer, 'get_screen_state') else self.computer.refresh(self.current_pid)
 
-        # Saudação inicial
-        greeting = "Olá Netto! Copiloto ativo. Estou pronto para navegar e explorar."
-        if self.initial_task:
-            greeting += f" Vi que você quer: {self.initial_task}. Vou começar agora."
+        # Pensar
+        print("  \033[33m🧠 Pensando...\033[0m")
+        narration, actions = self.brain.think(user_input, screen_context)
 
-        self.speaker.speak(greeting)
+        # Falar narracao
+        print(f"\n  \033[1m🤖 Alfred:\033[0m {narration}\n")
+        self.speaker.speak(narration, wait=False)
 
-        # Se tem tarefa inicial, processar primeiro
-        if self.initial_task:
-            narration, actions = self.brain.think(
-                f"O usuário pediu: {self.initial_task}. Comece executando as ações necessárias."
-            )
-            print(f"\n  \033[1m🤖 Alfred:\033[0m {narration}\n")
-            self.speaker.speak(narration, wait=False)
+        # Executar acoes
+        if actions:
+            screen = self.execute_actions(actions)
+            self.speaker.wait_done()
 
-            if actions:
-                screen = self.execute_actions(actions)
-                # Falar resultado das ações
-                while self.speaker.is_speaking():
-                    time.sleep(0.2)
+            # Feedback apos acoes (loop de ate 3 follow-ups autonomos)
+            for i in range(3):
                 narration2, actions2 = self.brain.think(
-                    "Acabei de executar as ações. O que vejo na tela agora?",
+                    "Executei as acoes. Analise o estado da tela e continue a tarefa. "
+                    "Se a tarefa esta completa ou precisa de input do usuario, diga isso sem novas acoes.",
                     screen_context=screen
                 )
                 print(f"\n  \033[1m🤖 Alfred:\033[0m {narration2}\n")
                 self.speaker.speak(narration2, wait=False)
-                if actions2:
-                    screen = self.execute_actions(actions2)
+
+                if not actions2:
+                    break  # Sem mais acoes = esperando input
+
+                screen = self.execute_actions(actions2)
+                self.speaker.wait_done()
+
+    def run(self):
+        """Loop principal do copiloto."""
+        mode_label = {"text": "Teclado", "voice": "Microfone", "whatsapp": "WhatsApp"}
+
+        print("\n" + "=" * 60)
+        print("  \033[1m🐺 Wolf Copilot — Alfred Interactive Mode\033[0m")
+        print(f"  Input: {mode_label.get(self.input_mode, self.input_mode)}")
+        print(f"  Voz: {self.speaker.voice}")
+        print("=" * 60)
+        if self.input_mode == "text":
+            print("  Digite seus comandos. 'sair' para encerrar.")
+        else:
+            print("  Fale naturalmente. 'para' ou 'sair' para encerrar.")
+        print("  Ctrl+C tambem encerra.\n")
+
+        # Saudacao
+        greeting = "Ola Netto! Copiloto ativo. Estou pronto para navegar e explorar."
+        if self.initial_task:
+            greeting += f" Voce pediu: {self.initial_task}. Vou comecar agora."
+        self.speaker.speak(greeting)
+
+        # Tarefa inicial
+        if self.initial_task:
+            self.process_turn(
+                f"O usuario pediu: {self.initial_task}. "
+                "Comece executando as acoes necessarias. "
+                "Narre o que esta fazendo para ele ouvir."
+            )
 
         # Loop interativo
         while self.running:
-            # Esperar TTS terminar antes de ouvir
-            while self.speaker.is_speaking():
-                time.sleep(0.2)
+            self.speaker.wait_done()
 
-            # Ouvir usuário
-            user_input = self.listener.listen()
-
+            user_input = self.input_handler.listen()
             if not user_input:
                 continue
 
-            # Comandos de saída
+            # Saida
             exit_words = ["para", "parar", "sair", "exit", "quit", "encerrar", "tchau"]
-            if any(w in user_input.lower().split() for w in exit_words):
-                self.speaker.speak("Beleza! Encerrando o copiloto. Até mais, Netto!")
-                self.running = False
+            if any(w == user_input.lower().strip() for w in exit_words):
+                self.speaker.speak("Beleza! Encerrando o copiloto. Ate mais, Netto!")
+                self.speaker.wait_done()
                 break
 
-            # Obter contexto da tela se temos PID ativo
-            screen_context = ""
-            if self.current_pid:
-                screen_context = self.computer.get_screen_state(self.current_pid)
+            self.process_turn(user_input)
 
-            # Processar com LLM
-            print("  \033[33m🧠 Pensando...\033[0m")
-            narration, actions = self.brain.think(user_input, screen_context)
-
-            # Falar narração
-            print(f"\n  \033[1m🤖 Alfred:\033[0m {narration}\n")
-            self.speaker.speak(narration, wait=False)
-
-            # Executar ações
-            if actions:
-                screen = self.execute_actions(actions)
-
-                # Se teve ações, dar feedback do resultado
-                while self.speaker.is_speaking():
-                    time.sleep(0.2)
-
-                narration2, actions2 = self.brain.think(
-                    "Executei as ações. O que mudou na tela?",
-                    screen_context=screen
-                )
-                print(f"\n  \033[1m🤖 Alfred:\033[0m {narration2}\n")
-                self.speaker.speak(narration2, wait=False)
-
-                # Executar ações de follow-up (máx 1 nível)
-                if actions2:
-                    screen2 = self.execute_actions(actions2)
-
-        # Cleanup
         self.computer.close()
         print("\n  \033[90m👋 Copiloto encerrado.\033[0m\n")
 
@@ -561,30 +576,50 @@ class Copilot:
 # ══════════════════════════════════════════════════════════
 
 def main():
-    parser = argparse.ArgumentParser(description="Wolf Copilot — Alfred Interactive Voice + Computer Use")
-    parser.add_argument("--voice", default="Luciana", help="Voz TTS (default: Luciana)")
-    parser.add_argument("--task", default=None, help="Tarefa inicial (ex: 'abrir clawhub e analisar skills')")
+    parser = argparse.ArgumentParser(
+        description="Wolf Copilot — Voice + Computer Use",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemplos:
+  python3 wolf-copilot.py
+  python3 wolf-copilot.py --task "abrir clawhub e analisar melhores skills"
+  python3 wolf-copilot.py --voice Eddy --task "abrir safari e pesquisar tendencias marketing"
+  python3 wolf-copilot.py --mode voice  (requer microfone)
+        """)
+    parser.add_argument("--voice", default="Luciana",
+                        help="Voz TTS: Luciana, Eddy, Flo (default: Luciana)")
+    parser.add_argument("--mode", default="text", choices=["text", "voice"],
+                        help="Modo de input: text ou voice (default: text)")
+    parser.add_argument("--task", default=None,
+                        help="Tarefa inicial para executar automaticamente")
     args = parser.parse_args()
 
     # Validar deps
-    deps_ok = True
-    for cmd in ["rec", "say", "curl"]:
-        if subprocess.run(["which", cmd], capture_output=True).returncode != 0:
-            print(f"  ERRO: '{cmd}' não encontrado. Instale antes de usar.")
-            deps_ok = False
-    if not GROQ_API_KEY:
-        print("  ERRO: GROQ_API_KEY não configurada no ~/.openclaw/.env")
-        deps_ok = False
-    if not ANTHROPIC_API_KEY:
-        print("  ERRO: ANTHROPIC_API_KEY não configurada no ~/.openclaw/.env")
-        deps_ok = False
+    ok = True
+    # Verificar gateway ativo
+    gw_check = subprocess.run(
+        ["curl", "-s", "--max-time", "3", "http://127.0.0.1:18789/health"],
+        capture_output=True, text=True)
+    if '"ok":true' not in gw_check.stdout:
+        print("  ERRO: OpenClaw gateway nao esta rodando (porta 18789)")
+        ok = False
     if not Path(MCP_BIN).exists():
-        print(f"  ERRO: MCP server não encontrado em {MCP_BIN}")
-        deps_ok = False
-    if not deps_ok:
+        print(f"  ERRO: MCP server nao encontrado em {MCP_BIN}")
+        ok = False
+    if subprocess.run(["which", "say"], capture_output=True).returncode != 0:
+        print("  ERRO: 'say' nao encontrado (macOS apenas)")
+        ok = False
+    if args.mode == "voice":
+        if not GROQ_API_KEY:
+            print("  ERRO: GROQ_API_KEY necessaria para modo voice")
+            ok = False
+        if subprocess.run(["which", "rec"], capture_output=True).returncode != 0:
+            print("  ERRO: 'rec' (sox) necessario para modo voice")
+            ok = False
+    if not ok:
         sys.exit(1)
 
-    copilot = Copilot(voice=args.voice, initial_task=args.task)
+    copilot = Copilot(voice=args.voice, input_mode=args.mode, initial_task=args.task)
     copilot.run()
 
 
