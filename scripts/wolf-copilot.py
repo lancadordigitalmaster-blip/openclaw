@@ -330,7 +330,7 @@ class Brain:
         # Usar gateway local OpenClaw (OpenAI-compatible)
         self.gateway_url = "http://127.0.0.1:18789/v1/chat/completions"
         self.gateway_token = "b52639408a26e05b9170423402be3068db69ae001d4b0610"
-        self.model = "anthropic/claude-sonnet-4-6"
+        self.model = "anthropic/claude-haiku-4-5-20251001"
 
     def think(self, user_input, screen_context=""):
         """Envia ao LLM via gateway e retorna (narracao, acoes)."""
