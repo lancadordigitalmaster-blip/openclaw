@@ -1905,7 +1905,7 @@ function isAllowed(phone) {
 let copilotProcess = null;
 let copilotActive = false;
 
-const COPILOT_TRIGGERS = /^(copilot|copiloto|oi alfred.*(?:abre|abra|navega|entra|vai|mostra|analisa|pesquisa|busca))/i;
+const COPILOT_TRIGGERS = /^(copilot|copiloto|alfred[,.]?\s)/i;
 const COPILOT_SCRIPT = "/Users/thomasgirotto/.openclaw/workspace/scripts/wolf-copilot.py";
 
 function isCopilotCommand(text) {
@@ -1913,10 +1913,7 @@ function isCopilotCommand(text) {
 }
 
 function extractCopilotTask(text) {
-  // Remove trigger word and return the task
-  let task = text.replace(/^copilot[oe]?\s*/i, "").trim();
-  if (!task) task = text.replace(/^oi alfred[,.]?\s*/i, "").trim();
-  return task || text;
+  return text.replace(/^(copilot[oe]?|alfred)[,.]?\s*/i, "").trim() || text;
 }
 
 async function startCopilot(sock, from, task) {

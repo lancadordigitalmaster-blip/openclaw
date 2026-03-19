@@ -76,10 +76,16 @@ class Speaker:
             self.voice = voice
         else:
             self.voice = "pt-BR-AntonioNeural"
-        # Verificar se edge-tts está disponível
-        self.use_edge = subprocess.run(
-            ["python3", "-m", "edge_tts", "--version"],
-            capture_output=True).returncode == 0
+        # Verificar se edge-tts está disponível (tentar global e venv)
+        self.python = "python3"
+        self.use_edge = False
+        for py in ["/opt/homebrew/bin/python3", "python3", sys.executable]:
+            r = subprocess.run([py, "-m", "edge_tts", "--version"],
+                               capture_output=True, timeout=5)
+            if r.returncode == 0:
+                self.python = py
+                self.use_edge = True
+                break
         if not self.use_edge:
             log("edge-tts nao disponivel, usando macOS say como fallback")
             self.voice = "Eddy"
@@ -110,7 +116,7 @@ class Speaker:
             txt_file.write_text(clean, encoding="utf-8")
             self.process = subprocess.Popen(
                 ["bash", "-c",
-                 f'python3 -m edge_tts --voice "{self.voice}" '
+                 f'{self.python} -m edge_tts --voice "{self.voice}" '
                  f'-f {txt_file} '
                  f'--write-media {self.audio_file} 2>/dev/null && '
                  f'afplay {self.audio_file}'],
@@ -318,18 +324,20 @@ class ComputerUse:
 # LLM Brain — Anthropic Claude
 # ══════════════════════════════════════════════════════════
 
-SYSTEM_PROMPT = """Voce e Alfred, o copiloto inteligente da Wolf Agency.
+SYSTEM_PROMPT = """IDIOMA OBRIGATORIO: PORTUGUES BRASILEIRO. NUNCA responda em ingles.
+
+Voce e Alfred, o copiloto inteligente da Wolf Agency.
 
 CONTEXTO: Voce esta controlando o Mac do Netto em tempo real via Computer Use.
 Voce FALA pelo alto-falante (TTS) e o Netto digita ou fala de volta.
 
 REGRAS DE COMUNICACAO:
-1. Fale de forma natural, concisa e direta — suas respostas viram audio
-2. NAO use markdown, emojis, asteriscos, ou formatacao — sera falado em voz alta
-3. Maximo 3-4 frases por resposta
-4. Narre brevemente o que esta fazendo antes de agir
-5. Quando analisar a tela, resuma as informacoes mais relevantes
-6. Sempre responda em portugues brasileiro
+1. SEMPRE responda em PORTUGUES BRASILEIRO — sem excecao
+2. Fale de forma natural, concisa e direta — suas respostas viram audio
+3. NAO use markdown, emojis, asteriscos, ou formatacao — sera falado em voz alta
+4. Maximo 3-4 frases por resposta
+5. Narre brevemente o que esta fazendo antes de agir
+6. Quando analisar a tela, resuma as informacoes mais relevantes
 
 ACOES DISPONIVEIS:
 Retorne acoes entre tags <actions>...</actions> como JSON array.
