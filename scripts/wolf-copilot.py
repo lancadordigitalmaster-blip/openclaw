@@ -47,7 +47,18 @@ def load_env():
 load_env()
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
+# Gateway auth — lê token do openclaw.json
+def load_gateway_token():
+    try:
+        oc_file = Path.home() / ".openclaw" / "openclaw.json"
+        data = json.loads(oc_file.read_text())
+        return data.get("gateway", {}).get("auth", {}).get("token", "")
+    except Exception:
+        return ""
+
+GATEWAY_URL = "http://localhost:18789/v1/chat/completions"
+GATEWAY_TOKEN = load_gateway_token()
 
 # ── Logging ──
 def log(msg):
@@ -386,8 +397,7 @@ Narracao elegante aqui, senhor.
 class Brain:
     def __init__(self):
         self.history = []
-        self.api_key = ANTHROPIC_API_KEY
-        self.model = "claude-haiku-4-5-20251001"
+        self.model = "anthropic/claude-haiku-4-5-20251001"
 
     def think(self, user_input, screen_context=""):
         content = user_input
@@ -396,8 +406,10 @@ class Brain:
                 screen_context = screen_context[:6000] + "\n[...truncado]"
             content += f"\n\n[ESTADO DA TELA]\n{screen_context}"
 
+        # Montar mensagens com system prompt como primeira mensagem de sistema
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
         self.history.append({"role": "user", "content": content})
-        context = self.history[-12:]
+        messages.extend(self.history[-12:])
 
         try:
             import urllib.request
@@ -406,17 +418,15 @@ class Brain:
             payload = json.dumps({
                 "model": self.model,
                 "max_tokens": 2048,
-                "system": SYSTEM_PROMPT,
-                "messages": context
+                "messages": messages
             }).encode("utf-8")
 
-            log(f"Brain: chamando API ({self.model})")
+            log(f"Brain: chamando gateway ({self.model})")
             req = urllib.request.Request(
-                "https://api.anthropic.com/v1/messages",
+                GATEWAY_URL,
                 data=payload,
                 headers={
-                    "x-api-key": self.api_key,
-                    "anthropic-version": "2023-06-01",
+                    "Authorization": f"Bearer {GATEWAY_TOKEN}",
                     "content-type": "application/json",
                 },
                 method="POST"
@@ -438,10 +448,11 @@ class Brain:
                 log(f"LLM Error: {data['error']}")
                 return "Receio que tive um contratempo, senhor. Pode repetir?", []
 
+            # Formato OpenAI-compatible do gateway
             full_text = ""
-            for block in data.get("content", []):
-                if block.get("type") == "text":
-                    full_text += block["text"]
+            choices = data.get("choices", [])
+            if choices:
+                full_text = choices[0].get("message", {}).get("content", "")
 
             if not full_text:
                 log("LLM: resposta vazia")
@@ -658,8 +669,8 @@ Exemplos:
     args = parser.parse_args()
 
     ok = True
-    if not ANTHROPIC_API_KEY:
-        print("  ERRO: ANTHROPIC_API_KEY nao configurada no ~/.openclaw/.env")
+    if not GATEWAY_TOKEN:
+        print("  ERRO: Gateway token nao encontrado em ~/.openclaw/openclaw.json")
         ok = False
     if not Path(MCP_BIN).exists():
         print(f"  ERRO: MCP server nao encontrado em {MCP_BIN}")
