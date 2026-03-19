@@ -376,13 +376,11 @@ Mais narracao se necessario."""
 class Brain:
     def __init__(self):
         self.history = []
-        # Usar gateway local OpenClaw (OpenAI-compatible)
-        self.gateway_url = "http://127.0.0.1:18789/v1/chat/completions"
-        self.gateway_token = "b52639408a26e05b9170423402be3068db69ae001d4b0610"
-        self.model = "anthropic/claude-haiku-4-5-20251001"
+        self.api_key = ANTHROPIC_API_KEY
+        self.model = "claude-haiku-4-5-20251001"
 
     def think(self, user_input, screen_context=""):
-        """Envia ao LLM via gateway e retorna (narracao, acoes)."""
+        """Envia ao LLM via API Anthropic direta."""
         content = user_input
         if screen_context:
             if len(screen_context) > 6000:
@@ -390,23 +388,24 @@ class Brain:
             content += f"\n\n[ESTADO DA TELA]\n{screen_context}"
 
         self.history.append({"role": "user", "content": content})
-        # System prompt como primeira mensagem + ultimas 12
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + self.history[-12:]
+        context = self.history[-12:]
 
         try:
             payload = json.dumps({
                 "model": self.model,
                 "max_tokens": 2048,
-                "messages": messages
+                "system": SYSTEM_PROMPT,
+                "messages": context
             })
 
             result = subprocess.run([
-                "curl", "-s", "--max-time", "45",
-                self.gateway_url,
-                "-H", f"Authorization: Bearer {self.gateway_token}",
+                "curl", "-s", "--max-time", "30",
+                "https://api.anthropic.com/v1/messages",
+                "-H", f"x-api-key: {self.api_key}",
+                "-H", "anthropic-version: 2023-06-01",
                 "-H", "content-type: application/json",
                 "-d", payload
-            ], capture_output=True, text=True, timeout=50)
+            ], capture_output=True, text=True, timeout=35)
 
             data = json.loads(result.stdout)
             if "error" in data:
@@ -414,17 +413,16 @@ class Brain:
                 return "Desculpe, tive um problema. Pode repetir?", []
 
             full_text = ""
-            for choice in data.get("choices", []):
-                msg = choice.get("message", {})
-                full_text += msg.get("content", "")
+            for block in data.get("content", []):
+                if block.get("type") == "text":
+                    full_text += block["text"]
 
             if not full_text:
-                log(f"LLM empty response: {result.stdout[:200]}")
-                return "Nao recebi resposta do modelo. Tentando de novo.", []
+                log(f"LLM empty: {result.stdout[:200]}")
+                return "Nao recebi resposta. Tentando de novo.", []
 
             self.history.append({"role": "assistant", "content": full_text})
 
-            # Separar narracao e acoes
             narration = full_text
             actions = []
 
@@ -645,12 +643,8 @@ Exemplos:
 
     # Validar deps
     ok = True
-    # Verificar gateway ativo
-    gw_check = subprocess.run(
-        ["curl", "-s", "--max-time", "3", "http://127.0.0.1:18789/health"],
-        capture_output=True, text=True)
-    if '"ok":true' not in gw_check.stdout:
-        print("  ERRO: OpenClaw gateway nao esta rodando (porta 18789)")
+    if not ANTHROPIC_API_KEY:
+        print("  ERRO: ANTHROPIC_API_KEY nao configurada no ~/.openclaw/.env")
         ok = False
     if not Path(MCP_BIN).exists():
         print(f"  ERRO: MCP server nao encontrado em {MCP_BIN}")

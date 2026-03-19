@@ -78,15 +78,33 @@ for lid in LIST_IDS:
     if data and "tasks" in data:
         active_tasks.extend(data["tasks"])
 
-# PASSO 2 — Completed today
+# PASSO 2 — Produção do dia (finalizada + enviado ao cliente + conferência interna)
+# Regra Netto: "enviado ao cliente" e "conferência interna" contam como produção do designer
+DONE_STATUSES = ["finalizada", "enviado ao cliente", "conferência interna", "conferencia interna"]
 completed_tasks = []
+alteracoes_hoje = []  # em alteração mas criadas hoje = demanda nova
+
 for lid in LIST_IDS:
-    data = api_get(f"list/{lid}/task?include_closed=true&subtasks=false&page=0&statuses%5B%5D=finalizada&order_by=updated&reverse=true")
+    # Buscar tarefas atualizadas hoje (todas, para filtrar por status)
+    data = api_get(f"list/{lid}/task?include_closed=true&subtasks=false&page=0&date_updated_gt={today_start_ms}")
     if data and "tasks" in data:
         for t in data["tasks"]:
-            date_closed = t.get("date_closed")
-            if date_closed and int(date_closed) >= today_start_ms:
+            status = (t.get("status", {}).get("status", "") or "").lower()
+            # Finalizada: precisa date_closed hoje
+            if status == "finalizada":
+                date_closed = t.get("date_closed")
+                if date_closed and int(date_closed) >= today_start_ms:
+                    completed_tasks.append(t)
+            # Enviado ao cliente / conferência interna: date_updated hoje já basta
+            elif status in ["enviado ao cliente", "conferência interna", "conferencia interna"]:
                 completed_tasks.append(t)
+            # Em alteração: se foi criada hoje = demanda nova (conta). Se não = alteração (não conta como nova)
+            elif "alterac" in status or "alteraç" in status:
+                date_created = int(t.get("date_created") or 0)
+                if date_created >= today_start_ms:
+                    completed_tasks.append(t)  # Criada e produzida no mesmo dia
+                else:
+                    alteracoes_hoje.append(t)  # Veio de outro dia, é alteração
 
 # Extract designer from custom fields
 def get_designer(task):

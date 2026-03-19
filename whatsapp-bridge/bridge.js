@@ -1905,7 +1905,7 @@ function isAllowed(phone) {
 let copilotProcess = null;
 let copilotActive = false;
 
-const COPILOT_TRIGGERS = /^(copilot|copiloto|alfred[,.]?\s)/i;
+const COPILOT_TRIGGERS = /^(copilot|copiloto|alfredo?[,.]?\s)/i;
 const COPILOT_SCRIPT = "/Users/thomasgirotto/.openclaw/workspace/scripts/wolf-copilot.py";
 
 function isCopilotCommand(text) {
@@ -1913,7 +1913,7 @@ function isCopilotCommand(text) {
 }
 
 function extractCopilotTask(text) {
-  return text.replace(/^(copilot[oe]?|alfred)[,.]?\s*/i, "").trim() || text;
+  return text.replace(/^(copilot[oe]?|alfredo?)[,.]?\s*/i, "").trim() || text;
 }
 
 async function startCopilot(sock, from, task) {
