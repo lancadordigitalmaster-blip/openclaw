@@ -70,39 +70,49 @@ def log(msg):
 
 
 # ══════════════════════════════════════════════════════════
-# TTS — Text-to-Speech via Edge TTS Neural
+# TTS — Text-to-Speech (ElevenLabs JARVIS → Edge TTS fallback)
 # ══════════════════════════════════════════════════════════
 
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
+# Daniel — voz britanica profunda, a mais proxima do JARVIS
+ELEVENLABS_VOICE_ID = "onwK4e9ZLuTAKqWW03F9"
+
 class Speaker:
-    def __init__(self, voice="antonio"):
+    def __init__(self, voice="jarvis"):
         self.process = None
         self.audio_file = Path("/tmp/wolf-alfred-tts.mp3")
-        self.voice_map = {
-            "antonio": "pt-BR-AntonioNeural",
-            "francisca": "pt-BR-FranciscaNeural",
-            "thalita": "pt-BR-ThalitaMultilingualNeural",
-        }
-        voice_lower = voice.lower()
-        if voice_lower in self.voice_map:
-            self.voice = self.voice_map[voice_lower]
-        elif voice.startswith("pt-BR-"):
-            self.voice = voice
-        else:
-            self.voice = "pt-BR-AntonioNeural"
-        self.python = "python3"
+        self.use_elevenlabs = False
         self.use_edge = False
-        for py in ["/opt/homebrew/bin/python3", "python3", sys.executable]:
-            r = subprocess.run([py, "-m", "edge_tts", "--version"],
-                               capture_output=True, timeout=5)
-            if r.returncode == 0:
-                self.python = py
-                self.use_edge = True
-                break
-        if not self.use_edge:
-            log("edge-tts indisponivel, fallback macOS say")
-            self.voice = "Eddy"
-        else:
-            log(f"TTS: Edge Neural ({self.voice})")
+        self.python = "python3"
+
+        # Prioridade 1: ElevenLabs (voz JARVIS)
+        if ELEVENLABS_API_KEY:
+            # Testar API com request minimo
+            try:
+                import urllib.request
+                req = urllib.request.Request(
+                    "https://api.elevenlabs.io/v1/user",
+                    headers={"xi-api-key": ELEVENLABS_API_KEY}
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    self.use_elevenlabs = True
+                    log("TTS: ElevenLabs JARVIS (Daniel — British Deep)")
+            except Exception as e:
+                log(f"ElevenLabs indisponivel: {e}")
+
+        # Prioridade 2: Edge TTS com pitch grave
+        if not self.use_elevenlabs:
+            for py in ["/opt/homebrew/bin/python3", "python3", sys.executable]:
+                r = subprocess.run([py, "-m", "edge_tts", "--version"],
+                                   capture_output=True, timeout=5)
+                if r.returncode == 0:
+                    self.python = py
+                    self.use_edge = True
+                    break
+            if self.use_edge:
+                log("TTS: Edge Neural (AntonioNeural pitch grave)")
+            else:
+                log("TTS: fallback macOS say")
 
     def _clean_text(self, text):
         clean = re.sub(r'[*_`#\[\]()]', '', text)
@@ -110,6 +120,54 @@ class Speaker:
         clean = re.sub(r'<[^>]+>', '', clean)
         clean = clean.replace('\n', '. ').replace('  ', ' ')
         return clean[:2000].strip()
+
+    def _speak_elevenlabs(self, text):
+        """TTS via ElevenLabs API — voz JARVIS."""
+        import urllib.request
+        payload = json.dumps({
+            "text": text,
+            "model_id": "eleven_multilingual_v2",
+            "voice_settings": {
+                "stability": 0.75,
+                "similarity_boost": 0.80,
+                "style": 0.35,
+                "use_speaker_boost": True
+            }
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}",
+            data=payload,
+            headers={
+                "xi-api-key": ELEVENLABS_API_KEY,
+                "content-type": "application/json",
+                "accept": "audio/mpeg",
+            },
+            method="POST"
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                audio_data = resp.read()
+                self.audio_file.write_bytes(audio_data)
+                return True
+        except Exception as e:
+            log(f"ElevenLabs erro: {e}")
+            return False
+
+    def _speak_edge(self, text):
+        """TTS via Edge TTS com pitch grave (-15Hz)."""
+        txt_file = Path("/tmp/wolf-alfred-tts.txt")
+        txt_file.write_text(text, encoding="utf-8")
+        self.process = subprocess.Popen(
+            ["bash", "-c",
+             f'{self.python} -m edge_tts --voice "pt-BR-AntonioNeural" '
+             f'--pitch="-15Hz" --rate="-5%" '
+             f'-f {txt_file} '
+             f'--write-media {self.audio_file} 2>/dev/null && '
+             f'afplay {self.audio_file}'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
 
     def speak(self, text, wait=True):
         if not text or not text.strip():
@@ -120,24 +178,24 @@ class Speaker:
 
         log(f"TTS: {clean[:80]}...")
 
-        if self.use_edge:
-            txt_file = Path("/tmp/wolf-alfred-tts.txt")
-            txt_file.write_text(clean, encoding="utf-8")
-            self.process = subprocess.Popen(
-                ["bash", "-c",
-                 f'{self.python} -m edge_tts --voice "{self.voice}" '
-                 f'-f {txt_file} '
-                 f'--write-media {self.audio_file} 2>/dev/null && '
-                 f'afplay {self.audio_file}'],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
+        if self.use_elevenlabs:
+            if self._speak_elevenlabs(clean):
+                self.process = subprocess.Popen(
+                    ["afplay", str(self.audio_file)],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+            else:
+                # Fallback para Edge se ElevenLabs falhar
+                self._speak_edge(clean)
+        elif self.use_edge:
+            self._speak_edge(clean)
         else:
             self.process = subprocess.Popen(
-                ["say", "-v", self.voice, "-r", "210", clean],
+                ["say", "-v", "Eddy", "-r", "190", clean],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
 
-        if wait:
+        if wait and self.process:
             self.process.wait()
 
     def stop(self):
@@ -660,8 +718,8 @@ Exemplos:
   python3 wolf-copilot.py --voice antonio --task "abrir safari e pesquisar noticias"
   python3 wolf-copilot.py --mode voice
         """)
-    parser.add_argument("--voice", default="antonio",
-                        help="Voz TTS: antonio, francisca, thalita (default: antonio)")
+    parser.add_argument("--voice", default="jarvis",
+                        help="Voz TTS: jarvis (ElevenLabs), antonio, francisca (default: jarvis)")
     parser.add_argument("--mode", default="text", choices=["text", "voice"],
                         help="Modo de input: text ou voice (default: text)")
     parser.add_argument("--task", default=None,
