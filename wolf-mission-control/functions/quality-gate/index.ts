@@ -124,10 +124,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "output_id obrigatório" }), { status: 400 });
     }
 
-    // 1. Buscar output com missão e agente
+    // 1. Buscar output com missão e agente (clients separado — evita bug schema cache)
     const { data: outputRecord } = await supabase
       .from("mission_outputs")
-      .select(`*, missions(*, agents(*), clients(*))`)
+      .select(`*, missions(*, agents(*))`)
       .eq("id", output_id)
       .single();
 

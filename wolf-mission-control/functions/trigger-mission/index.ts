@@ -1,13 +1,13 @@
 // Wolf Mission Control — Edge Function: trigger-mission
 // Versão: 2.0 | 2026-03-18
 // Aciona um agente para executar uma missão com contexto completo
-// LLM: Anthropic Haiku 4.5 (migrado de Ollama Cloud em 2026-03-18)
+// LLM: Anthropic Haiku 4.5 via OpenRouter (migrado de Anthropic direto em 2026-03-19)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY")!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const NETTO_TELEGRAM_ID = "789352357";
 
@@ -20,15 +20,25 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "mission_id obrigatório" }), { status: 400 });
     }
 
-    // 1. Buscar missão com agente e cliente
+    // 1. Buscar missão com agente (clients separado — evita bug de schema cache)
     const { data: mission, error: missionErr } = await supabase
       .from("missions")
-      .select(`*, agents(*), clients(*)`)
+      .select(`*, agents(*)`)
       .eq("id", mission_id)
       .single();
 
     if (missionErr || !mission) {
-      return new Response(JSON.stringify({ error: "Missão não encontrada" }), { status: 404 });
+      return new Response(JSON.stringify({ error: "Missão não encontrada", detail: missionErr?.message }), { status: 404 });
+    }
+
+    // Buscar cliente separadamente (defensivo contra schema cache)
+    if (mission.client_id) {
+      const { data: client } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", mission.client_id)
+        .single();
+      mission.clients = client;
     }
 
     // 2. Marcar como in_progress
