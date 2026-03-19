@@ -39,7 +39,10 @@ def load_env():
         for line in ENV_FILE.read_text().splitlines():
             if "=" in line and not line.strip().startswith("#"):
                 key, _, val = line.partition("=")
-                os.environ.setdefault(key.strip(), val.strip())
+                k, v = key.strip(), val.strip()
+                # Forcar carregamento — sobrescreve se vazio ou ausente
+                if v and (not os.environ.get(k) or len(os.environ.get(k, "")) < 5):
+                    os.environ[k] = v
 
 load_env()
 

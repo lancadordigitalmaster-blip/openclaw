@@ -110,24 +110,23 @@ Se precisar sinalizar outro agente, use o formato:
 [/SIGNALS]
 `.trim();
 
-    // 7. Chamar Anthropic API (Haiku 4.5)
-    const model = "claude-haiku-4-5-20251001";
+    // 7. Chamar LLM via OpenRouter (Anthropic Haiku 4.5)
+    const model = "anthropic/claude-haiku-4-5";
     const maxTokens = Math.min(mission.agents.max_tokens || 4096, 8192);
 
     const llmResponse = await fetch(
-      "https://api.anthropic.com/v1/messages",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model,
           max_tokens: maxTokens,
-          system: systemPrompt,
           messages: [
+            { role: "system", content: systemPrompt },
             { role: "user", content: contextualPrompt },
           ],
         }),
@@ -136,12 +135,12 @@ Se precisar sinalizar outro agente, use o formato:
 
     if (!llmResponse.ok) {
       const errBody = await llmResponse.text();
-      throw new Error(`Anthropic API error: ${llmResponse.status} — ${errBody}`);
+      throw new Error(`OpenRouter API error: ${llmResponse.status} — ${errBody}`);
     }
 
     const llmResult = await llmResponse.json();
-    const output = llmResult.content[0].text;
-    const tokensUsed = llmResult.usage?.output_tokens || 0;
+    const output = llmResult.choices[0].message.content;
+    const tokensUsed = llmResult.usage?.completion_tokens || 0;
 
     // 8. Salvar output
     const { data: outputRecord } = await supabase

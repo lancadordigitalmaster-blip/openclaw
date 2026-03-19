@@ -4,13 +4,13 @@
 // Aprovado (≥0.65) → missão done + aciona memory-writer
 // Reprovado (<0.65) → cria missão de revisão (máx 2 tentativas)
 // 3ª falha → escala para Netto via Telegram
-// LLM: Anthropic Haiku 4.5 (migrado de Ollama Cloud/Gemma em 2026-03-18)
+// LLM: Anthropic Haiku 4.5 via OpenRouter (migrado de Anthropic direto em 2026-03-19)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANTHROPIC_API_KEY    = Deno.env.get("ANTHROPIC_API_KEY")!;
+const OPENROUTER_API_KEY   = Deno.env.get("OPENROUTER_API_KEY")!;
 const TELEGRAM_BOT_TOKEN   = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const NETTO_TELEGRAM_ID    = Deno.env.get("NETTO_TELEGRAM_ID") ?? "789352357";
 
@@ -57,28 +57,27 @@ OUTPUT A AVALIAR:
 ${output.slice(0, 3000)}`;
 
   const res = await fetch(
-    "https://api.anthropic.com/v1/messages",
+    "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
       headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "anthropic/claude-haiku-4-5",
         max_tokens: 512,
-        system: system,
         messages: [
+          { role: "system", content: system },
           { role: "user", content: user },
         ],
       }),
     }
   );
 
-  if (!res.ok) throw new Error(`Anthropic quality-gate error: ${res.status}`);
+  if (!res.ok) throw new Error(`OpenRouter quality-gate error: ${res.status}`);
   const json = await res.json();
-  const raw  = json.content[0].text;
+  const raw  = json.choices[0].message.content;
 
   const jsonMatch = raw.match(/\{[\s\S]+\}/);
   if (!jsonMatch) throw new Error(`Quality gate não retornou JSON: ${raw}`);
