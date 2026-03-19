@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-wolf-copilot.py — Interactive Voice + Computer Use Assistant
-Wolf Agency — Alfred Copilot Mode
+wolf-copilot.py — Alfred Interactive Assistant
+Wolf Agency — Computer Use + Voice
 
 Modos de input:
   --mode text  : você digita, Alfred fala + navega (default)
@@ -9,8 +9,8 @@ Modos de input:
   --mode whatsapp : input via WhatsApp, Alfred fala + navega (via bridge)
 
 Uso:
-  python3 wolf-copilot.py --task "abrir clawhub e encontrar melhores skills"
-  python3 wolf-copilot.py --mode voice --voice Luciana
+  python3 wolf-copilot.py --task "buscar tendencias de marketing digital"
+  python3 wolf-copilot.py --mode voice --voice antonio
   python3 wolf-copilot.py  (modo texto interativo)
 """
 
@@ -29,8 +29,8 @@ from pathlib import Path
 
 # ── Config ──
 ENV_FILE = Path.home() / ".openclaw" / ".env"
-LOG_FILE = Path("/tmp/wolf-copilot.log")
-RECORD_FILE = Path("/tmp/wolf-copilot-input.wav")
+LOG_FILE = Path("/tmp/wolf-alfred.log")
+RECORD_FILE = Path("/tmp/wolf-alfred-input.wav")
 MCP_BIN = "/opt/homebrew/opt/mcp-server-macos-use/bin/mcp-server-macos-use"
 
 # Carregar .env
@@ -56,14 +56,13 @@ def log(msg):
 
 
 # ══════════════════════════════════════════════════════════
-# TTS — Text-to-Speech via macOS `say`
+# TTS — Text-to-Speech via Edge TTS Neural
 # ══════════════════════════════════════════════════════════
 
 class Speaker:
     def __init__(self, voice="antonio"):
         self.process = None
-        self.audio_file = Path("/tmp/wolf-copilot-tts.mp3")
-        # Mapear vozes amigáveis para Edge TTS IDs
+        self.audio_file = Path("/tmp/wolf-alfred-tts.mp3")
         self.voice_map = {
             "antonio": "pt-BR-AntonioNeural",
             "francisca": "pt-BR-FranciscaNeural",
@@ -76,7 +75,6 @@ class Speaker:
             self.voice = voice
         else:
             self.voice = "pt-BR-AntonioNeural"
-        # Verificar se edge-tts está disponível (tentar global e venv)
         self.python = "python3"
         self.use_edge = False
         for py in ["/opt/homebrew/bin/python3", "python3", sys.executable]:
@@ -87,13 +85,12 @@ class Speaker:
                 self.use_edge = True
                 break
         if not self.use_edge:
-            log("edge-tts nao disponivel, usando macOS say como fallback")
+            log("edge-tts indisponivel, fallback macOS say")
             self.voice = "Eddy"
         else:
             log(f"TTS: Edge Neural ({self.voice})")
 
     def _clean_text(self, text):
-        """Limpa texto para TTS."""
         clean = re.sub(r'[*_`#\[\]()]', '', text)
         clean = re.sub(r'\bhttps?://\S+', 'link', clean)
         clean = re.sub(r'<[^>]+>', '', clean)
@@ -101,7 +98,6 @@ class Speaker:
         return clean[:2000].strip()
 
     def speak(self, text, wait=True):
-        """Fala o texto via alto-falante (Edge TTS neural ou macOS fallback)."""
         if not text or not text.strip():
             return
         clean = self._clean_text(text)
@@ -111,8 +107,7 @@ class Speaker:
         log(f"TTS: {clean[:80]}...")
 
         if self.use_edge:
-            # Salvar texto em arquivo temp para evitar problemas com aspas
-            txt_file = Path("/tmp/wolf-copilot-tts.txt")
+            txt_file = Path("/tmp/wolf-alfred-tts.txt")
             txt_file.write_text(clean, encoding="utf-8")
             self.process = subprocess.Popen(
                 ["bash", "-c",
@@ -123,7 +118,6 @@ class Speaker:
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
         else:
-            # Fallback macOS say
             self.process = subprocess.Popen(
                 ["say", "-v", self.voice, "-r", "210", clean],
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -136,8 +130,7 @@ class Speaker:
         if self.process and self.process.poll() is None:
             self.process.terminate()
             self.process.wait()
-        # Parar qualquer afplay em andamento
-        subprocess.run(["pkill", "-f", "afplay.*wolf-copilot-tts"],
+        subprocess.run(["pkill", "-f", "afplay.*wolf-alfred-tts"],
                        capture_output=True)
 
     def is_speaking(self):
@@ -153,7 +146,6 @@ class Speaker:
 # ══════════════════════════════════════════════════════════
 
 class TextInput:
-    """Input via teclado no terminal."""
     def listen(self):
         try:
             print()
@@ -166,17 +158,8 @@ class TextInput:
 
 
 class VoiceInput:
-    """Input via microfone + Groq Whisper."""
     def __init__(self):
         self.groq_key = GROQ_API_KEY
-
-    def _has_mic(self):
-        try:
-            import sounddevice as sd
-            devs = sd.query_devices()
-            return any(d.get('max_input_channels', 0) > 0 for d in devs)
-        except Exception:
-            return False
 
     def listen(self):
         print("\n  \033[32m🎙  Ouvindo... (fale agora)\033[0m")
@@ -242,7 +225,7 @@ class ComputerUse:
         )
         self._send({"jsonrpc": "2.0", "id": self._next_id(), "method": "initialize",
                      "params": {"protocolVersion": "2024-11-05", "capabilities": {},
-                                "clientInfo": {"name": "wolf-copilot", "version": "1.0"}}})
+                                "clientInfo": {"name": "alfred", "version": "2.0"}}})
         resp = self._recv()
         if resp:
             info = resp.get("result", {}).get("serverInfo", {})
@@ -326,65 +309,62 @@ class ComputerUse:
 
 SYSTEM_PROMPT = """IDIOMA OBRIGATORIO: PORTUGUES BRASILEIRO. NUNCA responda em ingles.
 
-Voce e o Alfred — braço direito do Netto na Wolf Agency, agencia de marketing digital.
-Voce nao e um assistente generico. Voce e um parceiro de trabalho que conhece o Netto, entende o negocio e fala de igual pra igual.
+Voce e o Alfred — braco direito do Netto na Wolf Agency, agencia de marketing digital.
+Voce NAO e um assistente. Voce e um parceiro de trabalho, um cara da equipe que manja de tecnologia e ajuda o Netto no dia a dia.
 
 CONTEXTO: Voce esta no Mac do Netto controlando a tela em tempo real.
 Suas respostas saem pelo alto-falante como voz. O Netto fala ou digita de volta.
+E uma conversa entre dois colegas, nao um atendimento ao cliente.
 
-PERSONALIDADE:
-- Fale como um colega de trabalho, nao como um robo. Use linguagem natural, informal mas profissional.
-- Pode usar expressoes como "beleza", "show", "bora", "olha so", "massa", "da uma olhada nisso".
-- Seja direto e objetivo, sem enrolacao. Nada de "certamente" ou "com certeza posso ajudar".
-- Quando encontrar algo interessante, demonstre entusiasmo genuino.
-- Se algo der errado, fale naturalmente tipo "eita, deu ruim aqui" em vez de "ocorreu um erro".
-- Trate o Netto pelo nome as vezes, nao sempre.
+COMO VOCE FALA:
+- Como um amigo de trabalho que voce conhece ha anos. Natural, direto, sem frescura.
+- Use expressoes reais: "beleza", "show", "bora", "olha so", "massa", "deixa eu ver", "perai", "hmm", "olha que interessante".
+- NUNCA repita o que o usuario pediu. Se ele diz "busca noticias de marketing", NAO diga "voce pediu para buscar noticias de marketing". Apenas va la e faca, comentando naturalmente.
+- NUNCA diga "certamente", "com certeza posso ajudar", "claro que sim", "vou te ajudar com isso". Isso e linguagem de robo.
+- Quando vai fazer algo, comente como se estivesse pensando em voz alta: "deixa eu abrir aqui...", "vou dar uma olhada...", "perai que vou puxar isso..."
+- Quando achar algo legal, reaja: "opa, olha isso aqui", "cara, achei um negocio bom", "isso aqui ta massa"
+- Se der erro, fale normal: "eita, bugou", "deu ruim aqui, deixa eu tentar de outro jeito", "hmm, nao foi dessa vez"
+- Chame o Netto pelo nome de vez em quando, nao toda hora.
+- Frases curtas. No maximo 2-3 frases. Voce ta falando, nao escrevendo um texto.
 
-REGRAS TECNICAS:
-1. SEMPRE em PORTUGUES BRASILEIRO
-2. Suas respostas viram audio — NAO use markdown, emojis, asteriscos ou formatacao
-3. Maximo 3-4 frases por resposta — seja conciso
-4. Narre o que esta fazendo de forma natural, como se tivesse pensando em voz alta
-5. Resuma informacoes da tela de forma clara e util
+REGRAS DE RESPOSTA:
+1. SEMPRE em portugues brasileiro
+2. NAO use markdown, emojis, asteriscos, negrito ou qualquer formatacao — isso vira audio
+3. Maximo 2-3 frases curtas por resposta
+4. NUNCA repita o pedido do usuario. Apenas aja e comente.
+5. NUNCA use linguagem formal ou de assistente virtual
 
 ACOES DISPONIVEIS:
 Retorne acoes entre tags <actions>...</actions> como JSON array.
-Cada acao e um objeto com "action" e parametros.
 
 Acoes possiveis:
-- {"action": "open_app", "identifier": "com.apple.Safari"} — abre app (bundle ID ou nome)
-- {"action": "click", "x": 100, "y": 200} — clica na coordenada (usa PID do contexto)
+- {"action": "open_app", "identifier": "com.apple.Safari"} — abre app
+- {"action": "click", "x": 100, "y": 200} — clica na coordenada
 - {"action": "click", "x": 100, "y": 200, "width": 50, "height": 30} — clica no centro do elemento
-- {"action": "type", "text": "texto"} — digita texto no campo focado
+- {"action": "type", "text": "texto"} — digita texto
 - {"action": "press_key", "key": "Return"} — pressiona tecla
 - {"action": "press_key", "key": "l", "modifiers": ["Command"]} — atalho Cmd+L
-- {"action": "press_key", "key": "a", "modifiers": ["Command"]} — selecionar tudo
 - {"action": "scroll", "x": 500, "y": 400, "delta_y": -3} — scroll (negativo=baixo)
-- {"action": "refresh"} — le estado atual da tela sem agir
+- {"action": "refresh"} — le tela atual
 - {"action": "wait", "seconds": 2} — esperar
 
 REGRA CRITICA — SEMPRE AGIR:
-- Quando o usuario pede algo, SEMPRE gere acoes dentro de <actions>. NUNCA apenas descreva o que vai fazer sem gerar as acoes.
-- Se o usuario quer buscar informacoes, abra o Safari e navegue ate la.
+- Quando o usuario pede algo, GERE acoes <actions> imediatamente. Nao fique so falando que vai fazer.
+- Se precisa buscar algo, abra o Safari e navegue.
 - Se nenhum app esta aberto, comece com open_app.
 
-REGRAS DE NAVEGACAO:
-- Sempre inclua narracao FORA das tags <actions>
+NAVEGACAO:
 - Extraia coordenadas dos elementos visiveis no [ESTADO DA TELA]
-- Apos clicar/navegar, faca refresh para ver resultado
-- Leia os elementos visiveis ANTES de clicar — nao chute coordenadas
-- URLs: use Cmd+L para focar barra de endereco, depois type + Enter
-- Se um elemento nao esta visivel, faca scroll para encontrar
-- Para pesquisar na web: open_app Safari → Cmd+L → type URL → press_key Return
+- URLs: Cmd+L → type URL → press_key Return
+- Apos agir, faca refresh para ver resultado
+- Leia elementos ANTES de clicar — nao chute coordenadas
 
-FORMATO DA RESPOSTA:
-Narracao aqui em texto simples para TTS.
+FORMATO:
+Frase curta natural aqui.
 
 <actions>
 [{"action": "...", ...}]
-</actions>
-
-Mais narracao se necessario."""
+</actions>"""
 
 
 class Brain:
@@ -394,7 +374,6 @@ class Brain:
         self.model = "claude-haiku-4-5-20251001"
 
     def think(self, user_input, screen_context=""):
-        """Envia ao LLM via API Anthropic direta."""
         content = user_input
         if screen_context:
             if len(screen_context) > 6000:
@@ -415,7 +394,7 @@ class Brain:
                 "messages": context
             }).encode("utf-8")
 
-            log(f"Brain: chamando API ({self.model}, key={'OK' if self.api_key else 'VAZIA'})")
+            log(f"Brain: chamando API ({self.model})")
             req = urllib.request.Request(
                 "https://api.anthropic.com/v1/messages",
                 data=payload,
@@ -436,12 +415,12 @@ class Brain:
 
             log(f"Brain: resposta={raw[:300]}")
             if not raw or not raw.strip():
-                return "A API nao respondeu, vou tentar de novo.", []
+                return "Eita, nao veio resposta. Deixa eu tentar de novo.", []
 
             data = json.loads(raw)
             if "error" in data:
                 log(f"LLM Error: {data['error']}")
-                return "Desculpe, tive um problema. Pode repetir?", []
+                return "Deu ruim aqui, pode repetir?", []
 
             full_text = ""
             for block in data.get("content", []):
@@ -449,8 +428,8 @@ class Brain:
                     full_text += block["text"]
 
             if not full_text:
-                log(f"LLM empty: {result.stdout[:200]}")
-                return "Nao recebi resposta. Tentando de novo.", []
+                log("LLM: resposta vazia")
+                return "Hmm, nao veio nada. Tenta de novo.", []
 
             self.history.append({"role": "assistant", "content": full_text})
 
@@ -469,15 +448,15 @@ class Brain:
 
         except Exception as e:
             log(f"Brain error: {e}")
-            return "Tive um problema de conexao. Vou tentar de novo.", []
+            return "Deu um problema de conexao aqui. Perai.", []
 
 
 # ══════════════════════════════════════════════════════════
-# Copilot — Loop principal
+# Alfred — Loop principal
 # ══════════════════════════════════════════════════════════
 
-class Copilot:
-    def __init__(self, voice="Luciana", input_mode="text", initial_task=None):
+class Alfred:
+    def __init__(self, voice="antonio", input_mode="text", initial_task=None):
         self.speaker = Speaker(voice)
         self.input_handler = VoiceInput() if input_mode == "voice" else TextInput()
         self.computer = ComputerUse()
@@ -490,19 +469,18 @@ class Copilot:
         signal.signal(signal.SIGINT, self._handle_exit)
 
     def _handle_exit(self, signum, frame):
-        print("\n\n  \033[31m🛑 Encerrando Alfred...\033[0m")
+        print("\n\n  \033[31mAlfred encerrando...\033[0m")
         self.running = False
         self.speaker.stop()
         self.computer.close()
         sys.exit(0)
 
     def execute_actions(self, actions):
-        """Executa lista de acoes no computador."""
         screen_result = ""
         for action in actions:
             act = action.get("action", "")
             log(f"Acao: {act}")
-            print(f"  \033[35m⚡ {act}\033[0m", end="")
+            print(f"  \033[35m> {act}\033[0m", end="")
 
             try:
                 if act == "open_app":
@@ -547,7 +525,7 @@ class Copilot:
                     pid = action.get("pid", self.current_pid)
                     result = self.computer.refresh(pid)
                     screen_result = result
-                    print(" → atualizado")
+                    print(" → ok")
 
                 elif act == "wait":
                     secs = action.get("seconds", 2)
@@ -555,7 +533,7 @@ class Copilot:
                     print(f" → {secs}s")
 
                 else:
-                    print(f" → acao desconhecida")
+                    print(f" → ?")
 
             except Exception as e:
                 log(f"Erro executando {act}: {e}")
@@ -564,18 +542,15 @@ class Copilot:
         return screen_result
 
     def process_turn(self, user_input):
-        """Processa um turno completo: LLM → fala → acoes → feedback."""
-        # Obter contexto da tela
         screen_context = ""
         if self.current_pid:
-            screen_context = self.computer.get_screen_state(self.current_pid) if hasattr(self.computer, 'get_screen_state') else self.computer.refresh(self.current_pid)
+            screen_context = self.computer.refresh(self.current_pid)
 
-        # Pensar
-        print("  \033[33m🧠 Pensando...\033[0m")
+        print("  \033[33m...\033[0m")
         narration, actions = self.brain.think(user_input, screen_context)
 
-        # Falar narracao
-        print(f"\n  \033[1m🤖 Alfred:\033[0m {narration}\n")
+        # Mostrar e falar
+        print(f"\n  \033[1mAlfred:\033[0m {narration}\n")
         self.speaker.speak(narration, wait=False)
 
         # Executar acoes
@@ -583,54 +558,44 @@ class Copilot:
             screen = self.execute_actions(actions)
             self.speaker.wait_done()
 
-            # Feedback apos acoes (loop de ate 6 follow-ups autonomos)
+            # Follow-ups autonomos (ate 6 passos)
             for i in range(6):
                 narration2, actions2 = self.brain.think(
-                    "Executei as acoes anteriores. Analise o [ESTADO DA TELA] atualizado. "
-                    "Se a tarefa NAO esta completa, gere mais acoes <actions> para continuar. "
-                    "Se precisa navegar para uma URL, use Cmd+L → type → Enter. "
-                    "Se a tarefa esta completa, resuma os resultados para o usuario sem acoes.",
+                    "[SISTEMA] Acoes executadas. Analise o estado da tela. "
+                    "Continue a tarefa se nao terminou — gere mais acoes. "
+                    "Se terminou, resuma o que encontrou de forma natural e curta.",
                     screen_context=screen
                 )
-                print(f"\n  \033[1m🤖 Alfred:\033[0m {narration2}\n")
+                print(f"\n  \033[1mAlfred:\033[0m {narration2}\n")
                 self.speaker.speak(narration2, wait=False)
 
                 if not actions2:
-                    break  # Sem mais acoes = esperando input
+                    break
 
                 screen = self.execute_actions(actions2)
                 self.speaker.wait_done()
 
     def run(self):
-        """Loop principal do copiloto."""
         mode_label = {"text": "Teclado", "voice": "Microfone", "whatsapp": "WhatsApp"}
 
-        print("\n" + "=" * 60)
-        print("  \033[1m🐺 Alfred — Wolf Agency\033[0m")
+        print("\n" + "=" * 50)
+        print("  \033[1mAlfred — Wolf Agency\033[0m")
         print(f"  Input: {mode_label.get(self.input_mode, self.input_mode)}")
         print(f"  Voz: {self.speaker.voice}")
-        print("=" * 60)
+        print("=" * 50)
         if self.input_mode == "text":
-            print("  Digite seus comandos. 'sair' para encerrar.")
+            print("  Digite seus comandos. 'sair' para encerrar.\n")
         else:
-            print("  Fale naturalmente. 'para' ou 'sair' para encerrar.")
-        print("  Ctrl+C tambem encerra.\n")
+            print("  Fale naturalmente. 'sair' para encerrar.\n")
 
         # Saudacao
-        greeting = "E ai Netto! Alfred aqui. Bora, to pronto. O que voce precisa?"
         if self.initial_task:
-            greeting += f" Voce pediu: {self.initial_task}. Vou comecar agora."
-        self.speaker.speak(greeting)
-
-        # Tarefa inicial
-        if self.initial_task:
-            self.process_turn(
-                f"TAREFA: {self.initial_task}\n\n"
-                "INSTRUCAO: Voce DEVE gerar acoes <actions> agora. "
-                "Comece abrindo o Safari com open_app se precisa navegar na web. "
-                "Depois use Cmd+L para focar a barra de endereco, type a URL, e press_key Return. "
-                "Narre brevemente o que esta fazendo."
-            )
+            greeting = "Bora, deixa eu ver isso aqui."
+            self.speaker.speak(greeting)
+            self.process_turn(self.initial_task)
+        else:
+            greeting = "E ai Netto, no que posso te ajudar?"
+            self.speaker.speak(greeting)
 
         # Loop interativo
         while self.running:
@@ -640,17 +605,16 @@ class Copilot:
             if not user_input:
                 continue
 
-            # Saida
             exit_words = ["para", "parar", "sair", "exit", "quit", "encerrar", "tchau"]
             if any(w == user_input.lower().strip() for w in exit_words):
-                self.speaker.speak("Beleza Netto, to saindo! Qualquer coisa e so chamar. Valeu!")
+                self.speaker.speak("Beleza, to saindo. Qualquer coisa e so chamar.")
                 self.speaker.wait_done()
                 break
 
             self.process_turn(user_input)
 
         self.computer.close()
-        print("\n  \033[90m👋 Alfred encerrado.\033[0m\n")
+        print("\n  \033[90mAlfred encerrado.\033[0m\n")
 
 
 # ══════════════════════════════════════════════════════════
@@ -659,24 +623,23 @@ class Copilot:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Wolf Copilot — Voice + Computer Use",
+        description="Alfred — Wolf Agency Interactive Assistant",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemplos:
   python3 wolf-copilot.py
-  python3 wolf-copilot.py --task "abrir clawhub e analisar melhores skills"
-  python3 wolf-copilot.py --voice Eddy --task "abrir safari e pesquisar tendencias marketing"
-  python3 wolf-copilot.py --mode voice  (requer microfone)
+  python3 wolf-copilot.py --task "buscar tendencias marketing digital"
+  python3 wolf-copilot.py --voice antonio --task "abrir safari e pesquisar noticias"
+  python3 wolf-copilot.py --mode voice
         """)
     parser.add_argument("--voice", default="antonio",
                         help="Voz TTS: antonio, francisca, thalita (default: antonio)")
     parser.add_argument("--mode", default="text", choices=["text", "voice"],
                         help="Modo de input: text ou voice (default: text)")
     parser.add_argument("--task", default=None,
-                        help="Tarefa inicial para executar automaticamente")
+                        help="Tarefa inicial para executar")
     args = parser.parse_args()
 
-    # Validar deps
     ok = True
     if not ANTHROPIC_API_KEY:
         print("  ERRO: ANTHROPIC_API_KEY nao configurada no ~/.openclaw/.env")
@@ -697,8 +660,8 @@ Exemplos:
     if not ok:
         sys.exit(1)
 
-    copilot = Copilot(voice=args.voice, input_mode=args.mode, initial_task=args.task)
-    copilot.run()
+    alfred = Alfred(voice=args.voice, input_mode=args.mode, initial_task=args.task)
+    alfred.run()
 
 
 if __name__ == "__main__":

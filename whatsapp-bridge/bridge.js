@@ -1900,87 +1900,82 @@ function isAllowed(phone) {
 }
 
 // ============================================================
-// COPILOT MODE — Computer Use + Voice
+// ALFRED MODE — Computer Use + Voice
 // ============================================================
-let copilotProcess = null;
-let copilotActive = false;
+let alfredProcess = null;
+let alfredActive = false;
 
-const COPILOT_TRIGGERS = /^(copilot|copiloto|alfredo?)[,.\s]/i;
-const COPILOT_SCRIPT = "/Users/thomasgirotto/.openclaw/workspace/scripts/wolf-copilot.py";
+const ALFRED_TRIGGERS = /^(alfred|alfredo)[,.\s]/i;
+const ALFRED_SCRIPT = "/Users/thomasgirotto/.openclaw/workspace/scripts/wolf-copilot.py";
 
-function isCopilotCommand(text) {
-  return COPILOT_TRIGGERS.test(text.trim());
+function isAlfredCommand(text) {
+  return ALFRED_TRIGGERS.test(text.trim());
 }
 
-function extractCopilotTask(text) {
-  return text.replace(/^(copilot[oe]?|alfredo?)[,.\s]*/i, "").trim() || text;
+function extractAlfredTask(text) {
+  return text.replace(/^alfredo?[,.\s]*/i, "").trim() || text;
 }
 
-async function startCopilot(sock, from, task) {
-  if (copilotActive && copilotProcess) {
-    // Já ativo — enviar comando pro stdin
+async function startAlfred(sock, from, task) {
+  if (alfredActive && alfredProcess) {
     try {
-      copilotProcess.stdin.write(task + "\n");
-      log("copilot", `Comando enviado ao copilot ativo: ${task.slice(0, 60)}`);
+      alfredProcess.stdin.write(task + "\n");
+      log("alfred", `Comando enviado: ${task.slice(0, 60)}`);
       return;
     } catch {
-      copilotActive = false;
+      alfredActive = false;
     }
   }
 
-  copilotActive = true;
-  log("copilot", `Iniciando copilot: ${task.slice(0, 80)}`);
+  alfredActive = true;
+  log("alfred", `Iniciando: ${task.slice(0, 80)}`);
 
   await sock.sendMessage(from, {
-    text: "🐺 *Alfred ativado!*\nNavegando e falando pelo alto-falante do Mac...\nMande mensagens para continuar interagindo.\nDigite *sair* para desativar.",
+    text: "🐺 *Alfred no controle*\nFalando pelo alto-falante do Mac.\nMande *sair* para desativar.",
   });
 
-  copilotProcess = spawn("python3", [COPILOT_SCRIPT, "--task", task], {
+  alfredProcess = spawn("python3", [ALFRED_SCRIPT, "--task", task], {
     stdio: ["pipe", "pipe", "pipe"],
     env: { ...process.env, PYTHONUNBUFFERED: "1" },
   });
 
-  let outputBuffer = "";
-
-  copilotProcess.stdout.on("data", (data) => {
+  alfredProcess.stdout.on("data", (data) => {
     const text = data.toString();
-    outputBuffer += text;
-    // Capturar linhas do Alfred para enviar no WhatsApp
-    const alfredLines = text.split("\n").filter((l) => l.includes("Alfred:"));
-    for (const line of alfredLines) {
+    const lines = text.split("\n").filter((l) => l.includes("Alfred:"));
+    for (const line of lines) {
       const clean = line.replace(/\x1b\[[0-9;]*m/g, "").replace(/.*Alfred:\s*/, "").trim();
       if (clean && clean.length > 5) {
-        sock.sendMessage(from, { text: `🤖 ${clean}` }).catch(() => {});
+        sock.sendMessage(from, { text: `🐺 ${clean}` }).catch(() => {});
       }
     }
   });
 
-  copilotProcess.stderr.on("data", (data) => {
-    log("copilot", `stderr: ${data.toString().slice(0, 200)}`);
+  alfredProcess.stderr.on("data", (data) => {
+    log("alfred", `stderr: ${data.toString().slice(0, 200)}`);
   });
 
-  copilotProcess.on("close", (code) => {
-    log("copilot", `Alfred encerrado (code ${code})`);
-    copilotActive = false;
-    copilotProcess = null;
-    sock.sendMessage(from, { text: "🐺 Alfred desativado." }).catch(() => {});
+  alfredProcess.on("close", (code) => {
+    log("alfred", `Encerrado (code ${code})`);
+    alfredActive = false;
+    alfredProcess = null;
+    sock.sendMessage(from, { text: "🐺 Alfred saiu." }).catch(() => {});
   });
 }
 
-function stopCopilot() {
-  if (copilotProcess) {
+function stopAlfred() {
+  if (alfredProcess) {
     try {
-      copilotProcess.stdin.write("sair\n");
+      alfredProcess.stdin.write("sair\n");
     } catch {}
     setTimeout(() => {
-      if (copilotProcess) {
-        copilotProcess.kill("SIGTERM");
-        copilotProcess = null;
+      if (alfredProcess) {
+        alfredProcess.kill("SIGTERM");
+        alfredProcess = null;
       }
-      copilotActive = false;
+      alfredActive = false;
     }, 3000);
   }
-  copilotActive = false;
+  alfredActive = false;
 }
 
 async function handleText(sock, from, body) {
@@ -1989,28 +1984,28 @@ async function handleText(sock, from, body) {
 
   log("in", `${phone} | texto: ${body.length > 80 ? body.slice(0, 80) + "..." : body}`);
 
-  // Copilot: desativar
-  if (copilotActive && /^(sair|para|parar|desativa|exit)\s*$/i.test(body.trim())) {
-    stopCopilot();
-    await sock.sendMessage(from, { text: "🐺 Alfred desativado." });
+  // Alfred mode: desativar
+  if (alfredActive && /^(sair|para|parar|desativa|exit)\s*$/i.test(body.trim())) {
+    stopAlfred();
+    await sock.sendMessage(from, { text: "🐺 Alfred saiu." });
     return;
   }
 
-  // Copilot: comando enquanto ativo
-  if (copilotActive && copilotProcess) {
+  // Alfred mode: comando enquanto ativo
+  if (alfredActive && alfredProcess) {
     try {
-      copilotProcess.stdin.write(body + "\n");
-      log("copilot", `Input enviado: ${body.slice(0, 60)}`);
+      alfredProcess.stdin.write(body + "\n");
+      log("alfred", `Input: ${body.slice(0, 60)}`);
     } catch {
-      copilotActive = false;
+      alfredActive = false;
     }
     return;
   }
 
-  // Copilot: ativar
-  if (isCopilotCommand(body)) {
-    const task = extractCopilotTask(body);
-    await startCopilot(sock, from, task);
+  // Alfred mode: ativar
+  if (isAlfredCommand(body)) {
+    const task = extractAlfredTask(body);
+    await startAlfred(sock, from, task);
     return;
   }
 
@@ -2036,23 +2031,21 @@ async function handleAudio(sock, from, msg) {
       const buffer = await downloadMediaMessage(msg, "buffer", {});
       const transcription = await transcribeAudio(buffer);
 
-      // Copilot: enviar transcrição como input se ativo
-      if (copilotActive && copilotProcess) {
+      // Alfred mode: enviar transcricao se ativo
+      if (alfredActive && alfredProcess) {
         try {
-          copilotProcess.stdin.write(transcription + "\n");
-          log("copilot", `Audio input: ${transcription.slice(0, 60)}`);
-          await sock.sendMessage(from, { text: `🎙️ _${transcription}_` });
+          alfredProcess.stdin.write(transcription + "\n");
+          log("alfred", `Audio input: ${transcription.slice(0, 60)}`);
         } catch {
-          copilotActive = false;
+          alfredActive = false;
         }
         return;
       }
 
-      // Copilot: ativar via áudio
-      if (isCopilotCommand(transcription)) {
-        const task = extractCopilotTask(transcription);
-        await sock.sendMessage(from, { text: `🎙️ _${transcription}_` });
-        await startCopilot(sock, from, task);
+      // Alfred mode: ativar via audio
+      if (isAlfredCommand(transcription)) {
+        const task = extractAlfredTask(transcription);
+        await startAlfred(sock, from, task);
         return;
       }
 
