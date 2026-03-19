@@ -363,6 +363,11 @@ Acoes possiveis:
 - {"action": "refresh"} — le estado atual da tela sem agir
 - {"action": "wait", "seconds": 2} — esperar
 
+REGRA CRITICA — SEMPRE AGIR:
+- Quando o usuario pede algo, SEMPRE gere acoes dentro de <actions>. NUNCA apenas descreva o que vai fazer sem gerar as acoes.
+- Se o usuario quer buscar informacoes, abra o Safari e navegue ate la.
+- Se nenhum app esta aberto, comece com open_app.
+
 REGRAS DE NAVEGACAO:
 - Sempre inclua narracao FORA das tags <actions>
 - Extraia coordenadas dos elementos visiveis no [ESTADO DA TELA]
@@ -370,6 +375,7 @@ REGRAS DE NAVEGACAO:
 - Leia os elementos visiveis ANTES de clicar — nao chute coordenadas
 - URLs: use Cmd+L para focar barra de endereco, depois type + Enter
 - Se um elemento nao esta visivel, faca scroll para encontrar
+- Para pesquisar na web: open_app Safari → Cmd+L → type URL → press_key Return
 
 FORMATO DA RESPOSTA:
 Narracao aqui em texto simples para TTS.
@@ -577,11 +583,13 @@ class Copilot:
             screen = self.execute_actions(actions)
             self.speaker.wait_done()
 
-            # Feedback apos acoes (loop de ate 3 follow-ups autonomos)
-            for i in range(3):
+            # Feedback apos acoes (loop de ate 6 follow-ups autonomos)
+            for i in range(6):
                 narration2, actions2 = self.brain.think(
-                    "Executei as acoes. Analise o estado da tela e continue a tarefa. "
-                    "Se a tarefa esta completa ou precisa de input do usuario, diga isso sem novas acoes.",
+                    "Executei as acoes anteriores. Analise o [ESTADO DA TELA] atualizado. "
+                    "Se a tarefa NAO esta completa, gere mais acoes <actions> para continuar. "
+                    "Se precisa navegar para uma URL, use Cmd+L → type → Enter. "
+                    "Se a tarefa esta completa, resuma os resultados para o usuario sem acoes.",
                     screen_context=screen
                 )
                 print(f"\n  \033[1m🤖 Alfred:\033[0m {narration2}\n")
@@ -617,9 +625,11 @@ class Copilot:
         # Tarefa inicial
         if self.initial_task:
             self.process_turn(
-                f"O usuario pediu: {self.initial_task}. "
-                "Comece executando as acoes necessarias. "
-                "Narre o que esta fazendo para ele ouvir."
+                f"TAREFA: {self.initial_task}\n\n"
+                "INSTRUCAO: Voce DEVE gerar acoes <actions> agora. "
+                "Comece abrindo o Safari com open_app se precisa navegar na web. "
+                "Depois use Cmd+L para focar a barra de endereco, type a URL, e press_key Return. "
+                "Narre brevemente o que esta fazendo."
             )
 
         # Loop interativo
