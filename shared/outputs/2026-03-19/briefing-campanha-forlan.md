@@ -1,6 +1,7 @@
 # Briefing de Campanha — William Forlan
+**Produto:** Curso de vídeos realistas com IA
 **Elaborado por:** Alfred (Wolf Agency)
-**Data:** 19/03/2026
+**Data:** 19/03/2026 (atualizado após correção de segmento)
 **Status:** Aguardando aprovação Netto + confirmação de dados com cliente
 
 ---
@@ -12,106 +13,119 @@
 | William Forlan (`act_299753830`) | Post impulsionado ativo | Sem objetivo de conversão |
 | CA 01 \| Forlan (`act_1215299206693994`) | Campanha pausada/sem entrega | Budget insuficiente, 0 conversões |
 
-**Conclusão:** Estrutura atual não gera resultado. Precisa refazer do zero com objetivo claro.
+**Conclusão:** Estrutura atual não gera resultado. Refazer do zero com foco em venda/captação de alunos.
 
 ---
 
-## Inferências (confirmar com cliente)
+## Produto
 
-- **Segmento:** Tatuador — estilo realismo (baseado no nome da campanha "REALISMO | QUENTE + MORNO")
-- **Objetivo provável:** Captação de clientes para agendamento de sessões
-- **Público provável:** Pessoas interessadas em tatuagem realismo, faixa 18–35 anos
+- **O que é:** Curso ensinando a criar vídeos realistas usando IA
+- **Formato provável:** Digital (infoproduto) — entrega online
+- **Ticket:** ⚠️ Confirmar com cliente (define toda a estratégia de funil)
+
+---
+
+## Objetivo de Campanha
+
+Depende do ticket do curso:
+
+| Ticket | Objetivo recomendado | Funil |
+|--------|---------------------|-------|
+| Até R$ 197 | Conversão direta | Anúncio → Página de vendas → Compra |
+| R$ 197–497 | Lead WPP ou Forms | Anúncio → WPP/Forms → Qualificação → Venda |
+| Acima de R$ 497 | Lead qualificado | Anúncio → Forms → Call de vendas |
+
+> ⚠️ **Confirmar ticket com Forlan antes de definir objetivo.**
 
 ---
 
 ## Estrutura Recomendada
 
-### Objetivo de Campanha
-**Mensagens (WhatsApp)** — Ideal para tatuadores: lead entra direto no WPP, já começa conversa de agendamento.
-
-> Alternativa: **Formulário de leads** (Forms) se quiser qualificar antes do contato.
-
----
-
-### Estrutura de Conta
-
 **Usar apenas: CA 01 | Forlan** (`act_1215299206693994`)
-- Parar o impulsionamento da conta William Forlan — não gera retorno
-- Concentrar tudo em 1 conta estruturada
-
----
-
-### Estrutura de Campanha (CBO recomendado)
+- Parar o impulsionamento da conta William Forlan
+- Concentrar budget em 1 conta estruturada
 
 ```
-📁 CAMPANHA — [CBO] [FORLAN] [WPP] [REALISMO]
+📁 CAMPANHA — [CBO] [FORLAN] [CURSO IA] [CONVERSÃO/WPP]
    Budget diário: R$ 30–50/dia (mínimo viável)
-   Objetivo: Mensagens (WhatsApp)
+   Objetivo: Conversão ou Mensagens (definir após ticket)
 
-   📂 Conjunto 1 — Público Frio | Amplo
-      Idade: 18–35
-      Localização: [cidade do estúdio + raio 30km]
-      Interesses: tatuagem, body art, tattoo
-      Criativos: 3 peças (ver abaixo)
+   📂 Conjunto 1 — Público Frio | Interesse em IA
+      Idade: 20–45
+      Interesses: Inteligência artificial, edição de vídeo, criação de conteúdo,
+                  freelancer, produção audiovisual, ChatGPT, Midjourney
+      Criativos: 3 peças
 
-   📂 Conjunto 2 — Público Quente | Engajamento
-      Pessoas que interagiram com o perfil nos últimos 30–60 dias
-      Criativos: 2 peças (ver abaixo)
+   📂 Conjunto 2 — Público Frio | Criadores de Conteúdo
+      Interesses: YouTube, TikTok, criação de conteúdo, influencer,
+                  marketing digital, renda extra online
+      Criativos: 3 peças
+
+   📂 Conjunto 3 — Público Quente (após 7+ dias rodando)
+      Visitantes da página de vendas (pixel)
+      Engajamento com perfil nos últimos 30 dias
+      Criativos: 2 peças de remarketing
 ```
 
 ---
 
-### Criativos Recomendados (mínimo 3 por campanha)
+## Criativos Recomendados
 
-**Criativo A — Portfólio Antes/Depois**
-- Formato: Carrossel ou vídeo rápido (10–15s)
-- Conteúdo: Processo da tatuagem → resultado final
-- Gancho: *"Você com essa tattoo ou você sem ela?"*
-- CTA: "Manda mensagem e agenda sua sessão"
+**Criativo A — Demonstração de resultado (MELHOR PARA ESSE NICHO)**
+- Formato: Vídeo curto 15–30s (Reels)
+- Conteúdo: Mostrar um vídeo realista criado com IA → revelar que é IA
+- Gancho: *"Você achou que era real? Fiz isso com IA em menos de 10 minutos."*
+- CTA: "Aprenda como → [link/WPP]"
 
-**Criativo B — Prova Social**
-- Formato: Imagem estática ou Reels
-- Conteúdo: Print/depoimento de cliente satisfeito + foto da tattoo
-- Gancho: *"[Nome] queria essa tattoo há anos. Agendou. Ficou assim."*
-- CTA: "Clique e fale comigo"
+**Criativo B — Transformação / Antes e Depois**
+- Formato: Carrossel ou vídeo
+- Conteúdo: Antes (vídeo comum) vs Depois (vídeo realista com IA)
+- Gancho: *"A diferença entre um vídeo amador e um vídeo profissional hoje é só uma ferramenta."*
+- CTA: "Clica e descobre qual"
 
-**Criativo C — Autoridade / Estilo**
-- Formato: Vídeo curto (bastidores da sessão, mão trabalhando)
-- Gancho: *"Realismo feito com quem leva a sério"*
-- CTA: "Agenda aberta — vagas limitadas"
+**Criativo C — Oportunidade de mercado**
+- Formato: Vídeo falado (face cam) ou estático
+- Conteúdo: Posicionar o criador de vídeo IA como profissão/renda
+- Gancho: *"Quem aprender isso agora vai estar 2 anos na frente do mercado."*
+- CTA: "Entra na lista / Garante sua vaga"
 
----
-
-### Copies de CTA (testar A/B)
-
-**Opção 1 (escassez):**
-> "Agenda de [MÊS] quase cheia. Me chama no WhatsApp e garante sua vaga."
-
-**Opção 2 (curiosidade):**
-> "Antes de fazer sua próxima tattoo, me manda uma mensagem. Pode mudar sua decisão."
-
-**Opção 3 (direta):**
-> "Orçamento sem compromisso. Clique e fala comigo agora."
+**Criativo D — Prova Social (quando tiver alunos)**
+- Formato: Depoimento em vídeo ou print
+- Conteúdo: Aluno mostrando o que criou depois do curso
+- Alta conversão para públicos mornos/quentes
 
 ---
 
-### Segmentação de Público (detalhar com cliente)
+## Copies de CTA (testar A/B)
+
+**Opção 1 (curiosidade + IA):**
+> "Criei esse vídeo com IA em 10 minutos. Parece real? Ensino você a fazer igual."
+
+**Opção 2 (dor do mercado):**
+> "Produtoras cobram R$3.000 por um vídeo assim. Você pode criar sozinho por R$0."
+
+**Opção 3 (urgência/escassez):**
+> "Turma [X] abrindo. Vagas limitadas. Aprenda a criar vídeos realistas com IA do zero."
+
+---
+
+## Segmentação de Público
 
 | Campo | Dado necessário |
 |-------|----------------|
-| Cidade / região | ⚠️ Confirmar localização do estúdio |
-| Raio de atendimento | ⚠️ Confirmar se atende fora da cidade |
-| Faixa etária | Sugestão: 18–40 |
-| Gênero | Todos (salvo indicação do cliente) |
-| Interesses | Tatuagem, realismo, body art, tattoo artists |
+| Localização | Brasil (nacional) — curso digital |
+| Faixa etária | 20–45 anos |
+| Gênero | Todos |
+| Interesses principais | IA, edição de vídeo, criação de conteúdo, freelancer |
+| Interesses secundários | Renda extra, marketing digital, YouTube, TikTok |
 
 ---
 
-### Pixel & Rastreamento
+## Pixel & Rastreamento
 
-- ⚠️ Verificar se pixel está instalado (site ou link de agendamento)
-- Se não tiver site: usar **WhatsApp direto como destino** (sem necessidade de pixel)
-- Configurar evento de conversão: "Mensagem enviada"
+- ⚠️ Confirmar se tem página de vendas com pixel instalado
+- Se não tiver: usar **WhatsApp ou Forms** como destino
+- Configurar evento: "Lead" ou "Purchase" dependendo do funil
 
 ---
 
@@ -119,21 +133,19 @@
 
 | Cenário | Budget/dia | Budget/mês | Expectativa |
 |---------|-----------|------------|-------------|
-| Teste inicial | R$ 30/dia | R$ 900 | 15–30 leads/mês |
-| Escala básica | R$ 50/dia | R$ 1.500 | 30–60 leads/mês |
-| Escala real | R$ 100/dia | R$ 3.000 | 80–150 leads/mês |
-
-> CPA estimado: R$ 15–40 por lead (dependendo do criativo e público)
+| Teste inicial | R$ 30/dia | R$ 900 | Validar criativos e público |
+| Escala básica | R$ 50/dia | R$ 1.500 | 20–50 leads/mês |
+| Escala real | R$ 100+/dia | R$ 3.000+ | Depende do ticket/funil |
 
 ---
 
 ## Checklist Pré-Lançamento
 
-- [ ] Confirmar objetivo com Forlan (WPP ou Forms?)
-- [ ] Confirmar localização do estúdio
-- [ ] Confirmar budget disponível
-- [ ] Criativos prontos (fotos/vídeos do portfólio)
-- [ ] Pixel instalado OU WhatsApp configurado como destino
+- [ ] Confirmar ticket do curso
+- [ ] Confirmar se tem página de vendas ou vai usar WPP/Forms
+- [ ] Confirmar se tem pixel instalado
+- [ ] Confirmar se tem vídeos demonstrativos prontos (ESSENCIAL para esse nicho)
+- [ ] Confirmar budget disponível/mês
 - [ ] Aprovação do Netto para execução
 
 ---
@@ -141,10 +153,10 @@
 ## Próximos Passos (após aprovação)
 
 1. Netto aprova estrutura
-2. Gabi cria a campanha no Gerenciador
-3. Alfred monitora primeiros 3 dias e reporta métricas
+2. Forlan confirma os campos ⚠️
+3. Gabi sobe a campanha no Gerenciador
+4. Alfred monitora primeiros 3 dias e reporta
 
 ---
 
 *Briefing elaborado por Alfred — Wolf Agency | 19/03/2026*
-*Aguardando confirmação dos campos marcados com ⚠️ antes de execução*
