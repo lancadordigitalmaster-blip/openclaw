@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const http = require("http");
-const { execSync, execFile } = require("child_process");
+const { execSync, execFile, spawn } = require("child_process");
 
 // ============================================================
 // CONFIG
@@ -1899,12 +1899,125 @@ function isAllowed(phone) {
   return ALLOWED_NUMBERS.includes(phone);
 }
 
+// ============================================================
+// COPILOT MODE — Computer Use + Voice
+// ============================================================
+let copilotProcess = null;
+let copilotActive = false;
+
+const COPILOT_TRIGGERS = /^(copilot|copiloto|oi alfred.*(?:abre|abra|navega|entra|vai|mostra|analisa|pesquisa|busca))/i;
+const COPILOT_SCRIPT = "/Users/thomasgirotto/.openclaw/workspace/scripts/wolf-copilot.py";
+
+function isCopilotCommand(text) {
+  return COPILOT_TRIGGERS.test(text.trim());
+}
+
+function extractCopilotTask(text) {
+  // Remove trigger word and return the task
+  let task = text.replace(/^copilot[oe]?\s*/i, "").trim();
+  if (!task) task = text.replace(/^oi alfred[,.]?\s*/i, "").trim();
+  return task || text;
+}
+
+async function startCopilot(sock, from, task) {
+  if (copilotActive && copilotProcess) {
+    // Já ativo — enviar comando pro stdin
+    try {
+      copilotProcess.stdin.write(task + "\n");
+      log("copilot", `Comando enviado ao copilot ativo: ${task.slice(0, 60)}`);
+      return;
+    } catch {
+      copilotActive = false;
+    }
+  }
+
+  copilotActive = true;
+  log("copilot", `Iniciando copilot: ${task.slice(0, 80)}`);
+
+  await sock.sendMessage(from, {
+    text: "🐺 *Copiloto ativado!*\nNavegando e falando pelo alto-falante do Mac...\nMande mensagens para continuar interagindo.\nDigite *sair* para desativar.",
+  });
+
+  copilotProcess = spawn("python3", [COPILOT_SCRIPT, "--task", task], {
+    stdio: ["pipe", "pipe", "pipe"],
+    env: { ...process.env, PYTHONUNBUFFERED: "1" },
+  });
+
+  let outputBuffer = "";
+
+  copilotProcess.stdout.on("data", (data) => {
+    const text = data.toString();
+    outputBuffer += text;
+    // Capturar linhas do Alfred para enviar no WhatsApp
+    const alfredLines = text.split("\n").filter((l) => l.includes("Alfred:"));
+    for (const line of alfredLines) {
+      const clean = line.replace(/\x1b\[[0-9;]*m/g, "").replace(/.*Alfred:\s*/, "").trim();
+      if (clean && clean.length > 5) {
+        sock.sendMessage(from, { text: `🤖 ${clean}` }).catch(() => {});
+      }
+    }
+  });
+
+  copilotProcess.stderr.on("data", (data) => {
+    log("copilot", `stderr: ${data.toString().slice(0, 200)}`);
+  });
+
+  copilotProcess.on("close", (code) => {
+    log("copilot", `Copilot encerrado (code ${code})`);
+    copilotActive = false;
+    copilotProcess = null;
+    sock.sendMessage(from, { text: "🐺 Copiloto desativado." }).catch(() => {});
+  });
+}
+
+function stopCopilot() {
+  if (copilotProcess) {
+    try {
+      copilotProcess.stdin.write("sair\n");
+    } catch {}
+    setTimeout(() => {
+      if (copilotProcess) {
+        copilotProcess.kill("SIGTERM");
+        copilotProcess = null;
+      }
+      copilotActive = false;
+    }, 3000);
+  }
+  copilotActive = false;
+}
+
 async function handleText(sock, from, body) {
   const phone = from.replace("@s.whatsapp.net", "");
   if (!isAllowed(phone)) return;
 
   log("in", `${phone} | texto: ${body.length > 80 ? body.slice(0, 80) + "..." : body}`);
 
+  // Copilot: desativar
+  if (copilotActive && /^(sair|para|parar|desativa|exit)\s*$/i.test(body.trim())) {
+    stopCopilot();
+    await sock.sendMessage(from, { text: "🐺 Copiloto desativado." });
+    return;
+  }
+
+  // Copilot: comando enquanto ativo
+  if (copilotActive && copilotProcess) {
+    try {
+      copilotProcess.stdin.write(body + "\n");
+      log("copilot", `Input enviado: ${body.slice(0, 60)}`);
+    } catch {
+      copilotActive = false;
+    }
+    return;
+  }
+
+  // Copilot: ativar
+  if (isCopilotCommand(body)) {
+    const task = extractCopilotTask(body);
+    await startCopilot(sock, from, task);
+    return;
+  }
+
+  // Fluxo normal
   return enqueue(phone, async () => {
     const session = getSession(phone);
     session.history.push({ role: "user", content: body });
@@ -1925,6 +2038,26 @@ async function handleAudio(sock, from, msg) {
 
       const buffer = await downloadMediaMessage(msg, "buffer", {});
       const transcription = await transcribeAudio(buffer);
+
+      // Copilot: enviar transcrição como input se ativo
+      if (copilotActive && copilotProcess) {
+        try {
+          copilotProcess.stdin.write(transcription + "\n");
+          log("copilot", `Audio input: ${transcription.slice(0, 60)}`);
+          await sock.sendMessage(from, { text: `🎙️ _${transcription}_` });
+        } catch {
+          copilotActive = false;
+        }
+        return;
+      }
+
+      // Copilot: ativar via áudio
+      if (isCopilotCommand(transcription)) {
+        const task = extractCopilotTask(transcription);
+        await sock.sendMessage(from, { text: `🎙️ _${transcription}_` });
+        await startCopilot(sock, from, task);
+        return;
+      }
 
       const session = getSession(phone);
       session.history.push({

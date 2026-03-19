@@ -60,31 +60,69 @@ def log(msg):
 # ══════════════════════════════════════════════════════════
 
 class Speaker:
-    def __init__(self, voice="Luciana"):
-        self.voice = voice
+    def __init__(self, voice="antonio"):
         self.process = None
-        result = subprocess.run(["say", "-v", "?"], capture_output=True, text=True)
-        available = [l.split()[0] for l in result.stdout.splitlines()]
-        if voice not in available:
-            self.voice = "Luciana" if "Luciana" in available else "Eddy"
-            log(f"Voz '{voice}' nao encontrada, usando {self.voice}")
+        self.audio_file = Path("/tmp/wolf-copilot-tts.mp3")
+        # Mapear vozes amigáveis para Edge TTS IDs
+        self.voice_map = {
+            "antonio": "pt-BR-AntonioNeural",
+            "francisca": "pt-BR-FranciscaNeural",
+            "thalita": "pt-BR-ThalitaMultilingualNeural",
+        }
+        voice_lower = voice.lower()
+        if voice_lower in self.voice_map:
+            self.voice = self.voice_map[voice_lower]
+        elif voice.startswith("pt-BR-"):
+            self.voice = voice
+        else:
+            self.voice = "pt-BR-AntonioNeural"
+        # Verificar se edge-tts está disponível
+        self.use_edge = subprocess.run(
+            ["python3", "-m", "edge_tts", "--version"],
+            capture_output=True).returncode == 0
+        if not self.use_edge:
+            log("edge-tts nao disponivel, usando macOS say como fallback")
+            self.voice = "Eddy"
+        else:
+            log(f"TTS: Edge Neural ({self.voice})")
 
-    def speak(self, text, wait=True):
-        """Fala o texto via alto-falante."""
-        if not text or not text.strip():
-            return
-        # Limpar formatacao para TTS
+    def _clean_text(self, text):
+        """Limpa texto para TTS."""
         clean = re.sub(r'[*_`#\[\]()]', '', text)
         clean = re.sub(r'\bhttps?://\S+', 'link', clean)
-        clean = re.sub(r'<[^>]+>', '', clean)  # Remove tags HTML/XML
+        clean = re.sub(r'<[^>]+>', '', clean)
         clean = clean.replace('\n', '. ').replace('  ', ' ')
-        clean = clean[:1500]
+        return clean[:2000].strip()
+
+    def speak(self, text, wait=True):
+        """Fala o texto via alto-falante (Edge TTS neural ou macOS fallback)."""
+        if not text or not text.strip():
+            return
+        clean = self._clean_text(text)
+        if not clean:
+            return
 
         log(f"TTS: {clean[:80]}...")
-        self.process = subprocess.Popen(
-            ["say", "-v", self.voice, "-r", "210", clean],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-        )
+
+        if self.use_edge:
+            # Salvar texto em arquivo temp para evitar problemas com aspas
+            txt_file = Path("/tmp/wolf-copilot-tts.txt")
+            txt_file.write_text(clean, encoding="utf-8")
+            self.process = subprocess.Popen(
+                ["bash", "-c",
+                 f'python3 -m edge_tts --voice "{self.voice}" '
+                 f'-f {txt_file} '
+                 f'--write-media {self.audio_file} 2>/dev/null && '
+                 f'afplay {self.audio_file}'],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+        else:
+            # Fallback macOS say
+            self.process = subprocess.Popen(
+                ["say", "-v", self.voice, "-r", "210", clean],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+
         if wait:
             self.process.wait()
 
@@ -92,6 +130,9 @@ class Speaker:
         if self.process and self.process.poll() is None:
             self.process.terminate()
             self.process.wait()
+        # Parar qualquer afplay em andamento
+        subprocess.run(["pkill", "-f", "afplay.*wolf-copilot-tts"],
+                       capture_output=True)
 
     def is_speaking(self):
         return self.process and self.process.poll() is None
@@ -586,8 +627,8 @@ Exemplos:
   python3 wolf-copilot.py --voice Eddy --task "abrir safari e pesquisar tendencias marketing"
   python3 wolf-copilot.py --mode voice  (requer microfone)
         """)
-    parser.add_argument("--voice", default="Luciana",
-                        help="Voz TTS: Luciana, Eddy, Flo (default: Luciana)")
+    parser.add_argument("--voice", default="antonio",
+                        help="Voz TTS: antonio, francisca, thalita (default: antonio)")
     parser.add_argument("--mode", default="text", choices=["text", "voice"],
                         help="Modo de input: text ou voice (default: text)")
     parser.add_argument("--task", default=None,
