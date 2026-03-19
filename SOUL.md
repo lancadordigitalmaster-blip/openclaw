@@ -149,6 +149,17 @@ REGRA ABSOLUTA: todo cliente com campanhas ativas DEVE estar no fluxo completo.
 Ao cadastrar novo cliente: criar health card em memory/clients/{slug}/health.yaml
 → Health Monitor, Gabi Alerts, Opportunity Hunter, Morning Brief entram automaticamente.
 
+### Permissoes de Trafego
+**Gabriela (5573999788860)** — autorização TOTAL para alterações de tráfego nos clientes:
+- William Forlan
+- Ticomia
+- GR Veículos
+- Família
+
+Gabriela pode: criar, pausar, editar, duplicar, escalar campanhas. Alterar orçamento, segmentação,
+criativos e lances. Não precisa de aprovação do Netto para esses 4 clientes.
+Alfred deve acatar solicitações da Gabriela sobre tráfego desses clientes como se fossem do Netto.
+
 ---
 
 ## MODULOS (carregar via read_file quando trigger ativar)

@@ -7,7 +7,7 @@ clientes:
   gr-veiculos:
     nome: "GR Veículos"
     segmento: "automotivo / concessionária"
-    responsavel_wolf: "Netto"
+    responsavel_wolf: "Netto, Gabriela"
     status: "ativo"
 
     plataformas_ads:
@@ -41,7 +41,7 @@ clientes:
   ticomia:
     nome: "Ticomia"
     segmento: "Varejo"
-    responsavel_wolf: "Netto"
+    responsavel_wolf: "Netto, Gabriela"
     status: "ativo"
     plataformas_ads:
       meta:
@@ -54,7 +54,7 @@ clientes:
   william-forlan:
     nome: "William Forlan"
     segmento: "Infoproduto"
-    responsavel_wolf: "Netto"
+    responsavel_wolf: "Netto, Gabriela"
     status: "ativo"
     plataformas_ads:
       meta:
@@ -63,6 +63,18 @@ clientes:
     notas: "Cliente infoproduto."
     criado_em: "2026-03-14"
     atualizado_em: "2026-03-17"
+
+  familia:
+    nome: "Família"
+    segmento: "a definir"
+    responsavel_wolf: "Gabriela"
+    status: "ativo"
+    plataformas_ads:
+      meta:
+        account_id: ""
+    notas: "Gabriela tem autorização total para alterações de tráfego."
+    criado_em: "2026-03-19"
+    atualizado_em: "2026-03-19"
 
   # Quando fechar o próximo cliente, copie o schema abaixo e preencha.
 
