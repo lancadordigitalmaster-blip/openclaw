@@ -149,30 +149,6 @@ except:
 
 jobs = data.get('jobs', [])
 
-## Crons de manutencao que NAO devem gerar mission quando OK
-## (ruido operacional — so registrar se FALHARAM)
-EXCLUDE_OK = [
-    'auto-heal', 'Auto-Heal',
-    'meta-anti-duplicate', 'Anti-Duplicata', 'anti-duplicata',
-    'watchdog', 'healthcheck', 'health-check',
-    'gateway-healthcheck', 'tunnel-watchdog', 'uptime-monitor',
-    'session-cleanup', 'Session End Hook', 'compaction',
-    'wolf-context-guardian', 'bridge-health', 'token-telemetry',
-    'log-rotate', 'memory-guard', 'wmc-monitor', 'wolf-reminders',
-    'lembrete', 'agua', 'RTK',
-]
-
-def should_register(name, status):
-    """Decide se cron deve gerar mission no WMC.
-    SEMPRE registra erros. Filtra crons de manutencao quando OK."""
-    if status == 'error':
-        return True  # SEMPRE registrar falhas
-    nl = name.lower()
-    for pattern in EXCLUDE_OK:
-        if pattern.lower() in nl:
-            return False  # Cron de manutencao rodou OK — nao registrar
-    return True  # Cron estrategico rodou OK — registrar
-
 for job in jobs:
     if not job.get('enabled', True):
         continue
@@ -190,10 +166,6 @@ for job in jobs:
 
     # So registrar se executou nos ultimos 15 minutos
     if (now - last_dt).total_seconds() > 900:
-        continue
-
-    # Filtro inteligente: pular crons de manutencao que rodaram OK
-    if not should_register(name, last_status):
         continue
 
     # Marker para nao duplicar

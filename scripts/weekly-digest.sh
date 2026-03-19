@@ -113,17 +113,19 @@ Formato:
 Dados brutos:
 ${REPORT}"
 
-# Envia via hooks/agent
-RESPONSE=$(curl -s -X POST "${GATEWAY}/hooks/agent" \
+# Envia via hooks/agent (campo: message)
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${GATEWAY}/hooks/agent" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${HOOKS_TOKEN}" \
-  -d "$(jq -n --arg prompt "$PROMPT" '{prompt: $prompt}')" \
+  --max-time 30 \
+  -d "$(jq -n --arg msg "$PROMPT" '{message: $msg}')" \
   2>/dev/null)
 
-if [ $? -eq 0 ]; then
+HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+if [ "$HTTP_CODE" = "200" ]; then
   echo "Weekly digest enviado via gateway"
 else
-  echo "AVISO: Falha ao enviar via gateway. Relatório salvo localmente em $REPORT_FILE"
+  echo "AVISO: Gateway retornou HTTP $HTTP_CODE. Relatório salvo localmente em $REPORT_FILE"
 fi
 
 # ── Rotação: mantém últimos 12 relatórios ─────────────────────
