@@ -1,0 +1,95 @@
+# integrations-status.yaml — Estado das integracoes Wolf Agency
+# Atualizado: 2026-03-19 (automatico via integration-check.sh)
+
+integrations:
+  # --- LLM Providers ---
+  anthropic:
+    status: ok
+    env_var: ANTHROPIC_API_KEY
+    last_check: "2026-03-19"
+    notes: "Primario (Sonnet 4.6 chat, Haiku 4.5 crons)"
+
+  openrouter:
+    status: ok
+    env_var: OPENROUTER_API_KEY
+    last_check: "2026-03-19"
+    notes: "Fallback chain"
+
+  groq:
+    status: ok
+    env_var: GROQ_API_KEY
+    last_check: "2026-03-19"
+    notes: "Whisper voice transcription"
+
+  # --- Comunicacao ---
+  telegram:
+    status: ok
+    env_var: TELEGRAM_BOT_TOKEN
+    last_check: "2026-03-19"
+    notes: "@alfredwolf_bot — fallback + alertas urgentes"
+
+  whatsapp_bridge:
+    status: ok
+    endpoint: "http://127.0.0.1:3002/health"
+    last_check: "2026-03-19"
+    notes: "Canal principal via bridge.js"
+
+  # --- Projeto ---
+  supabase:
+    status: ok
+    env_var: SUPABASE_URL
+    last_check: "2026-03-19"
+    notes: "Mission Control (dqhiafxbljujahmpcdhf)"
+
+  clickup:
+    status: ok
+    env_var: CLICKUP_API_TOKEN
+    last_check: "2026-03-19"
+    notes: "Gestao de tarefas design/atendimento"
+
+  # --- Meta Ads ---
+  meta_ads_main:
+    status: ok
+    env_var: META_ADS_ACCESS_TOKEN
+    last_check: "2026-03-19"
+    notes: "Token principal Netto"
+
+  meta_ads_forlan:
+    status: ok
+    env_var: META_ADS_TOKEN_FORLAN
+    last_check: "2026-03-19"
+
+  meta_ads_marcos:
+    status: expired
+    env_var: META_ADS_TOKEN_MARCOS
+    last_check: "2026-03-19"
+    notes: "HTTP 400 — token expirado, precisa renovar"
+
+  meta_ads_ticomia:
+    status: ok
+    env_var: META_ADS_TOKEN_TICOMIA
+    last_check: "2026-03-19"
+
+  meta_ads_gr:
+    status: ok
+    env_var: META_ADS_TOKEN_GR
+    last_check: "2026-03-19"
+
+  meta_token_gr_veiculos:
+    status: ok
+    env_var: META_TOKEN_GR_VEICULOS
+    last_check: "2026-03-19"
+
+  # --- Design ---
+  figma:
+    status: expired
+    env_var: FIGMA_TOKEN
+    last_check: "2026-03-19"
+    notes: "HTTP 403 — token expirado, Netto precisa gerar novo PAT em figma.com/developers"
+
+  # --- Infra local ---
+  gateway:
+    status: ok
+    endpoint: "http://127.0.0.1:18789/"
+    last_check: "2026-03-19"
+    notes: "OpenClaw gateway"

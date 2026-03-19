@@ -1,19 +1,20 @@
 // Wolf Mission Control — Edge Function: memory-writer
-// Versão: 1.0 | 2026-03-05
+// Versão: 2.0 | 2026-03-18
 // Extrai lições estruturadas de um output aprovado e salva em agent_memory.
-// Chamado automaticamente pelo quality-gate após aprovação.
+// Chamado por: trigger on_mission_done (DB) + quality-gate (fire-and-forget).
 // Acumula contexto por agente × cliente para missões futuras.
+// LLM: Anthropic Haiku 4.5 (migrado de Ollama Cloud em 2026-03-18)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const OLLAMA_CLOUD_KEY     = Deno.env.get("OLLAMA_CLOUD_KEY")!;
+const ANTHROPIC_API_KEY    = Deno.env.get("ANTHROPIC_API_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // =============================================================
-// EXTRAÇÃO DE MEMÓRIA COM GEMINI
+// EXTRAÇÃO DE MEMÓRIA COM ANTHROPIC HAIKU 4.5
 // =============================================================
 async function extractMemory(
   missionTitle: string,
@@ -69,31 +70,35 @@ OUTPUT APROVADO:
 ${output.slice(0, 3000)}`;
 
   const res = await fetch(
-    "https://ollama.com/v1/chat/completions",
+    "https://api.anthropic.com/v1/messages",
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OLLAMA_CLOUD_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gemma3:27b",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
+        system: system,
         messages: [
-          { role: "system", content: system },
           { role: "user", content: user },
         ],
       }),
     }
   );
 
-  if (!res.ok) throw new Error(`Ollama Cloud memory-writer error: ${res.status}`);
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Anthropic memory-writer error: ${res.status} — ${errBody}`);
+  }
   const json = await res.json();
-  const raw  = json.choices[0].message.content;
+  const raw  = json.content[0].text;
 
   const jsonMatch = raw.match(/\[[\s\S]+\]/);
   if (!jsonMatch) {
-    console.warn("[memory-writer] Gemini não retornou array JSON:", raw);
+    console.warn("[memory-writer] Haiku não retornou array JSON:", raw);
     return [];
   }
 
@@ -117,8 +122,12 @@ ${output.slice(0, 3000)}`;
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
-  const auth = req.headers.get("Authorization");
-  if (!auth || auth !== `Bearer ${SUPABASE_SERVICE_KEY}`) {
+  // Auth: aceitar service_role_key (trigger DB) ou anon_key (gateway auth)
+  // O Supabase gateway já valida o JWT antes de chegar aqui
+  const auth = req.headers.get("Authorization") ?? "";
+  const isServiceRole = auth === `Bearer ${SUPABASE_SERVICE_KEY}`;
+  const hasValidJWT = auth.startsWith("Bearer ey"); // JWT passado pelo gateway
+  if (!isServiceRole && !hasValidJWT) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -128,20 +137,35 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "output_id obrigatório" }), { status: 400 });
     }
 
-    // 1. Buscar output com missão, agente e cliente
-    const { data: outputRecord } = await supabase
+    // 1. Buscar output com missão e agente
+    const { data: outputRecord, error: queryError } = await supabase
       .from("mission_outputs")
-      .select(`*, missions(*, agents(*), clients(*))`)
+      .select(`*, missions(*, agents(*))`)
       .eq("id", output_id)
       .single();
 
-    if (!outputRecord) {
-      return new Response(JSON.stringify({ error: "Output não encontrado" }), { status: 404 });
+    if (queryError || !outputRecord) {
+      console.error("[memory-writer] Query error:", queryError?.message ?? "no data");
+      return new Response(JSON.stringify({
+        error: "Output não encontrado",
+        detail: queryError?.message ?? "null result",
+        output_id
+      }), { status: 404 });
     }
 
     const mission = outputRecord.missions;
-    const agent   = mission.agents;
-    const client  = mission.clients;
+    const agent   = mission?.agents;
+
+    // Buscar cliente separadamente (FK pode não existir)
+    let client: { id: string; name: string } | null = null;
+    if (mission?.client_id) {
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("id, name")
+        .eq("id", mission.client_id)
+        .single();
+      client = clientData;
+    }
 
     // 2. Só processar se há cliente associado (memória é por agente × cliente)
     if (!mission.client_id) {

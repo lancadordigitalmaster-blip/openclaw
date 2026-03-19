@@ -13,8 +13,8 @@ Toda a logica de identidade e comportamento do Alfred esta em `SOUL.md`.
 ```
 OpenClaw Gateway (porta 18789)
   ├── Telegram Bot (@alfredwolf_bot)
-  ├── 7 crons LLM ativos + ~30 scripts crontab (jobs.json + crontab)
-  ├── 57 skills ativas + 20 agentes (TOOLS.md)
+  ├── 7 crons LLM ativos + 49 scripts crontab (jobs.json + crontab)
+  ├── 72 skills ativas + 20 agentes (TOOLS.md)
   ├── Wolf Mission Control (Supabase)
   ├── wolf-monitor.sh (bash puro, 30min) + wolf-queue.sh (LLM condicional)
   └── Anthropic API (Sonnet 4.6 primario, Haiku 4.5 crons)
@@ -26,7 +26,7 @@ OpenClaw Gateway (porta 18789)
 |---------|--------|
 | `SOUL.md` | System prompt do Alfred v4.0 — identidade, regras, protocolos |
 | `orchestrator/ORCHESTRATOR.md` | Roteamento de mensagens v5.1 |
-| `TOOLS.md` | Inventario completo: 57 skills + 20 agentes + 3 plugins |
+| `TOOLS.md` | Inventario completo: 72 skills + 20 agentes + 3 plugins |
 | `agents/*/SKILL.md` | Skills dos 20 agentes especializados |
 | `shared/memory/team.yaml` | Equipe real da Wolf (designers, atendimento) |
 | `shared/memory/clients.yaml` | Base de clientes (a preencher) |
@@ -44,7 +44,7 @@ OpenClaw Gateway (porta 18789)
 ## Crons
 
 - Config: `~/.openclaw/cron/jobs.json`
-- 7 crons LLM ativos + ~30 scripts crontab (sem LLM), todos com `delivery.mode: "none"`
+- 7 crons LLM ativos + 49 scripts crontab (sem LLM), todos com `delivery.mode: "none"`
 - Crons LLM usam `anthropic/claude-haiku-4-5-20251001` (atualizado 2026-03-08)
 - Monitoramento: `wolf-monitor.sh` (bash puro) + `wolf-queue.sh` (LLM condicional)
 - Timezone: `America/Sao_Paulo` (unico padrao)

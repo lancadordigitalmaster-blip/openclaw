@@ -48,17 +48,22 @@ TOTAL=$((MSGS_RECV + CRON_RUNS)); ERRS=$((TOOL_FAILS + CRON_ERRORS + LOG_ERRORS)
 [ "$TOTAL" -gt 0 ] && ERROR_RATE=$(( ERRS * 100 / TOTAL ))
 
 # --- Build report ---
-REPORT="📊 *Alfred Quality Report — ${DATE_BR}*"
-REPORT+="\n\n*Volume:* ${MSGS_RECV} msgs recebidas | ${MSGS_SENT_TODAY} respostas"
-REPORT+="\n*Erros:* ${TOOL_FAILS} tool fails | $((OVERLOADED + RATE_LIMITS)) rate limits | ${FAILOVERS} fallbacks | ${AUTH_ERRORS} auth errors"
-REPORT+="\n*Crons:* ${CRON_RUNS} executados | ${CRON_ERRORS} com erro (${CRON_PCT}%)"
-REPORT+="\n*Sessões:* ${ACTIVE_SESSIONS} ativas"
+REPORT="🐺 *Wolf — Quality Alert | ${DATE_BR}*"
+REPORT+="\n\n📊 *Volume*"
+REPORT+="\n${MSGS_RECV} msgs recebidas · ${MSGS_SENT_TODAY} respostas"
+REPORT+="\n\n⚙️ *Sistema*"
+REPORT+="\nErros: ${TOOL_FAILS} tool fails · $((OVERLOADED + RATE_LIMITS)) rate limits · ${FAILOVERS} fallbacks · ${AUTH_ERRORS} auth"
+REPORT+="\nCrons: ${CRON_RUNS} executados · ${CRON_ERRORS} com erro (${CRON_PCT}%)"
+REPORT+="\nSessoes: ${ACTIVE_SESSIONS} ativas"
 
 # --- Alerts ---
 ALERT=0
-[ "$ERROR_RATE" -gt 10 ] && REPORT+="\n\n⚠️ Taxa de erro elevada (${ERROR_RATE}%)" && ALERT=1
-[ "$((OVERLOADED + RATE_LIMITS))" -gt 5 ] && REPORT+="\n⚠️ Rate limits frequentes — considere reduzir crons" && ALERT=1
-[ "$AUTH_ERRORS" -gt 0 ] && REPORT+="\n🔴 Erros de autenticação — verificar tokens" && ALERT=1
+ALERTS_TEXT=""
+[ "$ERROR_RATE" -gt 10 ] && ALERTS_TEXT+="\n🔴 Taxa de erro elevada (${ERROR_RATE}%)" && ALERT=1
+[ "$((OVERLOADED + RATE_LIMITS))" -gt 5 ] && ALERTS_TEXT+="\n⚠️ Rate limits frequentes — reduzir crons" && ALERT=1
+[ "$AUTH_ERRORS" -gt 0 ] && ALERTS_TEXT+="\n🔴 Erros de autenticacao — verificar tokens" && ALERT=1
+
+[ "$ALERT" -eq 1 ] && REPORT+="\n\n🚨 *Alertas*${ALERTS_TEXT}"
 
 # --- Log always, Telegram only on alerts ---
 echo "[$(date)] $REPORT" | sed 's/\\n/\n/g'

@@ -8,7 +8,6 @@ set -euo pipefail
 LOG="/tmp/wolf-gateway-monitor.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 source "$HOME/.openclaw/.env" 2>/dev/null
-}
 
 if ! lsof -i :18789 >/dev/null 2>&1; then
   echo "[$TIMESTAMP] Gateway DOWN — attempting restart" >> "$LOG"

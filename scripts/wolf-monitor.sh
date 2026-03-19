@@ -44,7 +44,8 @@ if [[ "$ERROR_COUNT" -ge 5 ]]; then
 fi
 
 # ============================================================
-# 2 — Verificar crons falhados
+# 2 — Verificar crons falhados + autoheal (3+ erros consecutivos)
+# Consolidado: absorve wolf-cron-watchdog.sh e wolf-cron-autoheal.sh
 # ============================================================
 CRON_REPORT=$(python3 << 'PYEOF'
 import json, os, time
@@ -58,6 +59,7 @@ now = time.time() * 1000
 failed = []
 never_ran = []
 ok_count = 0
+auto_disabled = []
 
 for j in data.get('jobs', []):
     if not j.get('enabled', False):
@@ -66,14 +68,28 @@ for j in data.get('jobs', []):
     state = j.get('state', {})
     status = state.get('lastRunStatus', 'never')
     last_run = state.get('lastRunAtMs', 0)
+    consecutive_errors = state.get('consecutiveErrors', 0)
 
     if status == 'error':
         ago = int((now - last_run) / 60000) if last_run else 0
-        failed.append(f"{name} (erro ha {ago}min)")
+        failed.append(f"{name} (erro ha {ago}min, {consecutive_errors}x consecutivas)")
+
+        # Autoheal: desabilitar cron com 3+ erros consecutivos
+        if consecutive_errors >= 3:
+            j['enabled'] = False
+            auto_disabled.append(f"{name} ({consecutive_errors}x)")
     elif status == 'never' and last_run == 0:
         never_ran.append(name)
     elif status == 'ok':
         ok_count += 1
+
+# Salvar jobs.json se houve autoheal
+if auto_disabled:
+    with open(jobs_path, 'w') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    print(f"AUTOHEAL: {len(auto_disabled)} cron(s) desabilitado(s)")
+    for d in auto_disabled:
+        print(f"  ! {d}")
 
 if failed:
     print(f"CRONS COM ERRO: {len(failed)}")
@@ -94,6 +110,12 @@ PYEOF
 CRON_ERRORS=$(echo "$CRON_REPORT" | grep -o "CRONS COM ERRO: [0-9]*" | grep -o "[0-9]*")
 if [[ "${CRON_ERRORS:-0}" -gt 0 ]]; then
   ALERTS+=("$CRON_ERRORS crons com erro")
+fi
+
+# Alertar sobre crons auto-desabilitados
+AUTOHEAL_COUNT=$(echo "$CRON_REPORT" | grep -o "AUTOHEAL: [0-9]*" | grep -o "[0-9]*" || echo "0")
+if [[ "${AUTOHEAL_COUNT:-0}" -gt 0 ]]; then
+  ALERTS+=("$AUTOHEAL_COUNT cron(s) auto-desabilitado(s) por falhas consecutivas")
 fi
 
 # ============================================================
@@ -136,8 +158,7 @@ if echo "$MEM_PRESSURE" | grep -qi "critical\|warning"; then
   ALERTS+=("Pressao de memoria: $MEM_PRESSURE")
 fi
 
-# (detector de crons fantasma removido — era necessario com kimi-k2.5
-#  que nao executava tools; Anthropic Haiku 4.5 funciona corretamente)
+# (detector de crons fantasma removido — Anthropic Haiku 4.5 executa tools corretamente)
 
 # ============================================================
 # 5 — Verificar tarefas na agenda

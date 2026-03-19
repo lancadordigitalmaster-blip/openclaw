@@ -25,6 +25,9 @@ const LOG_DIR = path.join(__dirname, "logs");
 const SOUL_PATH = path.resolve(
   process.env.SOUL_PATH || "/Users/thomasgirotto/.openclaw/workspace/SOUL.md"
 );
+const ORCHESTRATOR_PATH = path.resolve(
+  process.env.ORCHESTRATOR_PATH || "/Users/thomasgirotto/.openclaw/workspace/orchestrator/ORCHESTRATOR.md"
+);
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
@@ -136,6 +139,7 @@ const sessions = new Map();
 const groupsMeta = new Map(); // groupJid -> { name, subject, participants }
 const messageQueues = new Map(); // phone -> Promise chain (serialize per user)
 let soulPromptCache = { text: "", mtime: 0 };
+let orchestratorCache = { text: "", mtime: 0 };
 let myLidCache = ""; // LID (Linked Identity) cached from auth creds
 
 // ============================================================
@@ -168,6 +172,24 @@ function loadSoulPrompt() {
   } catch (err) {
     logError("soul", "Erro ao ler SOUL.md", err);
     return "Voce e Alfred, assistente da Wolf Agency. Responda em portugues do Brasil.";
+  }
+}
+
+// ============================================================
+// ORCHESTRATOR PROMPT (cached, reloads on file change)
+// ============================================================
+function loadOrchestratorPrompt() {
+  try {
+    const stat = fs.statSync(ORCHESTRATOR_PATH);
+    if (stat.mtimeMs !== orchestratorCache.mtime) {
+      orchestratorCache.text = fs.readFileSync(ORCHESTRATOR_PATH, "utf-8");
+      orchestratorCache.mtime = stat.mtimeMs;
+      log("orchestrator", "ORCHESTRATOR.md recarregado");
+    }
+    return orchestratorCache.text;
+  } catch (err) {
+    logError("orchestrator", "Erro ao ler ORCHESTRATOR.md", err);
+    return "";
   }
 }
 
@@ -1755,10 +1777,20 @@ async function callGateway(systemPrompt, history, retryCount = 0) {
     // Extract response (skip config warnings/errors in stderr)
     let text = stdout.trim();
 
-    // Remove any config warning lines that leaked into stdout
+    // Remove any config/startup lines that leaked into stdout
     text = text
       .split("\n")
-      .filter((line) => !line.includes("Config warnings") && !line.includes("Failed to read config") && !line.includes("at ") && !line.includes("normalizeAnthropicModelId"))
+      .filter((line) => {
+        if (!line.trim()) return true; // keep blank lines
+        if (line.includes("Config warnings")) return false;
+        if (line.includes("Failed to read config")) return false;
+        if (line.includes("normalizeAnthropicModelId")) return false;
+        if (/^\[plugins?\]/.test(line.trim())) return false;
+        if (/^\[info\]|\[warn\]|\[error\]|\[debug\]/.test(line.trim())) return false;
+        if (/^at\s+/.test(line.trim())) return false;
+        if (/^Registered \d+ tools/.test(line.trim())) return false;
+        return true;
+      })
       .join("\n")
       .trim();
 
@@ -1816,7 +1848,7 @@ async function processAndReply(sock, from, phone, session) {
     await sock.presenceSubscribe(from);
     await sock.sendPresenceUpdate("composing", from);
 
-    const systemPrompt = loadSoulPrompt();
+    const systemPrompt = loadSoulPrompt() + "\n\n---\n\n" + loadOrchestratorPrompt();
     const { text, extraMessages } = await callAnthropic(
       systemPrompt,
       session.history
@@ -2524,7 +2556,7 @@ except Exception as e:
         session.history = session.history.slice(-MAX_HISTORY);
       }
 
-      const soulBase = loadSoulPrompt();
+      const soulBase = loadSoulPrompt() + "\n\n---\n\n" + loadOrchestratorPrompt();
       const isVendasGroup = groupName.toLowerCase().includes("vnd") || groupName.toLowerCase().includes("venda");
       let groupContext = `\n\nCONTEXTO: Você está respondendo no GRUPO DE WHATSAPP "${groupName}". Responda de forma útil e objetiva. Você tem acesso a todas as suas ferramentas (buscar mensagens, web search, etc). Quando alguém te pedir algo no grupo, execute a tarefa e responda ali mesmo.`;
       if (isVendasGroup) {

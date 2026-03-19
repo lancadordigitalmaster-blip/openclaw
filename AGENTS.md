@@ -109,6 +109,30 @@ Apos cada tarefa MEDIUM ou COMPLEX, Alfred deve:
 
 ---
 
+## Chrome DevTools MCP — v3.13 (documentado 18/03/2026)
+
+**Disponível desde:** OpenClaw v3.13
+**O que é:** Integração nativa com Chrome via CDP (Chrome DevTools Protocol). Permite que agentes controlem e debuguem sessões Chrome em tempo real.
+
+**Profiles disponíveis:**
+| Profile | Uso |
+|---|---|
+| `openclaw` | Browser isolado gerenciado pelo OpenClaw (padrão) |
+| `user` / `chrome` | Attach na sessão Chrome real do usuário (signed-in) |
+| `chrome-relay` | Extension relay — requer botão OpenClaw Browser Relay ativo na aba |
+
+**Agentes autorizados a usar:**
+- **Titan** — automação de testes, debugging de apps web
+- **Pixel** — review visual de interfaces, QA de layouts
+- **Alfred** — web scraping, automação de plataformas
+
+**⚠️ Segurança:**
+- Remote debugging expõe dados sensíveis (cookies, senhas)
+- Chrome 146+ necessário para funcionalidades completas
+- Ativar `profile="user"` apenas quando necessário — usar `profile="openclaw"` por padrão
+
+---
+
 ## Bloqueios Conhecidos (ver TOOLS.md para detalhes)
 
 | Integração | Status | Motivo | Ação Necessária |

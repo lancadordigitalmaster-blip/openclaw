@@ -179,8 +179,8 @@ fi
 # PASSO 5.3 — Detectar crons "fantasma" (ok sem acao real)
 # ============================================================
 # O gateway marca sessao como "ok" se o LLM respondeu texto,
-# mesmo sem executar nenhuma tool. Com kimi-k2.5 via Ollama Cloud
-# isso acontece 100% das vezes (0 tool_calls em 298+ sessoes).
+# mesmo sem executar nenhuma tool. Com Anthropic Haiku 4.5 isso
+# raramente acontece (tools executam corretamente).
 # Detectamos comparando: crons habilitados com agentTurn vs
 # crons que realmente precisavam de tools (payload menciona acao).
 GHOST_SESSIONS=$(python3 << 'PYEOF'

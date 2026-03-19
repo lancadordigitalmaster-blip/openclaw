@@ -61,22 +61,18 @@ def load_env():
 
 
 def send_telegram(msg):
-    """Send via Telegram."""
-    env = load_env()
-    token = env.get("TELEGRAM_BOT_TOKEN", "")
-    if not token:
-        log("ERRO: TELEGRAM_BOT_TOKEN não encontrado")
-        return False
+    """Send via WhatsApp Bridge (porta 3002)."""
+    import urllib.request
+    to = os.environ.get("NETTO_WHATSAPP", "557391484716")
+    payload = json.dumps({"to": to, "text": msg}).encode()
+    req = urllib.request.Request(
+        "http://127.0.0.1:3002/send",
+        data=payload,
+        headers={"Content-Type": "application/json"}
+    )
     try:
-        payload = json.dumps({"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"})
-        subprocess.run(
-            ["curl", "-s", "-X", "POST",
-             f"https://api.telegram.org/bot{token}/sendMessage",
-             "-H", "Content-Type: application/json",
-             "-d", payload],
-            capture_output=True, timeout=15
-        )
-        return True
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
     except Exception as e:
         log(f"ERRO Telegram: {e}")
         return False

@@ -1,19 +1,18 @@
 # TOOLS.md — Inventario de Skills & Plugins
-# Wolf Agency AI System | Atualizado: 2026-03-08
+# Wolf Agency AI System | Atualizado: 2026-03-17
 
 ---
 
-## ⚠️ Skills Bloqueados (3 skills — Requerem Acao)
+## ⚠️ Skills Bloqueados (2 skills — Requerem Acao)
 
 | Skill | Status | Motivo | Acao Necessaria |
 |-------|--------|--------|---|
-| meta-ads | Bloqueado | Token expirado | Renovar token Meta Ads |
 | google-sheets | Requer OAuth | Autenticacao pendente | Aprovar OAuth Google |
 | youtube-api | Requer OAuth | Autenticacao pendente | Aprovar OAuth Google |
 
 ---
 
-## Skills Ativas (57 skills em skills/)
+## Skills Ativas (70 skills em skills/)
 
 ### Wolf Agency — Operacao (23 skills)
 
@@ -37,7 +36,7 @@
 | wolf-reference-curator | Curadoria de referencias visuais | Luna | Operacional |
 | wolf-proposal-draft | Rascunho de propostas comerciais | Nova | Operacional |
 | wolf-nova-research | Pesquisa profunda multi-fontes | Nova | Operacional |
-| meta-ads | Meta Ads CRUD (criar/pausar/ativar) | Gabi | Bloqueado (token expirado) |
+| meta-ads | Meta Ads CRUD + workflows (criar/pausar/ativar/diagnosticar/escalar) | Gabi | Operacional (3 tokens ativos, exp 12/05) |
 | natiely-ops | Operacoes de design e gestao | Alfred | Operacional |
 | wolf-video-pipeline | Pipeline producao de video | Editor | Operacional |
 | wolf-voice | Transcricao de audio Telegram | Alfred | Operacional |
@@ -78,7 +77,7 @@
 | openai-whisper | Transcricao audio (Whisper) | Operacional |
 | tavily-search | Busca web Tavily | Operacional |
 
-### Marketing & Criacao (4 skills)
+### Marketing & Criacao (7 skills)
 
 | Skill | Funcao | Status |
 |-------|--------|--------|
@@ -86,6 +85,9 @@
 | quick-reminders | Lembretes rapidos | Operacional |
 | social-data | Dados de redes sociais | Operacional |
 | summarize | Resumos gerais | Operacional |
+| content-engine | Conteúdo nativo por plataforma (Instagram, TikTok, LinkedIn, YouTube) | Operacional |
+| cost-aware-llm-pipeline | Roteamento de modelo por custo/complexidade + budget tracking | Operacional |
+| strategic-compact | Compactação estratégica de contexto em pontos lógicos | Operacional |
 
 ### Utilidades (5 skills)
 
@@ -154,7 +156,7 @@
 
 ---
 
-## Arquivados (11 skills em skills/_archive/)
+## Arquivados (13 skills em skills/_archive/)
 
 | Skill | Motivo |
 |-------|--------|
@@ -169,7 +171,9 @@
 | video-editor-pro | Duplicata — canonical em agents/video-editor-pro/ |
 | wolf-coding-loop | Quebrado — referencia QUEUE.md deletado |
 | wolf-facebook-ads | Superseded por meta-ads (write-enabled) |
+| facebook-ads-manager-skill | Consolidado em meta-ads (workflows copiados) |
+| meta-ads-manager | OAuth/MCP nao configurado, consolidado em meta-ads |
 
 ---
 
-*Atualizado: 2026-03-08 23:00 — Heartbeat Noturno*
+*Atualizado: 2026-03-18 — Consolidacao Meta Ads + limpeza scripts*

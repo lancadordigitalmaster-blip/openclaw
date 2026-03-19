@@ -23,7 +23,7 @@ log_entry() {
 log_entry "Verificando canal $CHANNEL_URL"
 
 # Tenta pegar info do canal (fallback: verifica via curl + grep)
-LATEST_VIDEO=$(curl -s "$CHANNEL_URL" 2>/dev/null | grep -oP 'href="/watch\?v=\K[^"]+' | head -1)
+LATEST_VIDEO=$(curl -s "$CHANNEL_URL" 2>/dev/null | grep -o 'href="/watch?v=[^"]*"' | sed 's/.*v=//;s/".*//' | head -1)
 
 if [ -z "$LATEST_VIDEO" ]; then
   log_entry "ERRO: Não conseguiu pegar vídeos do canal"

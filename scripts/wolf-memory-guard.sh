@@ -40,7 +40,7 @@ Nenhuma.
 ## Grupos Telegram
 Nenhum registrado."
 
-create_if_missing "$WORKSPACE/memory/agenda-alfred.md" \
+create_if_missing "$WORKSPACE/memory/agenda.md" \
 "# Agenda Alfred
 # Criado automaticamente em $TODAY
 
@@ -103,11 +103,14 @@ create_if_missing "$WORKSPACE/memory/projects.md" \
 
 Nenhum projeto registrado."
 
-create_if_missing "$WORKSPACE/memory/pending.md" \
-"# Pendencias
+create_if_missing "$WORKSPACE/memory/state.md" \
+"# Estado Operacional
 # Criado automaticamente em $TODAY
 
-Nenhuma pendencia registrada."
+## Sistemas
+- Gateway: verificar
+- WhatsApp Bridge: verificar
+- Telegram: verificar"
 
 if [[ "$CREATED" -gt 0 ]]; then
   echo "[$TIMESTAMP] Created $CREATED missing memory files" >> "$LOG"

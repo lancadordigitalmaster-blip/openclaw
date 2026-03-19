@@ -14,17 +14,12 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 mkdir -p "$(dirname "$LOG_FILE")"
 log() { echo "[$TIMESTAMP] $1" >> "$LOG_FILE"; }
 
-# ── Error trap — notifica Telegram se script travar ────────────────────────
-set -a; source "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
+# ── Error trap — notifica via WhatsApp se script travar ────────────────────
+source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 trap 'EXIT_CODE=$?; if [ $EXIT_CODE -ne 0 ]; then
-  curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -d "chat_id=789352357" \
-    -d "text=⚠️ check_diario.sh falhou (código $EXIT_CODE) às $(date +%H:%M). Ver log: memory/logs/check_diario.log" \
-    > /dev/null 2>&1 || true
+  wolf_notify "⚠️ check_diario.sh falhou (código $EXIT_CODE) às $(date +%H:%M). Ver log: memory/logs/check_diario.log" 2>/dev/null || true
   log "ERRO: script falhou com código $EXIT_CODE"
 fi' EXIT
-
-source "$HOME/.openclaw/workspace/scripts/lib-wolf.sh" 2>/dev/null || true
 
 OPEN=$(grep -c "^- \[ \]" "$QUEUE" 2>/dev/null || echo "0")
 URGENT="$(awk '/## URGENT/,/## THIS WEEK/' "$QUEUE" 2>/dev/null | grep -c "^- \[ \]" 2>/dev/null || true)"
@@ -35,16 +30,19 @@ BLOCKED="${BLOCKED%%$'\n'*}"; BLOCKED="${BLOCKED:-0}"
 # Verificar notas antigas (>3 dias sem update)
 OLD_NOTES=$(find "$WORKSPACE/memory/daily/" -name "*.md" -mtime +3 2>/dev/null | wc -l | tr -d ' ')
 
-MSG="Netto, update das 9h.
+DATE_BR=$(date '+%d/%m')
 
-*$OPEN tasks* abertas na fila."
-[ "$URGENT" -gt 0 ] && MSG="$MSG
-$URGENT delas sao urgentes."
-[ "$BLOCKED" -gt 0 ] && MSG="$MSG
-$BLOCKED travada(s) esperando teu input."
+MSG="🐺 *Wolf — Check Matinal | ${DATE_BR} 9h*
+
+📋 *Fila*
+${OPEN} tasks abertas"
+[ "$URGENT" -gt 0 ] && MSG="$MSG · 🔴 ${URGENT} urgentes" || MSG="$MSG · 0 urgentes"
+[ "$BLOCKED" -gt 0 ] && MSG="$MSG · ⏳ ${BLOCKED} bloqueadas"
+
 [ "$OLD_NOTES" -gt 0 ] && MSG="$MSG
 
-Tem $OLD_NOTES nota(s) diaria(s) parada(s) ha mais de 3 dias — vale dar uma olhada."
+⚠️ *Atenção*
+${OLD_NOTES} nota(s) parada(s) há mais de 3 dias"
 
 wolf_notify "$MSG"
 log "Check diario: open=$OPEN urgent=$URGENT blocked=$BLOCKED"

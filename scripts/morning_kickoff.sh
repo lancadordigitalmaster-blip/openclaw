@@ -47,6 +47,71 @@ fi
 
 Tem $BLOCKED coisa(s) travada(s) esperando input teu."
 
+# ── Verificar licoes recentes e alertas ──────────────────────────────────
+LESSONS_FILE="$WORKSPACE/memory/lessons.md"
+ALERTS=""
+if [ -f "$LESSONS_FILE" ]; then
+  # Licoes dos ultimos 7 dias com status pendente
+  RECENT_LESSONS=$(grep -A 4 "^\*\*Data:\*\*" "$LESSONS_FILE" 2>/dev/null | grep -B 1 "pendente\|PENDENTE\|investigar\|INVESTIGAR" | grep "Data:" | tail -3 || true)
+  if [ -n "$RECENT_LESSONS" ]; then
+    ALERTS="
+Atencao hoje:
+$(echo "$RECENT_LESSONS" | sed 's/.*\*\*Data:\*\* /- Licao de /' | head -3)"
+  fi
+fi
+
+# Verificar errors.md recentes
+ERRORS_FILE="$WORKSPACE/memory/errors.md"
+if [ -f "$ERRORS_FILE" ]; then
+  PENDING_ERRORS=$(grep -c "pendente\|PENDENTE" "$ERRORS_FILE" 2>/dev/null || echo "0")
+  [ "$PENDING_ERRORS" -gt 0 ] && ALERTS="$ALERTS
+$PENDING_ERRORS erro(s) pendente(s) em errors.md"
+fi
+
+# ── Strategic Brain Insights (se Morning Think rodou às 06h30) ────────────
+BRAIN_FILE="$WORKSPACE/memory/brain/insight-morning-$(date +%Y-%m-%d).md"
+if [ -f "$BRAIN_FILE" ]; then
+  # Extrair riscos e oportunidades do Brain (primeiras linhas de cada seção)
+  BRAIN_RISKS=$(awk '/RISCOS/,/OPORTUNIDADES/' "$BRAIN_FILE" 2>/dev/null | grep -E "^[0-9-]" | head -2 | sed 's/^/  /' || true)
+  BRAIN_OPPS=$(awk '/OPORTUNIDADES/,/PADRAO/' "$BRAIN_FILE" 2>/dev/null | grep -E "^[0-9-]" | head -2 | sed 's/^/  /' || true)
+  BRAIN_ACTIONS=$(cat "$WORKSPACE/memory/brain/actions-$(date +%Y-%m-%d).md" 2>/dev/null | head -3 || true)
+
+  if [ -n "$BRAIN_RISKS" ] || [ -n "$BRAIN_OPPS" ]; then
+    ALERTS="$ALERTS
+
+Visao Estrategica (Brain):"
+    [ -n "$BRAIN_RISKS" ] && ALERTS="$ALERTS
+Riscos:
+$BRAIN_RISKS"
+    [ -n "$BRAIN_OPPS" ] && ALERTS="$ALERTS
+Oportunidades:
+$BRAIN_OPPS"
+  fi
+
+  [ -n "$BRAIN_ACTIONS" ] && ALERTS="$ALERTS
+Acoes autonomas: $BRAIN_ACTIONS"
+fi
+
+# ── Client Health Summary (se rodou às 07h) ──────────────────────────────
+HEALTH_ALERTS=""
+for hf in "$WORKSPACE"/memory/clients/*/health.yaml; do
+  [ -f "$hf" ] || continue
+  HSCORE=$(grep "score:" "$hf" 2>/dev/null | head -1 | awk '{print $2}')
+  [ "$HSCORE" = "null" ] && continue
+  [ -z "$HSCORE" ] && continue
+  HNAME=$(grep "client:" "$hf" 2>/dev/null | awk -F'"' '{print $2}')
+  if [ "$HSCORE" -lt 50 ] 2>/dev/null; then
+    HEALTH_ALERTS="$HEALTH_ALERTS
+  🔴 $HNAME: score $HSCORE/100"
+  fi
+done
+[ -n "$HEALTH_ALERTS" ] && ALERTS="$ALERTS
+
+Clientes em risco:$HEALTH_ALERTS"
+
+[ -n "$ALERTS" ] && MSG="$MSG
+$ALERTS"
+
 wolf_notify "$MSG"
 
 # Atualizar metricas no QUEUE.md

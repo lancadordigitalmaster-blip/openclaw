@@ -56,11 +56,26 @@ fi
 # 4. Dados de clientes (tem campanhas para rodar?)
 CLIENTS_FILE="$WOLF_WORKSPACE/shared/memory/clients.yaml"
 if [ -f "$CLIENTS_FILE" ]; then
-    CLIENT_COUNT=$(grep -c "^  - name:" "$CLIENTS_FILE" 2>/dev/null || echo "0")
+    # YAML usa formato mapa (chave:) sob "clientes:", nao lista (- name:)
+    # Conta entradas com status: "ativo" (ignora linhas comentadas com #)
+    CLIENT_COUNT=$(grep -v '^\s*#' "$CLIENTS_FILE" | grep -c 'status: "ativo"' 2>/dev/null || echo "0")
     METRICS="$METRICS | Clientes cadastrados: $CLIENT_COUNT"
+    [ "$CLIENT_COUNT" -eq 0 ] && WARNINGS+=("Nenhum cliente ativo em clients.yaml")
 else
     WARNINGS+=("clients.yaml nao existe — sem base de clientes")
 fi
+
+# 5. Verificar TODOS os tokens de clientes (nao so o principal)
+for TOKEN_VAR in META_TOKEN_GR_VEICULOS META_ADS_TOKEN_TICOMIA META_ADS_TOKEN_FORLAN; do
+    TOKEN_VAL="${!TOKEN_VAR:-}"
+    if [ -n "$TOKEN_VAL" ]; then
+        T_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+            "https://graph.facebook.com/v19.0/me?access_token=${TOKEN_VAL}" 2>/dev/null || echo "000")
+        if [ "$T_STATUS" != "200" ]; then
+            WARNINGS+=("Token $TOKEN_VAR expirado (HTTP $T_STATUS)")
+        fi
+    fi
+done
 
 # Resultado
 DESCRIPTION="$METRICS"

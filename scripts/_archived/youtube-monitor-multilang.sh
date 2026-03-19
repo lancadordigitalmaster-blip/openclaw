@@ -47,7 +47,7 @@ fi
 # Função: extrair último vídeo de um canal
 get_latest_video() {
   local channel_url=$1
-  local latest=$(curl -s "$channel_url" 2>/dev/null | grep -oP 'href="/watch\?v=\K[^"]+' | head -1)
+  local latest=$(curl -s "$channel_url" 2>/dev/null | grep -o 'href="/watch?v=[^"]*"' | sed 's/.*v=//;s/".*//' | head -1)
   echo "$latest"
 }
 

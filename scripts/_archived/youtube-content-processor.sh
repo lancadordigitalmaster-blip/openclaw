@@ -14,15 +14,39 @@ log_entry() {
   echo "[$timestamp] $msg" >> "$PROCESSOR_LOG"
 }
 
-# Função: transcrever vídeo
+# Função: transcrever vídeo via yt-dlp (nativo, sem dependência externa)
 transcribe_video() {
   local video_url=$1
-  local video_id=$(echo "$video_url" | grep -oP 'v=\K[^&]+')
-  
+  local video_id=$(echo "$video_url" | sed 's/.*v=//;s/&.*//')
+
   log_entry "Transcrevendo: $video_id"
-  
-  # Usa summarize CLI pra extrair transcrição
-  summarize "$video_url" --youtube auto --extract-only 2>/dev/null
+
+  local TMP_DIR=$(mktemp -d /tmp/yt-transcript-XXXXXX)
+
+  # Tenta legendas manuais (pt/en), depois auto-geradas
+  yt-dlp --skip-download \
+    --write-subs --write-auto-subs \
+    --sub-lang "pt,en" --sub-format "vtt" \
+    --convert-subs "srt" \
+    -o "$TMP_DIR/%(id)s" \
+    "$video_url" 2>/dev/null
+
+  # Encontra o arquivo de legenda gerado (SRT ou VTT fallback)
+  local SUB_FILE=$(find "$TMP_DIR" -name "*.srt" -o -name "*.vtt" 2>/dev/null | head -1)
+
+  if [ -z "$SUB_FILE" ]; then
+    log_entry "WARN: Sem legendas para $video_id"
+    rm -rf "$TMP_DIR"
+    return 1
+  fi
+
+  # Limpa SRT/VTT → texto puro (remove timestamps, numeração, tags, headers)
+  sed '/^WEBVTT/d; /^Kind:/d; /^Language:/d; /^NOTE/d; /^[0-9]*$/d; /^[0-9][0-9]:[0-9][0-9]/d; /^$/d; s/<[^>]*>//g' "$SUB_FILE" \
+    | awk '!seen[$0]++' \
+    | tr '\n' ' ' \
+    | sed 's/  */ /g'
+
+  rm -rf "$TMP_DIR"
 }
 
 # Função: traduzir usando LLM (Gemini Flash gratuito)

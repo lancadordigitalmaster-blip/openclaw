@@ -5,12 +5,12 @@
 # ============================================================
 set -euo pipefail
 
-# DESATIVADO por Netto em 2026-03-10 — dados incorretos, reorganizando ClickUp
+# Reativado 2026-03-18 — dados corrigidos, alertas SLA enviados para Natiely + Netto
 
 SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
 
-exit 0
+NATIELY_WHATSAPP="5573999840448"
 
 set -a
 source "$HOME/.openclaw/.env"
@@ -217,6 +217,13 @@ if [[ -z "$TELEGRAM_TOKEN" ]]; then
   exit 1
 fi
 
+# Enviar para Netto (WhatsApp)
 wolf_notify "$RESULT"
+
+# Enviar alertas SLA para Natiely (responsável por prazos ClickUp)
+if echo "$RESULT" | grep -qE "ALERTAS SLA|VENCIDOS|EM RISCO"; then
+  wolf_notify_role "natiely" "$RESULT" "skip"  # skip=Netto ja recebe via wolf_notify acima
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Alertas enviados para Natiely" >> "$LOG"
+fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Enviado com sucesso" >> "$LOG"

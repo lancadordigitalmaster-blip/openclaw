@@ -1,9 +1,70 @@
 # clients.yaml — Base de Clientes Wolf Agency
 # Atualizado via comando: "alfred, atualiza cliente [NOME]"
-# Última atualização: 2026-03-08 (limpo — sem clientes reais ainda)
+# Última atualização: 2026-03-17 (sincronizado com Supabase — 4 clientes)
 
-clientes: {}
-  # Quando fechar o primeiro cliente, copie o schema abaixo e preencha.
+clientes:
+
+  gr-veiculos:
+    nome: "GR Veículos"
+    segmento: "automotivo / concessionária"
+    responsavel_wolf: "Netto"
+    status: "ativo"
+
+    plataformas_ads:
+      meta:
+        account_id: "1221676633470141"
+        # token armazenado em: ~/.openclaw/.env (chave: META_TOKEN_GR_VEICULOS)
+        campanhas_ativas:
+          - nome: "Conversas Iniciadas — Vendedores (Alagoas)"
+            objetivo: "conversas_iniciadas"
+            abrangencia: "estadual"
+          - nome: "Conversas Iniciadas — Jideon (Brasil)"
+            objetivo: "conversas_iniciadas"
+            abrangencia: "nacional"
+
+    notas: "2 campanhas ativas Meta Ads. CPConv médio R$1,49 (mar/26)."
+    criado_em: "2026-03-17"
+    atualizado_em: "2026-03-17"
+
+  wolf-pack:
+    nome: "WOLF PACK"
+    segmento: "Marketing Digital / Agência"
+    responsavel_wolf: "Netto"
+    status: "ativo"
+    plataformas_ads:
+      meta:
+        account_id: "1583430182930723"
+    notas: "Conta interna da Wolf Agency. Usado para testes e gestão própria."
+    criado_em: "2026-03-14"
+    atualizado_em: "2026-03-17"
+
+  ticomia:
+    nome: "Ticomia"
+    segmento: "Varejo"
+    responsavel_wolf: "Netto"
+    status: "ativo"
+    plataformas_ads:
+      meta:
+        account_id: "1336968033454787"
+        # token armazenado em: ~/.openclaw/.env (chave: META_ADS_TOKEN_TICOMIA)
+    notas: "Primeiro cliente com Meta Ads token válido. Campanhas de conversão ativas."
+    criado_em: "2026-03-14"
+    atualizado_em: "2026-03-17"
+
+  william-forlan:
+    nome: "William Forlan"
+    segmento: "Infoproduto"
+    responsavel_wolf: "Netto"
+    status: "ativo"
+    plataformas_ads:
+      meta:
+        account_id: "702342462816996"
+        # token armazenado em: ~/.openclaw/.env (chave: META_ADS_TOKEN_FORLAN)
+    notas: "Cliente infoproduto."
+    criado_em: "2026-03-14"
+    atualizado_em: "2026-03-17"
+
+  # Quando fechar o próximo cliente, copie o schema abaixo e preencha.
 
 # Schema de referência — copie e preencha para cada cliente:
 #

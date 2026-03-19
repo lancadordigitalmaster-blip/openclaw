@@ -18,7 +18,7 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 TODAY=$(date '+%Y-%m-%d')
 
 # --- Config: custo por modelo (USD per 1M tokens) ---
-# Precos Ollama Cloud Pro
+# Precos Anthropic + OpenRouter
 DAILY_BUDGET_USD="3.00"
 SESSION_ALERT_THRESHOLD=50  # alerta se mais de X sessoes/dia
 
@@ -37,10 +37,9 @@ telemetry_path = os.path.expanduser('~/.openclaw/logs/token-telemetry.jsonl')
 
 # Precos USD por 1M tokens (input / output)
 PRICES = {
-    'kimi-k2.5':      {'input': 0.15, 'output': 0.15},
-    'deepseek-v3.2':  {'input': 0.14, 'output': 0.28},
-    'qwen3.5:397b':   {'input': 0.30, 'output': 0.30},
-    'gemma3:27b':     {'input': 0.10, 'output': 0.10},
+    'anthropic/claude-sonnet-4-6': {'input': 3.00, 'output': 15.00},
+    'claude-sonnet-4-6': {'input': 3.00, 'output': 15.00},
+    'claude-haiku-4-5-20251001': {'input': 0.80, 'output': 4.00},
     'gemini-2.5-flash': {'input': 0.15, 'output': 0.60},
     'llama-3.3-70b-versatile': {'input': 0.59, 'output': 0.79},
     'anthropic/claude-haiku-4-5': {'input': 0.80, 'output': 4.00},
@@ -185,62 +184,50 @@ if [[ -n "$TELEGRAM_TOKEN" ]]; then
     echo "  $line"
   done)
 
+  # Build human-readable message
+  ICON="✅"
+  [[ "$STATUS" == "ATENCAO" ]] && ICON="⚠️"
+  [[ "$STATUS" == "ESTOURO" ]] && ICON="🔴"
+
+  # Extract model breakdown
+  MODEL_LINES=$(echo "$REPORT" | awk '/^POR MODELO:/{found=1; next} found && /^  /{print} found && !/^  /{exit}' | head -5 | while read -r line; do
+    NAME=$(echo "$line" | awk '{print $1}')
+    MCOST=$(echo "$line" | awk '{print $2}')
+    echo "  $NAME: $MCOST"
+  done)
+
+  MSG="$ICON *Wolf Custo | $TODAY*
+
+💰 Custo: \$$COST / \$3.00 (${PCT}%)
+📊 Sessões: $SESSIONS
+📈 Status: $STATUS
+
+Por modelo:
+$MODEL_LINES"
+
   if [[ "$SEND_DAILY" == "true" ]]; then
-    # Daily summary - always send
-    MSG=$(python3 -c "
-import urllib.parse
-status='$STATUS'
-cost='$COST'
-pct='$PCT'
-sessions='$SESSIONS'
-today='$TODAY'
+    # Daily summary - always send via WhatsApp
+    wolf_notify "$MSG"
+    wolf_log "cost-tracker" "Daily report enviado"
+    echo "[$TIMESTAMP] Daily report sent" >> "$LOG"
 
-icon = '✅' if status == 'OK' else ('⚠️' if status == 'ATENCAO' else '🔴')
+  elif [[ "$STATUS" == "ESTOURO" ]]; then
+    # Budget overflow - urgent alert (WhatsApp + Telegram)
+    wolf_notify_urgent "🔴 *ALERTA CUSTO*
 
-lines = [
-    f'{icon} Wolf Custo | {today}',
-    '',
-    f'💰 Custo: \${cost} / \$3.00 ({pct}%)',
-    f'📊 Sessoes: {sessions}',
-    f'📈 Status: {status}',
-]
+Orçamento diário estourado!
+Custo: \$$COST (${PCT}% do budget \$3.00)
+Sessões: $SESSIONS
 
-# Add model breakdown from report file
-import os
-report_path = f'/tmp/wolf-cost-report-{today}.txt'
-if os.path.exists(report_path):
-    with open(report_path) as f:
-        content = f.read()
-    in_models = False
-    lines.append('')
-    lines.append('Por modelo:')
-    for l in content.split('\n'):
-        if l.startswith('POR MODELO:'):
-            in_models = True
-            continue
-        if in_models and l.startswith('  '):
-            parts = l.strip().split()
-            if len(parts) >= 2:
-                name = parts[0]
-                cost_val = parts[1]
-                lines.append(f'  {name}: {cost_val}')
-        elif in_models and not l.startswith('  '):
-            in_models = False
+Verificar sessões ativas e considerar pausar crons não-essenciais."
+    wolf_log "cost-tracker" "ALERTA: Budget estourado \$$COST"
+    echo "[$TIMESTAMP] BUDGET ALERT sent (status=$STATUS)" >> "$LOG"
 
-print(urllib.parse.quote('\n'.join(lines)))
-")
-    wolf_log "cost-tracker" "${MSG}"
-    echo "[$TIMESTAMP] Daily report sent to Telegram" >> "$LOG"
-
-  elif [[ "$STATUS" == "ESTOURO" || "${SESSIONS:-0}" -gt "$SESSION_ALERT_THRESHOLD" ]]; then
-    # Alert mode - only on budget overflow
-    if [[ "$STATUS" == "ESTOURO" ]]; then
-      MSG="🔴 Wolf Cost | ALERTA%0A%0ACusto hoje: \$${COST} (${PCT}%25 do budget)%0ASessoes: ${SESSIONS}%0A%0AOrcamento diario estourado."
-    else
-      MSG="⚠️ Wolf Cost | ATENCAO%0A%0A${SESSIONS} sessoes hoje (limite: ${SESSION_ALERT_THRESHOLD})%0ACusto: \$${COST}%0A%0AVolume alto de sessoes."
-    fi
-    wolf_log "cost-tracker" "${MSG}"
-    echo "[$TIMESTAMP] Alert sent to Telegram (status=$STATUS)" >> "$LOG"
+  elif [[ "$STATUS" == "ATENCAO" || "${SESSIONS:-0}" -gt "$SESSION_ALERT_THRESHOLD" ]]; then
+    # Warning - WhatsApp only
+    wolf_notify "$MSG"
+    wolf_log "cost-tracker" "Warning enviado: ${PCT}% budget"
+    echo "[$TIMESTAMP] Warning sent (status=$STATUS, sessions=$SESSIONS)" >> "$LOG"
   fi
 fi
 

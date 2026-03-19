@@ -153,54 +153,189 @@ PASSO 5 — REGISTRO NO MISSION CONTROL (obrigatorio para MEDIUM e COMPLEX)
 
 ---
 
-## TABELA DE ROTEAMENTO
+## TABELA DE ROTEAMENTO POR DOMÍNIO
 
-| Trigger Keywords | Agente | Sub-skill |
-|-----------------|--------|-----------|
-| ads, campanha, meta, google ads, roas, cpa, criativo, orçamento, budget, tráfego | Gabi | Detecta automaticamente |
-| post, instagram, tiktok, linkedin, conteúdo, calendário, reel, stories, social, menção | Luna | Detecta automaticamente |
-| seo, ranking, keyword, palavra-chave, blog, artigo, site, google orgânico, backlink | Sage | Detecta automaticamente |
-| estratégia, mercado, concorrente, tendência, persona, pesquisa, análise, oportunidade | Nova | Detecta automaticamente |
-| onboarding, cliente novo, prazo, entrega, report mensal, proposta | Alfred | Operação direta |
-| wolf, kanban, equipe, carga, card, tarefa wolf, alerta wolf, cria tarefa, cria alerta, recomendação, operacional, status da equipe, quem está disponível | Alfred | wolf-ops |
-| mission control, dashboard, wmc, registrar missao, painel | Alfred | wolf-mission-control |
-| navegar, browser, abrir site, screenshot, preencher form | Alfred | agent-browser |
-| api, gateway, oauth, maton, integração externa | Alfred | api-gateway |
-| clickup, task, lista, sprint, workspace clickup | Alfred | clickup-api |
-| buscar skill, instalar skill, skills disponíveis | Alfred | find-skills |
-| github, pr, issue, ci, pull request, repositório | Alfred | github |
-| gmail, calendar, drive, sheets, docs, google workspace | Alfred | gog |
-| meet, reunião, gravação, transcrição meet | Alfred | google-meet |
-| slides, apresentação, powerpoint, deck | Alfred | google-slides |
-| humanizar, reescrever, tom humano, remover ia, naturalizar | Alfred | humanizer |
-| briefing, brief, analisar briefing, checar briefing, gaps do briefing | Alfred | wolf-briefing-monitor |
-| qa, qualidade, revisar entrega, checar entrega, quality check, antes de enviar | Alfred | wolf-quality-check |
-| lembrete, reminder, follow-up, lembra de, me avisa, agenda lembrete, prazo | Alfred | wolf-reminders |
-| legenda, caption, gera legenda, criar legenda, post caption | Luna | wolf-caption-gen |
-| tendencias, trends, google trends, trending, keywords tendencia | Sage | google-trends |
-| tom de voz, brand voice, voz da marca, escreve como, identidade textual | Luna | sovereign-brand-voice-writer |
-| tarefa, delegar, pendencia, quem faz, daily report tarefas | Alfred | todo-boss |
-| lembrete rapido, me avisa em, timer, daqui a, reminder curto | Alfred | quick-reminders |
-| evolucao, auto-evolucao, evolver, melhorar agente, evoluir | Alfred | capability-evolver |
-| concorrente, competidor, SWOT, analise competitiva, benchmark | Nova | competitor-analysis-report |
-| conteudo seo, artigo blog, criar conteudo, content, texto otimizado | Sage | content-creator |
-| multiplicar conteudo, transformar artigo em posts, repurpose, blogburst | Luna | blogburst |
-| dados sociais, twitter, reddit, mencoes, monitorar rede social, sentiment | Luna | social-data |
-| email cliente, enviar email, gateway email, aprovacao email | Alfred | postwall |
-| retomar tarefa, task resume, continuar onde parou, interrupted | Alfred | task-resume |
-| fatura, invoice, cobranca, pagamento, billing, nota fiscal | Alfred | invoice-tracker-pro |
-| converter, pdf para md, docx para md, markdown, converter arquivo | Alfred | markdown-converter |
-| n8n, workflow, automação, fluxo automatizado | Alfred | n8n-workflow-automation |
-| gerar imagem, criar imagem, editar imagem, banana, ilustração | Alfred | nano-banana-pro |
-| editar pdf, modificar pdf | Alfred | nano-pdf |
-| notícias, news, resumo notícias, bbc, reuters | Alfred | news-summary |
-| transcrever, áudio, whisper, transcrição | Alfred | openai-whisper |
-| proativo, antecipar, auto-recuperar | Alfred | proactive-agent |
-| aprender, self-improve, auto-melhoria, correção, learning | Alfred | self-improving |
-| resumir, summarize, resumo url, resumo vídeo | Alfred | summarize |
-| design, frontend, ui, ux, tailwind, layout, tema | Alfred | superdesign |
-| buscar web, pesquisar, tavily, search | Alfred | tavily-search |
-| whatsapp, wpp, mensagem whatsapp, template whatsapp | Alfred | whatsapp-business |
+### TRÁFEGO PAGO → Gabi
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| campanha, anúncio, ads, meta ads, google ads, tráfego pago | Detecta automaticamente |
+| cpa, cpc, cpr, ctr, roas, impressões, cliques, conversões | meta-ads / facebook-ads-manager-skill |
+| pixel (facebook), público, audiência, lookalike, retargeting | meta-ads |
+| spend, verba de mídia, investimento ads, budget de campanha | meta-ads |
+| performance de campanha, otimizar campanha, escalar campanha | Detecta automaticamente |
+
+Sub-rotas:
+- Consultar métricas → Gabi + meta-ads plugin (se token válido)
+- Ação em campanha (pausar/ativar/criar) → Gabi + meta-ads API + APROVAÇÃO obrigatória
+- Relatório de tráfego → Gabi + template de report
+- Diagnóstico de campanha → Gabi + facebook-ads-manager-skill
+- Se Meta Ads token expirado → avisar Netto, NÃO inventar dados
+
+### SOCIAL MEDIA → Luna
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| post, stories, reels, carrossel, feed, pauta, calendário editorial | Detecta automaticamente |
+| legenda, caption, hashtag, gera legenda, criar legenda | wolf-caption-gen |
+| engajamento, seguidores, alcance, social media | Detecta automaticamente |
+| Instagram, TikTok, LinkedIn, conteúdo social, menção | Detecta automaticamente |
+| tom de voz, brand voice, voz da marca, escreve como | sovereign-brand-voice-writer |
+| multiplicar conteúdo, repurpose, blogburst | blogburst |
+| dados sociais, twitter, reddit, menções, sentiment | social-data |
+| referência visual, inspiração, moodboard | wolf-reference-curator |
+| análise de criativo (social) | wolf-creative-analysis |
+
+### SEO & CONTEÚDO → Sage
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| seo, ranking, palavra-chave, keyword, orgânico | Detecta automaticamente |
+| blog, artigo, site, google orgânico, backlink, SERP | Detecta automaticamente |
+| meta description, title tag, H1, schema, indexação | Detecta automaticamente |
+| tendências, trends, google trends, trending | google-trends |
+| conteúdo seo, artigo blog, criar conteúdo, texto otimizado | content-creator |
+
+### ESTRATÉGIA → Nova
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| estratégia, posicionamento, mercado, concorrente, tendência | Detecta automaticamente |
+| persona, pesquisa de mercado, oportunidade, diferencial | Detecta automaticamente |
+| SWOT, análise competitiva, benchmark, competidor | competitor-analysis-report |
+| proposta comercial, montar proposta, proposta de valor | wolf-proposal-draft |
+| pesquisa profunda, investigar, deep research | wolf-nova-research |
+
+### DESIGN & CRIATIVO → Pixel
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| design, layout, UI, UX, visual, arte, banner, peça gráfica | superdesign |
+| design system, style guide, tipografia, paleta, Figma | design-system (skills/design-system/) |
+| frontend, tailwind, componente, HTML, tema | superdesign |
+| página, landing page, wireframe | page-architect |
+
+NOTA: "proposta comercial" NÃO vai para Pixel — vai para Nova.
+
+### FINANCEIRO → CFO Wolf
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| fluxo de caixa, DRE, faturamento, receita, despesa | agents/cfo-wolf/AGENT.md |
+| custo operacional, margem, lucro, pro-labore | agents/cfo-wolf/AGENT.md |
+| runway, projeção financeira, meta financeira | agents/cfo-wolf/AGENT.md |
+| relatório sócios, orçamento da agência | agents/cfo-wolf/AGENT.md |
+
+NOTA: "budget de campanha" / "budget de ads" → Gabi (tráfego), NÃO CFO Wolf.
+NOTA: "custo de token" / "gasto de API" → Alfred (infra), NÃO CFO Wolf.
+
+### VÍDEO → Editor (Ed)
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| vídeo, edição, corte, timeline, render | wolf-video-pipeline |
+| YouTube, thumbnail, roteiro, script de vídeo | wolf-video-pipeline |
+| podcast, gravação | wolf-video-pipeline |
+
+### OPERAÇÕES → Alfred (direto)
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| cliente, onboarding, prazo, entrega, report mensal | Operação direta |
+| resumo do dia, como foi hoje, daily, digest, recapitular | Ler memory/daily/ + activity.log |
+| atendimento, cliente reclamou, responder cliente, mensagem do cliente | agents/natiely/SKILL.md (Natiely) |
+| wolf, kanban, equipe, carga, card, tarefa wolf, alerta wolf | wolf-ops |
+| mission control, dashboard, wmc, registrar missão, painel | wolf-mission-control |
+| clickup, task, lista, sprint, workspace clickup | clickup-api |
+| briefing, brief, analisar briefing, checar briefing, gaps | wolf-briefing-monitor |
+| qa, qualidade, revisar entrega, quality check, antes de enviar | wolf-quality-check |
+| lembrete, reminder, follow-up, lembra de, me avisa, prazo | wolf-reminders |
+| lembrete rápido, me avisa em, timer, daqui a | quick-reminders |
+| tarefa, delegar, pendência, quem faz, daily report tarefas | todo-boss |
+| fatura, invoice, cobrança, pagamento, billing, nota fiscal | invoice-tracker-pro |
+| retomar tarefa, task resume, continuar onde parou | task-resume |
+| email cliente, enviar email, gateway email | postwall |
+
+### FERRAMENTAS → Alfred (com skill específica)
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| navegar, browser, abrir site, screenshot, preencher form | agent-browser |
+| github, pr, issue, ci, pull request, repositório | github |
+| gmail, calendar, drive, sheets, docs, google workspace | gog |
+| meet, reunião, gravação, transcrição meet | google-meet |
+| slides, apresentação, powerpoint, deck | google-slides |
+| humanizar, reescrever, tom humano, remover ia, naturalizar | humanizer |
+| buscar skill, instalar skill, skills disponíveis | find-skills |
+| converter, pdf para md, docx para md, markdown | markdown-converter |
+| n8n, workflow, automação, fluxo automatizado | n8n-workflow-automation |
+| gerar imagem, criar imagem, editar imagem, ilustração | nano-banana-pro |
+| editar pdf, modificar pdf | nano-pdf |
+| notícias, news, resumo notícias | news-summary |
+| transcrever, áudio, whisper, transcrição | openai-whisper |
+| resumir, summarize, resumo url, resumo vídeo | summarize |
+| buscar web, pesquisar, tavily, search | tavily-search |
+| whatsapp, wpp, mensagem whatsapp, template whatsapp | whatsapp-business |
+| api, gateway (externo), oauth, integração externa | api-gateway |
+| evolução, auto-evolução, melhorar agente, evoluir | capability-evolver |
+| aprender, self-improve, auto-melhoria, correção | self-improving |
+
+### INFRA / SISTEMA → Alfred (sem agente externo)
+
+| Keywords | Sub-skill |
+|----------|-----------|
+| gateway, status, saúde, sistema, erro, log | Protocolo /status |
+| cron, heartbeat, monitor, sessão | wolf-self-heal |
+| custo de token, gasto de API, telemetria | wolf-cost-tracker.sh |
+| Kaizen, revisão semanal, melhoria contínua | Kaizen cron manual |
+
+---
+
+## REGRAS DE DESAMBIGUAÇÃO
+
+Quando o pedido pode ir para mais de um agente, aplique estas regras ANTES de rotear:
+
+```
+1. "criativo" SEM contexto adicional:
+   - "criativo de campanha/ads/anúncio" → Gabi
+   - "criativo visual/design/peça/arte" → Pixel
+   - "criativo de conteúdo/post/social" → Luna
+   - Se ambíguo → perguntar: "Criativo de ads, design ou conteúdo?"
+
+2. "budget" / "orçamento" SEM contexto:
+   - "budget de campanha/ads/mídia/spend" → Gabi
+   - "budget da agência/mensal/operacional/custos" → CFO Wolf
+   - Se ambíguo → inferir pelo histórico da conversa
+
+3. "relatório" SEM especificador:
+   - "relatório de tráfego/ads/campanha/performance" → Gabi
+   - "relatório social/engajamento/posts" → Luna
+   - "relatório financeiro/DRE/faturamento" → CFO Wolf
+   - "relatório de sistema/status/saúde" → Alfred infra
+   - Sem especificador → Alfred genérico
+
+4. "proposta" → SEMPRE Nova (wolf-proposal-draft)
+   NUNCA Pixel. Pixel faz landing pages, não propostas comerciais.
+
+5. Menção a nome de cliente SEM domínio claro:
+   → Consultar clients.yaml (serviço contratado) e rotear pelo serviço.
+   Se cliente não cadastrado → perguntar contexto.
+
+6. "analisa" / "analisa isso" SEM objeto claro:
+   → Se há arquivo/imagem/link anexado: inferir pelo tipo do anexo.
+   → Se não há anexo: perguntar "Analisa o quê?"
+   NUNCA adivinhar sem evidência.
+
+7. Fallback universal: Alfred responde direto.
+   NUNCA perguntar "qual agente você quer?" — decidir e agir.
+
+8. "conteúdo" SEM especificador:
+   - "conteúdo para Instagram/TikTok/rede social/stories/reels" → Luna
+   - "conteúdo para blog/site/artigo/SEO/orgânico" → Sage
+   - Se ambíguo → perguntar: "Conteúdo para redes sociais ou para blog/site?"
+```
+
+---
 
 ### Enriquecimento automático com W.O.L.F.
 
@@ -490,4 +625,4 @@ cybersecurity, legal, 50+ tools   → T4 Opus 4.6              → $15 / $75 (AP
 
 ---
 
-*Atualizado: 2026-03-07 | Versão: 5.1 — Token optimization: budget dinamico + output formats + economy mode + shared rules + context filter*
+*Atualizado: 2026-03-18 | Versão: 5.2 — Routing audit: +keywords "resumo do dia/digest", +Natiely (atendimento), +regra desambiguação "conteúdo" (Luna vs Sage)*

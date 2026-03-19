@@ -4,7 +4,10 @@
 # Se encontra problema: tenta corrigir automaticamente
 # Se conseguir: silêncio. Se não conseguir: notifica Netto
 
-set -e
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib-wolf.sh"
 
 WORKSPACE="/Users/thomasgirotto/.openclaw/workspace"
 LOG_FILE="$WORKSPACE/memory/self-heal.log"
@@ -22,39 +25,8 @@ log_entry() {
   echo "[$timestamp] [$level] $msg" >> "$LOG_FILE"
 }
 
-# ─────────────────────────────────────────────────────────────
-# CHECK 1: Gateway respondendo?
-# ─────────────────────────────────────────────────────────────
-check_gateway() {
-  local status="OK"
-  
-  # Tenta fazer um simples ping na API local
-  if ! timeout $TIMEOUT_SECS curl -s http://localhost:3535/status > /dev/null 2>&1; then
-    status="FAIL"
-    log_entry "ALERT" "Gateway não respondendo. Tentando restart via openclaw CLI..."
-    
-    # Tenta restart via CLI (não via launchctl que varia por OS)
-    if (cd /opt/homebrew/lib/node_modules/openclaw && npm run gateway:restart 2>/dev/null) || openclaw gateway restart 2>/dev/null; then
-      log_entry "ACTION" "Gateway restart solicitado"
-      sleep 4
-      
-      # Verifica se voltou
-      if timeout $TIMEOUT_SECS curl -s http://localhost:3535/status > /dev/null 2>&1; then
-        log_entry "FIXED" "Gateway respondendo novamente após restart"
-        return 0
-      else
-        log_entry "ERROR" "Gateway ainda não responde após restart — escalando para Netto"
-        return 1
-      fi
-    else
-      log_entry "ERROR" "Falha ao executar restart — openclaw CLI ou npm não encontrados"
-      return 1
-    fi
-  else
-    log_entry "CHECK" "Gateway OK"
-    return 0
-  fi
-}
+# CHECK 1: Gateway — delegado para wolf-monitor.sh (30min, porta 18789)
+# Removido daqui para evitar redundancia e porta errada (3535 vs 18789)
 
 # ─────────────────────────────────────────────────────────────
 # CHECK 2: Memória não explodir?
@@ -108,16 +80,103 @@ check_crons() {
 }
 
 # ─────────────────────────────────────────────────────────────
+# CHECK 5: WhatsApp Bridge rodando?
+# ─────────────────────────────────────────────────────────────
+check_whatsapp_bridge() {
+  local bridge_ok=false
+
+  # Tenta health endpoint primeiro
+  if curl -s --max-time 5 http://127.0.0.1:3002/health > /dev/null 2>&1; then
+    bridge_ok=true
+  elif pgrep -f "bridge.js" > /dev/null 2>&1; then
+    bridge_ok=true
+  fi
+
+  if [ "$bridge_ok" = true ]; then
+    log_entry "CHECK" "WhatsApp Bridge OK"
+    return 0
+  fi
+
+  log_entry "ALERT" "WhatsApp Bridge DOWN — tentando restart via launchctl..."
+  launchctl kickstart -k "gui/$(id -u)/ai.openclaw.whatsapp-bridge" 2>/dev/null || true
+  sleep 5
+
+  # Verificar se voltou
+  if curl -s --max-time 5 http://127.0.0.1:3002/health > /dev/null 2>&1 || pgrep -f "bridge.js" > /dev/null 2>&1; then
+    log_entry "FIXED" "WhatsApp Bridge reiniciado com sucesso"
+    wolf_notify "🔧 *Self-Heal*: WhatsApp Bridge estava DOWN — reiniciado automaticamente."
+    return 0
+  else
+    log_entry "ERROR" "WhatsApp Bridge nao voltou apos restart — escalando"
+    wolf_notify "🚨 *Self-Heal CRITICO*: WhatsApp Bridge DOWN e nao consegui reiniciar. Verificar manualmente."
+    return 1
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────
+# CHECK 6: Espaco em disco
+# ─────────────────────────────────────────────────────────────
+check_disk_space() {
+  local disk_usage
+  disk_usage=$(df -h / | awk 'NR==2{print $5}' | tr -d '%')
+
+  if [ -z "$disk_usage" ]; then
+    log_entry "WARN" "Disco: nao foi possivel obter uso"
+    return 0
+  fi
+
+  local result=0
+
+  # Verificar tamanho do diretorio de sessoes (sempre, independente do disco)
+  local sessions_dir="$HOME/.openclaw/agents/main/sessions"
+  if [ -d "$sessions_dir" ]; then
+    local sessions_size_kb
+    sessions_size_kb=$(du -sk "$sessions_dir" 2>/dev/null | awk '{print $1}')
+    local sessions_size_mb=$((sessions_size_kb / 1024))
+
+    if [ "$sessions_size_mb" -gt 50 ]; then
+      log_entry "ALERT" "Sessions dir ${sessions_size_mb}MB (>50MB) — limpando .jsonl.bak"
+      find "$sessions_dir" -name "*.jsonl.bak" -delete 2>/dev/null || true
+      wolf_notify "🧹 *Self-Heal*: Sessions dir estava em ${sessions_size_mb}MB — arquivos .bak limpos."
+    fi
+  fi
+
+  if [ "$disk_usage" -gt 95 ]; then
+    log_entry "ALERT" "Disco CRITICO: ${disk_usage}% — limpando logs antigos e arquivos temporarios"
+    wolf_notify "🚨 *Self-Heal*: Disco em ${disk_usage}%! Limpando logs antigos automaticamente."
+
+    # Limpar logs com mais de 3 dias (truncar, nao deletar)
+    find "$HOME/.openclaw/logs" -name "*.log" -mtime +3 -exec truncate -s 0 {} \; 2>/dev/null || true
+
+    # Limpar arquivos .jsonl.bak antigos
+    find "$HOME/.openclaw" -name "*.jsonl.bak" -mtime +1 -delete 2>/dev/null || true
+
+    log_entry "ACTION" "Logs >3 dias truncados, .jsonl.bak antigos removidos"
+    result=1
+
+  elif [ "$disk_usage" -gt 90 ]; then
+    log_entry "WARN" "Disco ALTO: ${disk_usage}% — monitorando"
+    wolf_notify "⚠️ *Self-Heal*: Disco em ${disk_usage}%. Considere liberar espaco."
+  else
+    log_entry "CHECK" "Disco OK: ${disk_usage}%"
+  fi
+
+  return $result
+}
+
+# ─────────────────────────────────────────────────────────────
 # MAIN EXECUTION
 # ─────────────────────────────────────────────────────────────
 mkdir -p "$MEMORY_DIR"
 
 FAILED_CHECKS=0
 
-check_gateway || FAILED_CHECKS=$((FAILED_CHECKS + 1))
+# check_gateway removido — wolf-monitor.sh cuida (porta 18789 correta)
 check_memory || FAILED_CHECKS=$((FAILED_CHECKS + 1))
 check_errors || FAILED_CHECKS=$((FAILED_CHECKS + 1))
 check_crons
+check_whatsapp_bridge || FAILED_CHECKS=$((FAILED_CHECKS + 1))
+check_disk_space || FAILED_CHECKS=$((FAILED_CHECKS + 1))
 
 # ─────────────────────────────────────────────────────────────
 # REPORT: Notifica Netto APENAS se há problema não-resolvido

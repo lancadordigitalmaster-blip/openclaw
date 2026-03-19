@@ -60,6 +60,23 @@ ls -1d "$BACKUP_BASE"/????-??-?? 2>/dev/null | sort -r | tail -n +8 | while read
   echo "[$DATE $(date '+%H:%M:%S')] Removido: $(basename "$OLD")" >> "$LOG"
 done
 
-# --- Future: sync to Google Drive with rclone ---
-# rclone sync "$BACKUP_DIR" gdrive:wolf-backups/$DATE --transfers=4 --checkers=8
-# Setup: brew install rclone && rclone config (choose Google Drive)
+# 7. Sync to Google Drive with rclone (if configured)
+if rclone listremotes 2>/dev/null | grep -q "gdrive:"; then
+  echo "[$DATE $(date '+%H:%M:%S')] Syncing to Google Drive..." >> "$LOG"
+  rclone sync "$BACKUP_DIR" "gdrive:wolf-backups/$DATE" \
+    --transfers=4 --checkers=8 --quiet --timeout=120s 2>> "$LOG"
+  if [ $? -eq 0 ]; then
+    echo "[$DATE $(date '+%H:%M:%S')] Google Drive sync OK" >> "$LOG"
+  else
+    echo "[$DATE $(date '+%H:%M:%S')] Google Drive sync FAILED" >> "$LOG"
+    wolf_notify "⚠️ Backup: sync Google Drive falhou ($DATE)"
+  fi
+  # Rotation: keep last 14 days on Drive
+  rclone lsd "gdrive:wolf-backups/" 2>/dev/null | awk '{print $NF}' | sort -r | tail -n +15 | while read OLD; do
+    rclone purge "gdrive:wolf-backups/$OLD" 2>/dev/null
+    echo "[$DATE $(date '+%H:%M:%S')] Drive: removido $OLD" >> "$LOG"
+  done
+else
+  echo "[$DATE $(date '+%H:%M:%S')] Google Drive nao configurado (rclone config)" >> "$LOG"
+fi
+# Setup: rclone config → New remote → name: gdrive → type: drive → scope: drive → auto config: yes

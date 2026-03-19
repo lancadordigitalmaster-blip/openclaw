@@ -17,7 +17,7 @@ from pathlib import Path
 from dotenv import dotenv_values
 
 # Timeout global para conexoes IMAP (evita hang infinito)
-socket.setdefaulttimeout(20)
+socket.setdefaulttimeout(30)
 
 # ── Configuração ─────────────────────────────────────────────────────────────
 BASE_DIR = Path(__file__).parent.parent
@@ -115,10 +115,18 @@ def check_emails(mode="monitor"):
     mode='monitor' — verifica novos emails e alerta criticamente
     mode='briefing' — gera resumo diário completo
     """
+    if not GMAIL_USER or not GMAIL_PASS:
+        print(f"[{datetime.now().strftime('%H:%M')}] ERRO: GMAIL_USER ou GMAIL_APP_PASSWORD não configurados no .env")
+        return
+
     state = load_state()
-    mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
-    mail.login(GMAIL_USER, GMAIL_PASS)
-    mail.select("INBOX")
+    try:
+        mail = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+        mail.login(GMAIL_USER, GMAIL_PASS)
+        mail.select("INBOX")
+    except (imaplib.IMAP4.error, socket.timeout, OSError) as e:
+        print(f"[{datetime.now().strftime('%H:%M')}] ERRO IMAP: {e}")
+        return
 
     # Buscar e-mails das últimas 24h (evita varrer 91k não lidos)
     from datetime import timedelta

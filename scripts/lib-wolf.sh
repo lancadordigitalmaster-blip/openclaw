@@ -48,6 +48,72 @@ wolf_notify() {
 }
 
 # ================================================================
+# NIVEIS DE PRIORIDADE — controla quando/como notificar
+# ================================================================
+
+# URGENTE — envia imediatamente por WhatsApp + Telegram (redundancia)
+# Uso: wolf_notify_urgent "Sistema caiu!" ["numero"]
+wolf_notify_urgent() {
+    local msg="$1"
+    local to="${2:-$WOLF_NETTO_WHATSAPP}"
+    wolf_whatsapp "$msg" "$to"
+    wolf_telegram "$msg"
+}
+
+# INFO — envia por WhatsApp apenas (reports, status)
+# Uso: wolf_notify_info "Relatorio pronto"
+wolf_notify_info() {
+    local msg="$1"
+    local to="${2:-$WOLF_NETTO_WHATSAPP}"
+    wolf_whatsapp "$msg" "$to"
+}
+
+# SILENT — apenas registra no log, sem notificacao
+# Uso: wolf_notify_silent "agent" "Heartbeat OK"
+wolf_notify_silent() {
+    local agent="${1:-system}"
+    local msg="$2"
+    wolf_log "$agent" "$msg"
+}
+
+# ================================================================
+# NOTIFICACAO POR ROLE — envia para a pessoa certa + copia Netto
+# ================================================================
+WOLF_NATIELY_WHATSAPP="${NATIELY_WHATSAPP:-5573999840448}"
+WOLF_MIRELLI_WHATSAPP="${MIRELLI_WHATSAPP:-}"  # Configurar no .env quando disponivel
+
+# Envia para role especifica + copia Netto
+# Uso: wolf_notify_role "natiely" "SLA alert: 3 tarefas vencidas"
+# Roles: natiely (pendencias/SLA), mirelli (social media), netto (tudo)
+wolf_notify_role() {
+    local role="$1"
+    local msg="$2"
+    local skip_netto="${3:-}"  # "skip" para nao copiar Netto
+
+    case "$role" in
+        natiely)
+            wolf_whatsapp "$msg" "$WOLF_NATIELY_WHATSAPP"
+            ;;
+        mirelli)
+            if [ -n "$WOLF_MIRELLI_WHATSAPP" ]; then
+                wolf_whatsapp "$msg" "$WOLF_MIRELLI_WHATSAPP"
+            fi
+            ;;
+        netto)
+            # Direto pro Netto, sem duplicar
+            skip_netto="skip"
+            wolf_whatsapp "$msg" "$WOLF_NETTO_WHATSAPP"
+            ;;
+        *)
+            wolf_log "notify" "Role desconhecida: $role"
+            ;;
+    esac
+
+    # Netto sempre recebe copia (exceto se for role=netto ou skip)
+    [ "$skip_netto" != "skip" ] && wolf_whatsapp "$msg" "$WOLF_NETTO_WHATSAPP"
+}
+
+# ================================================================
 # MISSION LIFECYCLE — cada funcao move o card 1 etapa no kanban
 # Fluxo real: inbox → assigned → in_progress → done/blocked
 # Cada chamada = 1 movimento visivel no dashboard
@@ -187,4 +253,31 @@ wolf_log() {
     local agent="$1"
     local msg="$2"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$agent] $msg"
+}
+
+# Input sanitization — strip shell metacaracteres perigosos
+# Uso: SAFE=$(wolf_sanitize "$INPUT")
+# Remove: ` $ ( ) { } | ; & < > ! \ e limita a 200 chars
+wolf_sanitize() {
+    local input="$1"
+    local max_len="${2:-200}"
+    # Remove metacaracteres shell
+    local clean=$(echo "$input" | tr -d '`$(){}|;&<>!\\' | tr -d "'" | tr '"' ' ')
+    # Truncar ao limite
+    echo "${clean:0:$max_len}"
+}
+
+# Validar tipo de input
+# Uso: wolf_validate "slug" "$valor" || echo "invalido"
+wolf_validate() {
+    local type="$1"
+    local value="$2"
+    case "$type" in
+        slug)   echo "$value" | grep -qE '^[a-z0-9][a-z0-9-]*$' ;;
+        id)     echo "$value" | grep -qE '^[0-9]+$' ;;
+        url)    echo "$value" | grep -qE '^https?://' ;;
+        name)   echo "$value" | grep -qE '^[a-zA-ZÀ-ú .-]+$' ;;
+        date)   echo "$value" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' ;;
+        *)      return 1 ;;
+    esac
 }

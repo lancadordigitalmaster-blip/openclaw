@@ -74,7 +74,7 @@ modo_sono:
 
 ## Pre-requisitos para Ativacao
 
-- [ ] Criar diretorio `changelogs/`
-- [ ] Definir template de changelog diario
-- [ ] Criar cron no jobs.json (00:30, timeout 180s)
-- [ ] Testar com changelog de exemplo
+- [x] Criar diretorio `changelogs/` (criado 2026-03-18)
+- [x] Definir template de changelog diario (auto-gerado pelo executor)
+- [x] Criar cron (crontab 00:30 via modo-sono-executor.sh, 2026-03-18)
+- [x] Script executor: `scripts/modo-sono-executor.sh` (Haiku 4.5 via gateway)
