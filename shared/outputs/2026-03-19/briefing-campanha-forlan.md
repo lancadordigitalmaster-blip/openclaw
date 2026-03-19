@@ -16,7 +16,7 @@
 | URL do Quiz | https://quizz.forlanviral.com.br/ |
 | Budget mensal | R$ 1.000 |
 | Budget diário | R$ 33/dia |
-| Conta | CA 01 \| Forlan (`act_1215299206693994`) |
+| Conta | Conta 03 (`act_702342462816996`) |
 | Objetivo Meta | Tráfego (URL do quiz) |
 
 ---
