@@ -169,19 +169,17 @@ create_checkpoint
 # Limpar checkpoints antigos (manter últimos 10)
 ls -t "$CHECKPOINTS_DIR"/*.md 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
 
-# RED+: notificar Telegram
+# RED+: apenas log (desabilitado envio WhatsApp — era ruído para o Netto)
 if [ "$ACTION" = "checkpoint+notify" ] || [ "$ACTION" = "checkpoint+notify+restart" ]; then
-    MSG="$EMOJI Never-Forget Protocol — $LEVEL ($PCT%)
-
-Sessao ativa: $((ACTIVE_SIZE / 1024))KB
-sessions.json: $((SESSIONS_JSON_SIZE / 1024))KB
-
-Checkpoint salvo automaticamente.
-$([ "$LEVEL" = "CRITICAL" ] && echo "
-ACAO: Considerar restart da sessao para evitar perda de contexto." || echo "
-Monitorando. Proximo check em 15min.")"
-
-    wolf_notify_info "$MSG"
+    log "$LEVEL ($PCT%) — checkpoint criado, sessions.json=${SESSIONS_JSON_SIZE}B"
+    # Auto-limpeza: se sessions.json > 200KB, limpar sessões antigas
+    if [ "$SESSIONS_JSON_SIZE" -gt 200000 ]; then
+        log "Auto-limpeza: sessions.json ($((SESSIONS_JSON_SIZE/1024))KB) > 200KB — resetando"
+        echo '{}' > "$SESSIONS_JSON"
+        # Remover sessões mais antigas que 24h
+        find "$SESSIONS_DIR" -name "*.jsonl" -mmin +1440 -delete 2>/dev/null || true
+        log "Sessões antigas removidas, sessions.json resetado"
+    fi
 fi
 
 # CRITICAL: também atualizar last-context.md
