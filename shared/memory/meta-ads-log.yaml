@@ -27,3 +27,24 @@
   campaign_name: "Post do Instagram: A Youdose não é só um..."
   result: SUCCESS
   note: "Pausada a pedido de Netto"
+
+- timestamp: "2026-03-21T14:58:00-03:00"
+  action: PAUSE_CAMPAIGN
+  operator: netto
+  campaign_id: "120244757002200409"
+  campaign_name: "19/03 | Remarketing | Engajamento 365d | Mariana"
+  account: "act_1583430182930723"
+  result: SUCCESS
+  motivo: "Zero conversoes com R$86 gastos. Budget realocado para campanha ancora."
+
+- timestamp: "2026-03-21T14:58:00-03:00"
+  action: UPDATE_ADSET_BUDGET
+  operator: netto
+  adset_id: "120244652898250409"
+  adset_name: "00 - Interesses Hotmart + Marketing"
+  campaign_name: "17/03 | LP Whatsapp | Mariana | Imobiliario + Agencias"
+  account: "act_1583430182930723"
+  budget_anterior: 2500
+  budget_novo: 3125
+  result: SUCCESS
+  motivo: "Escala +25% — campanha ancora com 34 conv a R$7,24/conv"
