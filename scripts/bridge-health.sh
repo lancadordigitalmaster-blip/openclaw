@@ -14,8 +14,9 @@ TS=$(date '+%Y-%m-%d %H:%M:%S')
 PROBLEMS=""
 
 send_tg() {
-  [[ -z "${TELEGRAM_TOKEN:-}" || -z "${TELEGRAM_CHAT:-}" ]] && return
-  wolf_notify "$1"
+  # Desabilitado — era ruído no WhatsApp do Netto. Apenas logar.
+  echo "[$(date '+%H:%M:%S')] ALERTA (silenciado): $1"
+  return 0
 }
 
 # === TELEGRAM CHECKS ===
