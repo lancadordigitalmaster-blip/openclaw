@@ -56,7 +56,7 @@ CREATIVES_TO_CREATE = [
 def api_post(endpoint, data_dict):
     cmd = ["curl", "-s", "-X", "POST", f"https://graph.facebook.com/v21.0/{endpoint}"]
     for k, v in data_dict.items():
-        cmd += ["-F", f"{k}={v}"]
+        cmd += ["-d", f"{k}={v}"]
     result = subprocess.check_output(cmd)
     return json.loads(result)
 

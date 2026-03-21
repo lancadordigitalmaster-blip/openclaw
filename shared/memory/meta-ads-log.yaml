@@ -48,3 +48,17 @@
   budget_novo: 3125
   result: SUCCESS
   motivo: "Escala +25% — campanha ancora com 34 conv a R$7,24/conv"
+
+- timestamp: "2026-03-21T15:30:00-03:00"
+  action: CREATE_CAMPAIGN_ANDROMEDA
+  operator: netto
+  campaign_id: "120244861289850409"
+  campaign_name: "21/03 | Andromeda | Gabriela | CBO"
+  account: "act_1583430182930723"
+  adsets_created: 3
+  ads_created: 6
+  budget_daily: 6000
+  status: PAUSED
+  result: SUCCESS_PARTIAL
+  notes: "Campanha + adsets + 4 ads confirmados criados. 2 ads com erro de parsing (esperado — JSON escape issues no bash). Campanha aguardando ativacao por Netto."
+  wpp_destination: "5573999788860"
