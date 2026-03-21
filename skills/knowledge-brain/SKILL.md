@@ -96,15 +96,38 @@ node knowledge-brain/scripts/query.js "Como escalar campanha?" --domain trafego_
 5. Se não encontrar cards relevantes, diga que não tem na base
 
 ## Absorção de novos cursos
-```bash
-cd knowledge-brain
 
-# Hotmart (Chrome aberto e logado)
-bash scripts/absorb.sh hotmart URL --author "Autor" --domain dominio
+### Em background (recomendado — não trava o Mac)
+```bash
+# Hotmart (Chrome aberto e logado no curso)
+bash knowledge-brain/scripts/absorb-background.sh hotmart URL --author "Autor" --domain dominio
 
 # YouTube
-bash scripts/absorb.sh youtube URL --author "Autor" --domain dominio
+bash knowledge-brain/scripts/absorb-background.sh youtube URL --author "Autor" --domain dominio
 
-# Status
-bash scripts/absorb.sh status
+# Status da absorção
+bash knowledge-brain/scripts/absorb-background.sh status
+
+# Ver logs em tempo real
+bash knowledge-brain/scripts/absorb-background.sh logs
+
+# Parar absorção
+bash knowledge-brain/scripts/absorb-background.sh stop
+```
+
+### Direto no terminal (bloqueia)
+```bash
+bash knowledge-brain/scripts/absorb.sh hotmart URL --author "Autor" --domain dominio
+bash knowledge-brain/scripts/absorb.sh status
+```
+
+## Dashboard Visual
+http://localhost:8770/dashboard.html
+
+```bash
+# Iniciar dashboard
+bash knowledge-brain/scripts/serve-dashboard.sh start
+
+# Parar dashboard
+bash knowledge-brain/scripts/serve-dashboard.sh stop
 ```
