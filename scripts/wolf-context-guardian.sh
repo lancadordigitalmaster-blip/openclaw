@@ -169,14 +169,19 @@ create_checkpoint
 # Limpar checkpoints antigos (manter últimos 10)
 ls -t "$CHECKPOINTS_DIR"/*.md 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true
 
-# RED+: apenas log (desabilitado envio WhatsApp — era ruído para o Netto)
+# RED+: notificar + auto-limpeza
 if [ "$ACTION" = "checkpoint+notify" ] || [ "$ACTION" = "checkpoint+notify+restart" ]; then
-    log "$LEVEL ($PCT%) — checkpoint criado, sessions.json=${SESSIONS_JSON_SIZE}B"
+    MSG="$EMOJI Context Guardian — $LEVEL ($PCT%)
+Sessao: $((ACTIVE_SIZE / 1024))KB | sessions.json: $((SESSIONS_JSON_SIZE / 1024))KB
+Checkpoint salvo.$([ "$LEVEL" = "CRITICAL" ] && echo " Considerar restart.")"
+
+    wolf_notify_info "$MSG"
+    log "$LEVEL ($PCT%) — notificado"
+
     # Auto-limpeza: se sessions.json > 200KB, limpar sessões antigas
     if [ "$SESSIONS_JSON_SIZE" -gt 200000 ]; then
         log "Auto-limpeza: sessions.json ($((SESSIONS_JSON_SIZE/1024))KB) > 200KB — resetando"
         echo '{}' > "$SESSIONS_JSON"
-        # Remover sessões mais antigas que 24h
         find "$SESSIONS_DIR" -name "*.jsonl" -mmin +1440 -delete 2>/dev/null || true
         log "Sessões antigas removidas, sessions.json resetado"
     fi

@@ -14,9 +14,8 @@ STATE_FILE="/tmp/wolf-uptime-state.json"
 [ -f "$STATE_FILE" ] || echo '{}' > "$STATE_FILE"
 
 send_tg() {
-  # Desabilitado — era ruído no WhatsApp do Netto. Apenas logar.
-  echo "[$(date '+%H:%M:%S')] ALERTA (silenciado): $1"
-  return 0
+  [[ -z "${TELEGRAM_TOKEN:-}" || -z "${TELEGRAM_CHAT:-}" ]] && return
+  wolf_notify "$1"
 }
 
 check_service() {

@@ -18,10 +18,18 @@ wolf_telegram() {
     local msg="$1"
     local chat_id="${2:-$WOLF_CHAT_ID}"
     [ -z "$WOLF_BOT_TOKEN" ] && return 1
+    local tmpfile=$(mktemp /tmp/wolf-tg-XXXXXX.json)
+    printf '%s' "$msg" | python3 -c "
+import sys, json
+text = sys.stdin.read()
+with open('$tmpfile', 'w') as f:
+    json.dump({'chat_id': '$chat_id', 'text': text}, f)" 2>/dev/null
+    [ ! -s "$tmpfile" ] && rm -f "$tmpfile" && return 1
     curl -s -X POST "https://api.telegram.org/bot${WOLF_BOT_TOKEN}/sendMessage" \
         -H "Content-Type: application/json" \
-        -d "{\"chat_id\": \"$chat_id\", \"text\": $(echo "$msg" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}" \
+        -d @"$tmpfile" \
         > /dev/null 2>&1
+    rm -f "$tmpfile"
 }
 
 # Enviar mensagem WhatsApp via Bridge API (porta 3002)
@@ -32,11 +40,19 @@ WOLF_NETTO_WHATSAPP="${NETTO_WHATSAPP:-557391484716}"
 wolf_whatsapp() {
     local msg="$1"
     local to="${2:-$WOLF_NETTO_WHATSAPP}"
-    local payload=$(python3 -c "import json; print(json.dumps({'to': '$to', 'text': '''$msg'''}))" 2>/dev/null)
+    # Gerar JSON em arquivo temp para evitar corrupção de newlines/emojis pelo bash
+    local tmpfile=$(mktemp /tmp/wolf-wa-XXXXXX.json)
+    printf '%s' "$msg" | python3 -c "
+import sys, json
+text = sys.stdin.read()
+with open('$tmpfile', 'w') as f:
+    json.dump({'to': '$to', 'text': text}, f)" 2>/dev/null
+    [ ! -s "$tmpfile" ] && rm -f "$tmpfile" && return 1
     curl -s -X POST "$WOLF_WHATSAPP_BRIDGE" \
         -H "Content-Type: application/json" \
-        -d "$payload" \
+        -d @"$tmpfile" \
         --max-time 10 > /dev/null 2>&1
+    rm -f "$tmpfile"
 }
 
 # Notificacao unificada: WhatsApp only (Telegram apenas para programar)
