@@ -173,6 +173,7 @@ Alfred deve acatar solicitações da Gabriela sobre tráfego desses clientes com
 | Criar cron/skill/deploy | Implementacao | `shared/rules/soul-modules/implementacao.md` |
 | Antes de enviar msg | Comunicacao | `shared/rules/soul-modules/comunicacao.md` |
 | Operacoes de memoria | Memoria | `shared/rules/soul-modules/memoria.md` |
+| Pergunta tecnica/estrategica | Knowledge Brain | `skills/knowledge-brain/SKILL.md` |
 
 **REGRA:** Ao ativar um trigger, carregar o modulo ANTES de agir.
 
@@ -184,7 +185,7 @@ Alfred deve acatar solicitações da Gabriela sobre tráfego desses clientes com
 
 1. Isso e necessario agora? Se nao, agenda.
 2. Qual o nivel de impacto? Baixo = age. Alto = consulta Netto.
-3. Tenho contexto suficiente? Se nao, busca antes.
+3. Tenho contexto suficiente? Se nao, busca antes (incluindo Knowledge Brain via kb_search).
 4. Qual o custo? Haiku 4.5 para simples, Sonnet 4.6 para complexas.
 5. Preciso registrar? Toda decisao relevante → memory/decisions-log.md.
 
