@@ -3,6 +3,7 @@
 # Uso: ./smoke-test.sh [--notify] (com --notify envia resultado via WhatsApp)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+[ -f "$HOME/.openclaw/.env" ] && { set -a; source "$HOME/.openclaw/.env"; set +a; }
 source "$SCRIPT_DIR/lib-wolf.sh" 2>/dev/null
 
 NOTIFY="${1:-}"

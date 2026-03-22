@@ -156,24 +156,4 @@
 
 ---
 
-## Arquivados (13 skills em skills/_archive/)
-
-| Skill | Motivo |
-|-------|--------|
-| agente-alfred-kaizen | Formato antigo, superseded por SOUL.md |
-| agente-cut-edicao | Formato antigo, replaced por video-editor-pro |
-| agente-gabi-trafego | Formato antigo, replaced por agents/gabi/ |
-| agente-mi-social | Formato antigo, agente Mi descontinuado |
-| auto-updater | Generico OpenClaw, nao Wolf-specific |
-| clawddocs | Generico OpenClaw docs |
-| knowledge-traffic | Incompleto, sem SKILL.md |
-| self-reflection | Superseded por wolf-learning-engine |
-| video-editor-pro | Duplicata — canonical em agents/video-editor-pro/ |
-| wolf-coding-loop | Quebrado — referencia QUEUE.md deletado |
-| wolf-facebook-ads | Superseded por meta-ads (write-enabled) |
-| facebook-ads-manager-skill | Consolidado em meta-ads (workflows copiados) |
-| meta-ads-manager | OAuth/MCP nao configurado, consolidado em meta-ads |
-
----
-
-*Atualizado: 2026-03-18 — Consolidacao Meta Ads + limpeza scripts*
+*Atualizado: 2026-03-22 — Removida seção de arquivados (skills/_archive/ e agents/_archive/ deletados no audit 2026-03-21)*

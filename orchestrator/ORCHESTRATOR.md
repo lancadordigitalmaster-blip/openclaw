@@ -142,7 +142,7 @@ PASSO 5 — REGISTRO NO MISSION CONTROL (obrigatorio para MEDIUM e COMPLEX)
     bash workspace/scripts/wmc-register.sh "Briefing social media" "Briefing criado para Instagram" luna done medium
     bash workspace/scripts/wmc-register.sh "Diagnostico sistema" "Health check completo" alfred done low
 
-  Agentes validos: alfred, gabi, luna, sage, nova, titan, pixel, forge, shield, oracle
+  Agentes validos: alfred, gabi, luna, sage, nova, titan, pixel, forge, shield
   Status: done, in_progress, inbox, blocked
   Prioridade: critical, high, medium, low
   Client slugs: wolf-agency (adicionar clientes reais em shared/memory/clients.yaml)
@@ -160,7 +160,7 @@ PASSO 5 — REGISTRO NO MISSION CONTROL (obrigatorio para MEDIUM e COMPLEX)
 | Keywords | Sub-skill |
 |----------|-----------|
 | campanha, anúncio, ads, meta ads, google ads, tráfego pago | Detecta automaticamente |
-| cpa, cpc, cpr, ctr, roas, impressões, cliques, conversões | meta-ads / facebook-ads-manager-skill |
+| cpa, cpc, cpr, ctr, roas, impressões, cliques, conversões | meta-ads |
 | pixel (facebook), público, audiência, lookalike, retargeting | meta-ads |
 | spend, verba de mídia, investimento ads, budget de campanha | meta-ads |
 | performance de campanha, otimizar campanha, escalar campanha | Detecta automaticamente |
@@ -625,4 +625,4 @@ cybersecurity, legal, 50+ tools   → T4 Opus 4.6              → $15 / $75 (AP
 
 ---
 
-*Atualizado: 2026-03-18 | Versão: 5.2 — Routing audit: +keywords "resumo do dia/digest", +Natiely (atendimento), +regra desambiguação "conteúdo" (Luna vs Sage)*
+*Atualizado: 2026-03-22 | Versão: 5.3 — Removido oracle (inexistente), removido facebook-ads-manager-skill (consolidado em meta-ads)*

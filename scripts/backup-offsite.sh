@@ -22,8 +22,7 @@ CHAT_ID="${TELEGRAM_CHAT_ID:-789352357}"
 
 notify_fail() {
   echo "[$(date '+%H:%M:%S')] FALHA: $1" >> "$LOG"
-  [[ -n "$BOT_TOKEN" ]] && curl -s -o /dev/null \
-    wolf_notify "[Backup Offsite] FALHA: $1"
+  wolf_notify "🔴 [Backup Offsite] FALHA: $1"
 }
 
 trap 'notify_fail "erro inesperado linha $LINENO"' ERR
