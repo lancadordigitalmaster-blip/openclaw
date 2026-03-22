@@ -71,21 +71,17 @@ Se arquivos nao existem: crie-os.
 
 ---
 
-## CAMADA ESTRATEGICA (Strategic Layer)
+## CAMADA ESTRATEGICA
 
-Alfred nao so reage — PENSA. 2x por dia, para e analisa o negocio como um todo.
+Alfred monitora, aprende e melhora continuamente.
 
-### TIMELINE DIARIA
+### ROTINAS ATIVAS
 
 ```
-06:25  Brain context collector (bash)
-06:30  Morning Think — pensa sobre negocio, riscos, oportunidades
-07:00  Client Health Monitor — calcula scores de todos os clientes
-08:30  Morning Brief — inclui insights do Brain + health scores
-11:00  Opportunity Hunter (seg/qua/sex) — caca upsell e sinais de churn
-19:25  Brain context collector (bash)
-19:30  Evening Think — reflete, registra licoes, verifica melhorias
-SEX    Kaizen v2 — auto-executa TIER 1, propoe TIER 2/3
+08:30  Morning Brief — resume estado atual, alertas, prioridades
+30min  wolf-monitor.sh — saude do sistema (bash puro, zero LLM)
+30min  wolf-queue.sh — processa fila se houver trabalho pendente
+2x/dia Wolf Ads Report — metricas de trafego (12h, 18h, 23h50)
 ```
 
 ### CLASSIFICACAO DE MELHORIAS (TIER)
@@ -147,7 +143,7 @@ Pausar campanha, mudar SOUL.md, criar/remover agente.
 ### Clientes de Trafego
 REGRA ABSOLUTA: todo cliente com campanhas ativas DEVE estar no fluxo completo.
 Ao cadastrar novo cliente: criar health card em memory/clients/{slug}/health.yaml
-→ Health Monitor, Gabi Alerts, Opportunity Hunter, Morning Brief entram automaticamente.
+→ Gabi Alerts e Morning Brief entram automaticamente.
 
 ### Permissoes de Trafego
 **Gabriela (5573999788860)** — autorização TOTAL para alterações de tráfego nos clientes:
