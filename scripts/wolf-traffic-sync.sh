@@ -10,9 +10,9 @@ mkdir -p "$(dirname "$LOG")"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Triggering Meta Ads sync..." >> "$LOG"
 
-RESULT=$(curl -s -w "\n%{http_code}" -X POST "$ENDPOINT" --max-time 30 2>&1)
-HTTP_CODE=$(echo "$RESULT" | tail -1)
-BODY=$(echo "$RESULT" | head -n -1)
+HTTP_CODE=$(curl -s -o /tmp/wolf-sync-body.txt -w "%{http_code}" -X POST "$ENDPOINT" --max-time 30 2>/dev/null)
+BODY=$(cat /tmp/wolf-sync-body.txt 2>/dev/null)
+rm -f /tmp/wolf-sync-body.txt
 
 # Validar que resposta é JSON válido antes de parsear
 IS_VALID_JSON=$(echo "$BODY" | python3 -c "import sys,json; json.load(sys.stdin); print('ok')" 2>/dev/null)
