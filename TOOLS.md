@@ -1,18 +1,9 @@
 # TOOLS.md — Inventario de Skills & Plugins
-# Wolf Agency AI System | Atualizado: 2026-03-17
+# Wolf Agency AI System | Atualizado: 2026-03-22
 
 ---
 
-## ⚠️ Skills Bloqueados (2 skills — Requerem Acao)
-
-| Skill | Status | Motivo | Acao Necessaria |
-|-------|--------|--------|---|
-| google-sheets | Requer OAuth | Autenticacao pendente | Aprovar OAuth Google |
-| youtube-api | Requer OAuth | Autenticacao pendente | Aprovar OAuth Google |
-
----
-
-## Skills Ativas (70 skills em skills/)
+## Skills Ativas (skills/)
 
 ### Wolf Agency — Operacao (23 skills)
 
@@ -65,7 +56,7 @@
 | frontend-design | Design web profissional | Operacional |
 | github | Integracao GitHub | Operacional |
 | google-meet | Google Meet API | Operacional |
-| google-sheets | Google Sheets API | Requer OAuth |
+| google-sheets | Google Sheets API | Removido (OAuth) |
 | google-slides | Google Slides API | Operacional |
 | google-trends | Google Trends | Operacional |
 | humanizer | Humanizacao de texto AI | Operacional |
@@ -96,7 +87,7 @@
 | task-resume | Retomada de tarefas | Operacional |
 | todo-boss | Gestao de todos | Operacional |
 | whatsapp-business | WhatsApp Business API | Operacional |
-| youtube-api | YouTube Data API | Requer OAuth |
+| youtube-api | YouTube Data API | Removido (OAuth) |
 | youtube-transcript | Transcricao de videos YouTube | Operacional |
 
 ---
