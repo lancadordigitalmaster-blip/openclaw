@@ -12,11 +12,13 @@ Componentes:
 """
 
 import json
+import math
 import os
 import re
 import subprocess
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -82,14 +84,31 @@ def add_channel(url: str, channel_type: str = "concorrente", nicho: str = "geral
     if not meta:
         return {"ok": False, "error": "Nao conseguiu coletar dados do canal"}
 
+    channel_id = meta.get("channel_id", handle)
+
+    # Enrich with YouTube API data if available
+    channel_age_days = 0
+    country = ""
+    created_at = ""
+    if YOUTUBE_API_KEY and channel_id:
+        api_stats = youtube_api_channel_stats([channel_id])
+        if channel_id in api_stats:
+            s = api_stats[channel_id]
+            channel_age_days = s.get("channel_age_days", 0)
+            country = s.get("country", "")
+            created_at = s.get("created_at", "")
+
     channel = {
-        "id": meta.get("channel_id", handle),
+        "id": channel_id,
         "handle": handle,
         "url": url,
         "name": meta.get("channel", handle),
         "type": channel_type,  # principal, concorrente, referencia, tendencia
         "nicho": nicho,
         "subscribers": meta.get("channel_follower_count", 0),
+        "channel_age_days": channel_age_days,
+        "country": country,
+        "created_at": created_at,
         "added_at": datetime.now().isoformat(),
         "last_collected": None,
         "last_analyzed": None,
@@ -178,9 +197,12 @@ def collect_channel_videos(channel: dict, max_videos: int = 30) -> list:
                             "duration": data.get("duration", 0),
                             "view_count": data.get("view_count", 0),
                             "like_count": data.get("like_count", 0),
+                            "comment_count": data.get("comment_count", 0),
+                            "thumbnail": data.get("thumbnail", ""),
                             "upload_date": data.get("upload_date", ""),
                             "description": (data.get("description", "") or "")[:500],
-                            "tags": data.get("tags", [])[:10] if data.get("tags") else [],
+                            "tags": data.get("tags", [])[:30] if data.get("tags") else [],
+                            "is_short": (data.get("duration", 0) or 0) < 62,
                             "collected_at": datetime.now().isoformat(),
                         }
                         videos.append(video)
@@ -235,7 +257,7 @@ def collect_video_detail(video_id: str) -> Optional[dict]:
                 "like_count": data.get("like_count", 0),
                 "comment_count": data.get("comment_count", 0),
                 "duration": data.get("duration", 0),
-                "tags": data.get("tags", [])[:10] if data.get("tags") else [],
+                "tags": data.get("tags", [])[:30] if data.get("tags") else [],
                 "categories": data.get("categories", []),
             }
     except Exception:
@@ -283,7 +305,7 @@ def youtube_api_channel_stats(channel_ids: list) -> dict:
 
     try:
         r = requests.get("https://www.googleapis.com/youtube/v3/channels", params={
-            "part": "statistics,snippet,contentDetails",
+            "part": "statistics,snippet,contentDetails,brandingSettings",
             "id": ",".join(channel_ids[:50]),
             "key": YOUTUBE_API_KEY,
         }, timeout=15)
@@ -291,16 +313,167 @@ def youtube_api_channel_stats(channel_ids: list) -> dict:
         stats = {}
         for item in r.json().get("items", []):
             s = item.get("statistics", {})
+            snippet = item.get("snippet", {})
+            branding = item.get("brandingSettings", {}).get("channel", {})
+            published_at = snippet.get("publishedAt", "")
+            channel_age_days = 0
+            if published_at:
+                try:
+                    created_dt = datetime.fromisoformat(published_at.replace("Z", "+00:00")).replace(tzinfo=None)
+                    channel_age_days = (datetime.now() - created_dt).days
+                except (ValueError, TypeError):
+                    pass
             stats[item["id"]] = {
                 "subscribers": int(s.get("subscriberCount", 0)),
                 "total_views": int(s.get("viewCount", 0)),
                 "video_count": int(s.get("videoCount", 0)),
-                "created_at": item.get("snippet", {}).get("publishedAt", ""),
+                "created_at": published_at,
+                "channel_age_days": channel_age_days,
+                "country": branding.get("country", snippet.get("country", "")),
             }
         return stats
     except Exception as e:
         log(f"YouTube API stats erro: {e}", "WARN")
         return {}
+
+
+# ═══════════════════════════════════════════════════════════════
+# REVENUE ESTIMATION
+# ═══════════════════════════════════════════════════════════════
+
+CPM_BY_NICHE = {
+    "historia": 3.0, "financas": 10.0, "ciencia": 4.5,
+    "misterio": 4.0, "terror": 3.0, "tecnologia": 7.0,
+    "motivacional": 5.0, "cultura pop": 2.5, "geral": 3.0,
+}
+
+
+def estimate_revenue(channel: dict, videos: list) -> dict:
+    """Estima receita mensal baseada em CPM por nicho."""
+    nicho = channel.get("nicho", "geral").lower()
+    cpm = CPM_BY_NICHE.get(nicho, CPM_BY_NICHE["geral"])
+
+    now = datetime.now()
+    views_30d = 0
+    for v in videos:
+        upload = v.get("upload_date", "")
+        if upload:
+            try:
+                dt = datetime.strptime(upload, "%Y%m%d")
+                if (now - dt).days <= 30:
+                    views_30d += v.get("view_count", 0)
+            except ValueError:
+                pass
+
+    monthly_revenue_low = (views_30d / 1000) * cpm * 0.5
+    monthly_revenue_high = (views_30d / 1000) * cpm * 1.5
+
+    return {
+        "nicho": nicho,
+        "cpm": cpm,
+        "views_30d": views_30d,
+        "monthly_revenue_low": round(monthly_revenue_low, 2),
+        "monthly_revenue_high": round(monthly_revenue_high, 2),
+        "currency": "USD",
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# GRADE (Social Blade style)
+# ═══════════════════════════════════════════════════════════════
+
+def calculate_grade(score: float) -> str:
+    """Retorna grade estilo Social Blade baseado no score 0-100."""
+    if score >= 95:
+        return "A+"
+    elif score >= 85:
+        return "A"
+    elif score >= 80:
+        return "A-"
+    elif score >= 75:
+        return "B+"
+    elif score >= 65:
+        return "B"
+    elif score >= 55:
+        return "B-"
+    elif score >= 45:
+        return "C+"
+    elif score >= 35:
+        return "C"
+    elif score >= 25:
+        return "C-"
+    else:
+        return "D"
+
+
+# ═══════════════════════════════════════════════════════════════
+# GROWTH PROJECTION
+# ═══════════════════════════════════════════════════════════════
+
+def project_growth(channel: dict) -> dict:
+    """Projeta crescimento de subscribers baseado em snapshots historicos."""
+    ch_dir = RADAR_DIR / "channels" / channel.get("id", "")
+    hist_dir = ch_dir / "history"
+
+    snapshots = []
+    if hist_dir.exists():
+        for f in sorted(hist_dir.glob("*.json")):
+            try:
+                with open(f) as fp:
+                    snap = json.load(fp)
+                snapshots.append({
+                    "date": snap.get("date", f.stem),
+                    "subscribers": snap.get("subscribers", 0),
+                })
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    current_subs = channel.get("subscribers", 0)
+
+    if len(snapshots) < 2:
+        return {
+            "current_subscribers": current_subs,
+            "daily_growth_rate": 0,
+            "milestones": {},
+            "note": "insuficiente — precisa de pelo menos 2 snapshots",
+        }
+
+    # Calculate daily growth rate from first to last snapshot
+    first = snapshots[0]
+    last = snapshots[-1]
+    try:
+        d1 = datetime.strptime(first["date"], "%Y-%m-%d")
+        d2 = datetime.strptime(last["date"], "%Y-%m-%d")
+        days_span = (d2 - d1).days
+    except ValueError:
+        days_span = 0
+
+    if days_span <= 0 or last["subscribers"] <= first["subscribers"]:
+        return {
+            "current_subscribers": current_subs,
+            "daily_growth_rate": 0,
+            "milestones": {},
+            "note": "sem crescimento detectado ou dados insuficientes",
+        }
+
+    daily_growth = (last["subscribers"] - first["subscribers"]) / days_span
+
+    # Project milestones
+    milestones_targets = [1000, 5000, 10000, 50000, 100000, 500000, 1000000]
+    milestones = {}
+    for target in milestones_targets:
+        if target > current_subs and daily_growth > 0:
+            days_to = math.ceil((target - current_subs) / daily_growth)
+            eta = (datetime.now() + timedelta(days=days_to)).strftime("%Y-%m-%d")
+            milestones[f"{target:,}"] = {"days": days_to, "eta": eta}
+
+    return {
+        "current_subscribers": current_subs,
+        "daily_growth_rate": round(daily_growth, 1),
+        "data_points": len(snapshots),
+        "data_span_days": days_span,
+        "milestones": milestones,
+    }
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -345,10 +518,11 @@ def calculate_score(channel: dict, videos: list) -> dict:
     freq = len(recent_videos) / 4.3 if recent_videos else 0
     factors["frequencia"] = min(20, int(freq * 5))
 
-    # 3. Engajamento (likes/views ratio)
+    # 3. Engajamento (likes+comments/views ratio)
     total_likes = sum(v.get("like_count", 0) for v in videos)
+    total_comments = sum(v.get("comment_count", 0) for v in videos)
     if total_views > 0:
-        engagement = (total_likes / total_views) * 100
+        engagement = ((total_likes + total_comments) / total_views) * 100
         factors["engajamento"] = min(20, int(engagement * 5))
     else:
         factors["engajamento"] = 0
@@ -367,10 +541,30 @@ def calculate_score(channel: dict, videos: list) -> dict:
     else:
         factors["momentum"] = 0
 
-    # 5. Consistencia (desvio padrao da frequencia)
-    if len(recent_videos) >= 3:
-        factors["consistencia"] = 15  # tem pelo menos 3 videos no mes
-    elif len(recent_videos) >= 1:
+    # 5. Consistencia (desvio padrao real dos intervalos entre uploads)
+    upload_dates_sorted = []
+    for v in videos:
+        ud = v.get("upload_date", "")
+        if ud:
+            try:
+                upload_dates_sorted.append(datetime.strptime(ud, "%Y%m%d"))
+            except ValueError:
+                pass
+    upload_dates_sorted.sort()
+
+    if len(upload_dates_sorted) >= 3:
+        intervals = [(upload_dates_sorted[i+1] - upload_dates_sorted[i]).days
+                      for i in range(len(upload_dates_sorted) - 1)]
+        mean_interval = sum(intervals) / len(intervals)
+        variance = sum((x - mean_interval) ** 2 for x in intervals) / len(intervals)
+        std_dev = math.sqrt(variance)
+        # Lower std_dev = more consistent. Score: 20 if std_dev=0, decreasing
+        if mean_interval > 0:
+            cv = std_dev / mean_interval  # coefficient of variation
+            factors["consistencia"] = max(0, min(20, int(20 - cv * 15)))
+        else:
+            factors["consistencia"] = 15
+    elif len(upload_dates_sorted) >= 1:
         factors["consistencia"] = 8
     else:
         factors["consistencia"] = 0
@@ -398,8 +592,43 @@ def calculate_score(channel: dict, videos: list) -> dict:
         if recent_avg > 0 and max_views > recent_avg * 5:
             status = "viral"
 
+    # --- New computed metrics ---
+
+    # Engagement rate (likes + comments / views)
+    engagement_rate = ((total_likes + total_comments) / total_views * 100) if total_views > 0 else 0.0
+
+    # Views per subscriber
+    subs = channel.get("subscribers", 0)
+    views_per_subscriber = (total_views / subs) if subs > 0 else 0.0
+
+    # Shorts detection
+    shorts_count = sum(1 for v in videos if v.get("is_short", (v.get("duration", 0) or 0) < 62))
+    long_count = len(videos) - shorts_count
+    shorts_ratio = (shorts_count / len(videos) * 100) if videos else 0.0
+
+    # Upload pattern (day of week distribution)
+    day_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    day_counter = Counter()
+    for dt in upload_dates_sorted:
+        day_counter[day_names[dt.weekday()]] += 1
+    upload_pattern = {d: day_counter.get(d, 0) for d in day_names}
+
+    # Channel age
+    channel_age_days = channel.get("channel_age_days", 0)
+
+    # Revenue estimate
+    revenue = estimate_revenue(channel, videos)
+
+    # Grade
+    final_score = min(100, score)
+    grade = calculate_grade(final_score)
+
+    # Growth projection
+    growth = project_growth(channel)
+
     return {
-        "score": min(100, score),
+        "score": final_score,
+        "grade": grade,
         "status": status,
         "factors": factors,
         "stats": {
@@ -408,7 +637,16 @@ def calculate_score(channel: dict, videos: list) -> dict:
             "recent_avg": int(recent_avg),
             "videos_30d": len(recent_videos),
             "freq_per_week": round(freq, 1),
-        }
+            "engagement_rate": round(engagement_rate, 2),
+            "views_per_subscriber": round(views_per_subscriber, 1),
+            "shorts_ratio": round(shorts_ratio, 1),
+            "shorts_count": shorts_count,
+            "long_count": long_count,
+            "upload_pattern": upload_pattern,
+            "channel_age_days": channel_age_days,
+        },
+        "revenue_estimate": revenue,
+        "growth_projection": growth,
     }
 
 
@@ -558,6 +796,8 @@ def run_discovery() -> list:
             c["total_views"] = s.get("total_views", 0)
             c["video_count"] = s.get("video_count", 0)
             c["created_at"] = s.get("created_at", "")
+            c["channel_age_days"] = s.get("channel_age_days", 0)
+            c["country"] = s.get("country", "")
 
     # Filtra: canais com pelo menos 5 videos e < 500k subs (provavelmente dark)
     filtered = [
@@ -744,6 +984,15 @@ def collect_all():
                 ch["subscribers"] = meta.get("channel_follower_count", ch.get("subscribers", 0))
                 ch["name"] = meta.get("channel", ch.get("name", ""))
 
+            # Enrich with API data (channel_age_days, country, created_at)
+            if YOUTUBE_API_KEY and ch.get("id"):
+                api_stats = youtube_api_channel_stats([ch["id"]])
+                if ch["id"] in api_stats:
+                    s = api_stats[ch["id"]]
+                    ch["channel_age_days"] = s.get("channel_age_days", ch.get("channel_age_days", 0))
+                    ch["country"] = s.get("country", ch.get("country", ""))
+                    ch["created_at"] = s.get("created_at", ch.get("created_at", ""))
+
             # Coleta videos
             collect_channel_videos(ch)
 
@@ -896,6 +1145,9 @@ def main():
         print(f"  Canais: {len(channels)}")
         yt_dlp = subprocess.run(["which", "yt-dlp"], capture_output=True)
         print(f"  yt-dlp: {'instalado' if yt_dlp.returncode == 0 else 'NAO INSTALADO'}")
+        print(f"  Metricas por video: 12 (id, title, url, duration, view_count, like_count, comment_count, thumbnail, upload_date, description, tags[30], is_short)")
+        print(f"  Metricas por canal: 15 (score, grade, status, engagement_rate, views_per_subscriber, shorts_ratio, shorts_count, long_count, upload_pattern, channel_age_days, revenue_estimate, growth_projection, consistencia_stddev, country, created_at)")
+        print(f"  Nichos CPM: {len(CPM_BY_NICHE)} ({', '.join(CPM_BY_NICHE.keys())})")
 
 
 if __name__ == "__main__":
