@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "macos-use": {
-      "command": "/opt/homebrew/opt/mcp-server-macos-use/bin/mcp-server-macos-use"
+      "command": "/opt/homebrew/bin/mcp-server-macos-use"
     }
   },
   "imports": []
