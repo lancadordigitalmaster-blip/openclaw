@@ -1,5 +1,5 @@
 # integrations-status.yaml — Estado das integracoes Wolf Agency
-# Atualizado: 2026-03-19 (automatico via integration-check.sh)
+# Atualizado: 2026-03-23 (automatico via integration-check.sh)
 
 integrations:
   # --- LLM Providers ---
