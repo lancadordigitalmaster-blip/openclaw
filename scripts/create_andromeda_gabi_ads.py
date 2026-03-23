@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Cria ads Andromeda Gabriela — reutiliza imagens, troca WPP para Gabriela"""
 
-import subprocess, json
+import subprocess, json, os
 
-META_TOKEN = subprocess.check_output(
-    "grep META_ADS_ACCESS_TOKEN /Users/thomasgirotto/.openclaw/.env | head -1 | cut -d= -f2",
-    shell=True
-).decode().strip()
+# Carregar .env central
+for line in open(os.path.expanduser("~/.openclaw/.env")):
+    line = line.strip()
+    if line and not line.startswith("#") and "=" in line:
+        k, v = line.split("=", 1); os.environ.setdefault(k, v)
 
-ACCOUNT = "act_1583430182930723"
-PAGE_ID = "111242098624806"
-IG_ID = "17841407489358706"
-GABI_WPP = "5573999788860"
+META_TOKEN = os.environ.get("META_ADS_ACCESS_TOKEN", "")
+ACCOUNT = os.environ.get("META_AD_ACCOUNT_WOLF26", "act_1583430182930723")
+PAGE_ID = os.environ.get("META_PAGE_ID", "111242098624806")
+IG_ID = os.environ.get("META_INSTAGRAM_ACTOR_ID", "17841407489358706")
+GABI_WPP = os.environ.get("GABI_WHATSAPP", "5573999788860")
 
 # Adsets criados
 ADSETS = {

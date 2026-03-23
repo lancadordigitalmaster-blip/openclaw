@@ -226,7 +226,7 @@ if [[ ${#ALERTS[@]} -gt 0 ]]; then
     else
       curl -s -X POST "http://127.0.0.1:3002/send" \
         -H "Content-Type: application/json" \
-        -d "{\"to\": \"557391484716\", \"text\": $(echo "$MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}" \
+        -d "{\"to\": \"${NETTO_WHATSAPP:-557391484716}\", \"text\": $(echo "$MSG" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))')}" \
         --max-time 10 >/dev/null 2>&1 || true
     fi
     echo "$MSG_HASH" > "$LAST_ALERT_FILE"

@@ -26,7 +26,7 @@ INSTALLED_SKILLS_DIR = Path.home() / ".openclaw" / "workspace" / "skills"
 
 # Telegram config
 ENV_FILE = Path.home() / ".openclaw" / ".env"
-CHAT_ID = "789352357"
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "789352357")
 
 # Categories relevant to Wolf Agency (marketing digital)
 WOLF_CATEGORIES = [

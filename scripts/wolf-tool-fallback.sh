@@ -17,7 +17,7 @@ set +a
 LOG="/tmp/wolf-tool-fallback.log"
 GATEWAY_LOG="/tmp/openclaw/openclaw-$(date '+%Y-%m-%d').log"
 TELEGRAM_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
-NETTO_CHAT="789352357"
+NETTO_CHAT="${TELEGRAM_CHAT_ID:-789352357}"
 SCRIPTS_DIR="$HOME/.openclaw/workspace/scripts"
 FALLBACK_STATE="/tmp/wolf-fallback-state.json"
 

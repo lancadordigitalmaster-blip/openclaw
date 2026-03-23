@@ -9,7 +9,7 @@ set -euo pipefail
 SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
 
-CHAT_IDS=("789352357" "7073601150")
+CHAT_IDS=("${TELEGRAM_CHAT_ID:-789352357}" "7073601150")
 BOT_TOKEN=""
 ANTHROPIC_API_KEY=""
 

@@ -16,17 +16,9 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
 # --- Config ---
 STALE_HOURS=3          # missoes in_progress sem update por mais de Xh = stale
-SUPABASE_URL="https://dqhiafxbljujahmpcdhf.supabase.co"
-
-# Load keys from .env
-ENV_FILE="$HOME/.openclaw/.env"
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "[$TIMESTAMP] ERROR: .env not found" >> "$LOG"
-  exit 1
-fi
-
-ANON_KEY=$(grep '^SUPABASE_ANON_KEY=' "$ENV_FILE" | cut -d'=' -f2-)
-SERVICE_KEY=$(grep '^SUPABASE_SERVICE_ROLE_KEY=' "$ENV_FILE" | cut -d'=' -f2-)
+# Load keys from .env (lib-wolf.sh already sources it)
+ANON_KEY="${WOLF_ANON_KEY:-$SUPABASE_ANON_KEY}"
+SERVICE_KEY="${WOLF_SVC_KEY:-$SUPABASE_SERVICE_ROLE_KEY}"
 
 if [[ -z "$ANON_KEY" || -z "$SERVICE_KEY" ]]; then
   echo "[$TIMESTAMP] ERROR: Supabase keys missing in .env" >> "$LOG"

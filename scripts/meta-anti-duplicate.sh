@@ -9,7 +9,7 @@ set -uo pipefail
 
 ENV_FILE="$HOME/.openclaw/.env"
 LOG_FILE="$HOME/.openclaw/workspace/memory/meta-anti-duplicate.log"
-TELEGRAM_CHAT_ID="789352357"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-789352357}"
 TMP=$(mktemp /tmp/meta-dup-XXXXXX.json)
 trap 'rm -f "$TMP"' EXIT
 

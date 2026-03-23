@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Cria campanha Andromeda Gabriela em act_553368457476412 (conta com permissao API)"""
 
-import subprocess, json
+import subprocess, json, os
 
-META_TOKEN = subprocess.check_output(
-    "grep META_ADS_ACCESS_TOKEN /Users/thomasgirotto/.openclaw/.env | head -1 | cut -d= -f2",
-    shell=True
-).decode().strip()
+# Carregar .env central
+for line in open(os.path.expanduser("~/.openclaw/.env")):
+    line = line.strip()
+    if line and not line.startswith("#") and "=" in line:
+        k, v = line.split("=", 1); os.environ.setdefault(k, v)
 
-ACCOUNT = "act_553368457476412"   # Nova Conta Wolf - 01 (permissao API ok)
-PAGE_ID = "111242098624806"
-IG_ID = "17841407489358706"
-GABI_WPP = "5573999788860"
+META_TOKEN = os.environ.get("META_ADS_ACCESS_TOKEN", "")
+ACCOUNT = os.environ.get("META_AD_ACCOUNT_FORLAN", "act_553368457476412")
+PAGE_ID = os.environ.get("META_PAGE_ID", "111242098624806")
+IG_ID = os.environ.get("META_INSTAGRAM_ACTOR_ID", "17841407489358706")
+GABI_WPP = os.environ.get("GABI_WHATSAPP", "5573999788860")
 
 def api_post(endpoint, data_dict):
     cmd = ["curl", "-s", "-X", "POST", f"https://graph.facebook.com/v21.0/{endpoint}"]

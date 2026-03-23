@@ -10,14 +10,14 @@ set -euo pipefail
 SCRIPT_DIR_WOLF="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR_WOLF/lib-wolf.sh" 2>/dev/null || true
 
-NATIELY_WHATSAPP="5573999840448"
+NATIELY_WHATSAPP="${NATIELY_WHATSAPP:-5573999840448}"
 
 set -a
 source "$HOME/.openclaw/.env"
 set +a
 TOKEN="${CLICKUP_API_TOKEN:-}"
 TELEGRAM_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
-CHAT_ID="789352357"  # Netto DM
+CHAT_ID="${TELEGRAM_CHAT_ID:-789352357}"
 LOG="/tmp/wolf-clickup-check.log"
 TEAM_ID="3076130"
 LIST_IDS="901306028132,901306028133"

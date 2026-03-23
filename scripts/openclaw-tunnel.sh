@@ -3,8 +3,12 @@
 # Starts a quick tunnel and saves the URL to Supabase system_config
 # LaunchAgent: ai.openclaw.tunnel
 
-SUPABASE_URL="https://dqhiafxbljujahmpcdhf.supabase.co"
-SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxaGlhZnhibGp1amFobXBjZGhmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjY4NTI3MCwiZXhwIjoyMDg4MjYxMjcwfQ.Yn-_Jqu1MTMfNyR1wHn12_vDKb-PjnshQCSvn7hmH3Y"
+# Carregar credenciais do .env central
+ENV_FILE="$HOME/.openclaw/.env"
+[ -f "$ENV_FILE" ] && { set -a; source "$ENV_FILE"; set +a; }
+
+SUPABASE_URL="${SUPABASE_URL:?SUPABASE_URL not set in .env}"
+SUPABASE_KEY="${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY not set in .env}"
 LOG="/tmp/openclaw-tunnel.log"
 GATEWAY_PORT=18789
 
@@ -57,7 +61,7 @@ curl -s \
   -H "Authorization: Bearer ${SUPABASE_KEY}" \
   -H "Content-Type: application/json" \
   -H "Prefer: resolution=merge-duplicates" \
-  -d '{"key": "openclaw_gateway_token", "value": "\"b52639408a26e05b9170423402be3068db69ae001d4b0610\"", "description": "OpenClaw gateway auth token"}' > /dev/null 2>&1
+  -d "{\"key\": \"openclaw_gateway_token\", \"value\": \"\\\"${GATEWAY_TOKEN}\\\"\", \"description\": \"OpenClaw gateway auth token\"}" > /dev/null 2>&1
 
 echo "[$(date)] Tunnel running. Waiting for cloudflared to exit..." >> "$LOG"
 

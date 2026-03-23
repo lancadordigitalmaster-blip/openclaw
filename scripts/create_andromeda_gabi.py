@@ -5,15 +5,20 @@ import os
 import json
 import subprocess
 
-# Config
-META_TOKEN = subprocess.check_output(
-    "grep META_ADS_ACCESS_TOKEN /Users/thomasgirotto/.openclaw/.env | head -1 | cut -d= -f2",
-    shell=True
-).decode().strip()
+# Config — credenciais do .env central
+def _env(key, fallback=""):
+    return os.environ.get(key, fallback)
 
-ACCOUNT = "act_1583430182930723"
-PAGE_ID = "111242098624806"
-IG_ID = "17841407489358706"
+# Carregar .env
+for line in open(os.path.expanduser("~/.openclaw/.env")):
+    line = line.strip()
+    if line and not line.startswith("#") and "=" in line:
+        k, v = line.split("=", 1); os.environ.setdefault(k, v)
+
+META_TOKEN = _env("META_ADS_ACCESS_TOKEN")
+ACCOUNT = _env("META_AD_ACCOUNT_WOLF26", "act_1583430182930723")
+PAGE_ID = _env("META_PAGE_ID", "111242098624806")
+IG_ID = _env("META_INSTAGRAM_ACTOR_ID", "17841407489358706")
 CAMP_ID = "120244861197820409"  # ja criada
 
 # Criativos validados da campanha ancora (LP Whatsapp Mariana)

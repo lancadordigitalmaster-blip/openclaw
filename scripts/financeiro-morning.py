@@ -25,7 +25,7 @@ def _load_env():
 
 TOKEN = _load_env().get("CLICKUP_API_TOKEN", "")
 LISTS = ["901305981568", "901324962491"]
-TELEGRAM_TARGET = "789352357"
+TELEGRAM_TARGET = _load_env().get("TELEGRAM_CHAT_ID", os.environ.get("TELEGRAM_CHAT_ID", "789352357"))
 TELEGRAM_ACCOUNT = "financeiro"
 
 def fetch_tasks(list_id, params=""):

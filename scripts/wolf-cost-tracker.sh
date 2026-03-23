@@ -170,7 +170,7 @@ set +u
 source "$HOME/.openclaw/.env" 2>/dev/null || true
 set -u
 TELEGRAM_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
-CHAT_ID="789352357"
+CHAT_ID="${TELEGRAM_CHAT_ID:-789352357}"
 
 # Daily report mode: --daily flag sends summary always (not just on alert)
 SEND_DAILY=false
