@@ -29,6 +29,18 @@ import requests
 # CONFIG
 # ═══════════════════════════════════════════════════════════════
 
+# Load .env (for CLI and LaunchAgent usage)
+_env_path = os.path.expanduser("~/.openclaw/.env")
+if os.path.exists(_env_path):
+    with open(_env_path) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _, _v = _line.partition("=")
+                _k, _v = _k.strip(), _v.strip().strip('"').strip("'")
+                if _k and _k not in os.environ:
+                    os.environ[_k] = _v
+
 RADAR_DIR = Path(os.getenv("RADAR_DIR", os.path.expanduser("~/.openclaw/workspace/radar")))
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
