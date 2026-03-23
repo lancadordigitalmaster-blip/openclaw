@@ -205,6 +205,8 @@ Sub-rotas:
 | SWOT, análise competitiva, benchmark, competidor | competitor-analysis-report |
 | proposta comercial, montar proposta, proposta de valor | wolf-proposal-draft |
 | pesquisa profunda, investigar, deep research | wolf-nova-research |
+| radar, concorrente youtube, monitorar canal, inteligencia competitiva | dark-radar |
+| discovery, canais novos, tendencias nicho, mercado dark | dark-radar |
 
 ### DESIGN & CRIATIVO → Pixel
 
