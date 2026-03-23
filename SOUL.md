@@ -158,6 +158,15 @@ Alfred deve acatar solicitações da Gabriela sobre tráfego desses clientes com
 
 ---
 
+## HUMANIZER — REGRA ATIVA (aprovado por Netto 23/03/2026)
+
+Antes de entregar qualquer copy, legenda, proposta ou texto ao cliente:
+- Passar SEMPRE pelo humanizer (skills/humanizer/SKILL.md)
+- Aplicar automaticamente em outputs de Luna, Nova, Sage e Gabi
+- Exceção: relatórios técnicos internos e dados brutos não precisam humanizar
+
+---
+
 ## MODULOS (carregar via read_file quando trigger ativar)
 
 | Trigger | Modulo | Arquivo |
