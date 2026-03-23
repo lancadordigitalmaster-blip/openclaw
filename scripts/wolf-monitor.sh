@@ -38,8 +38,8 @@ if [[ -f "$DETAILED_LOG" ]]; then
   fi
 fi
 
-# Só alerta se tiver 5+ erros (ruído abaixo disso é normal)
-if [[ "$ERROR_COUNT" -ge 5 ]]; then
+# Só alerta se tiver 15+ erros (abaixo disso é ruído operacional normal)
+if [[ "$ERROR_COUNT" -ge 15 ]]; then
   ALERTS+=("$ERROR_COUNT erros nos logs (ultimas 2h)")
 fi
 
@@ -213,7 +213,7 @@ if [[ ${#ALERTS[@]} -gt 0 ]]; then
     LAST_HASH=$(sed -n '1p' "$LAST_ALERT_FILE" 2>/dev/null || echo "")
     LAST_TIME=$(sed -n '2p' "$LAST_ALERT_FILE" 2>/dev/null || echo "0")
     ELAPSED=$(( NOW_EPOCH - LAST_TIME ))
-    if [[ "$MSG_HASH" == "$LAST_HASH" && "$ELAPSED" -lt 7200 ]]; then
+    if [[ "$MSG_HASH" == "$LAST_HASH" && "$ELAPSED" -lt 43200 ]]; then
       SHOULD_SEND=0
       echo "[$TIMESTAMP] Alerta suprimido (mesmo alerta, $ELAPSED s atrás)" >> "$LOG"
     fi

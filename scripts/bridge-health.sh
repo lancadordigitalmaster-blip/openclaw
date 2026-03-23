@@ -20,15 +20,14 @@ send_tg() {
 
 # === TELEGRAM CHECKS ===
 
-# 1. Polling offset freshness (stale if >30min)
+# 1. Polling offset freshness — Telegram é fallback (WhatsApp é primário)
+# Só alertar se offset parado por >7 dias (indica problema real, não falta de uso)
 OFFSET_FILE="$HOME/.openclaw/telegram/update-offset-default.json"
 if [[ -f "$OFFSET_FILE" ]]; then
   OFFSET_AGE=$(( $(date +%s) - $(stat -f %m "$OFFSET_FILE" 2>/dev/null || echo 0) ))
-  if [[ "$OFFSET_AGE" -gt 43200 ]]; then
-    PROBLEMS+="Telegram polling offset stale ($(( OFFSET_AGE / 3600 ))h sem update). "
+  if [[ "$OFFSET_AGE" -gt 604800 ]]; then
+    PROBLEMS+="Telegram polling offset stale ($(( OFFSET_AGE / 86400 ))d sem update). "
   fi
-else
-  PROBLEMS+="Telegram offset file ausente. "
 fi
 
 # 2. Bot API reachable
@@ -67,7 +66,27 @@ if [[ -n "$PROBLEMS" ]]; then
   MSG="🔴 Bridge Health [$TS]
 $PROBLEMS"
   echo "[$TS] ALERT: $PROBLEMS"
-  send_tg "$MSG"
+
+  # Dedup: só enviar se o alerta mudou OU passou 2h desde o último
+  DEDUP_FILE="/tmp/bridge-health-last-alert.txt"
+  MSG_HASH=$(echo "$PROBLEMS" | md5)
+  NOW_EPOCH=$(date +%s)
+  SHOULD_SEND=1
+
+  if [[ -f "$DEDUP_FILE" ]]; then
+    LAST_HASH=$(sed -n '1p' "$DEDUP_FILE" 2>/dev/null || echo "")
+    LAST_TIME=$(sed -n '2p' "$DEDUP_FILE" 2>/dev/null || echo "0")
+    ELAPSED=$(( NOW_EPOCH - LAST_TIME ))
+    if [[ "$MSG_HASH" == "$LAST_HASH" && "$ELAPSED" -lt 7200 ]]; then
+      SHOULD_SEND=0
+    fi
+  fi
+
+  if [[ "$SHOULD_SEND" -eq 1 ]]; then
+    send_tg "$MSG"
+    echo "$MSG_HASH" > "$DEDUP_FILE"
+    echo "$NOW_EPOCH" >> "$DEDUP_FILE"
+  fi
 else
   echo "[$TS] OK — Telegram + WhatsApp healthy"
 fi
