@@ -32,6 +32,7 @@
 | wolf-video-pipeline | Pipeline producao de video | Editor | Operacional |
 | wolf-voice | Transcricao de audio Telegram | Alfred | Operacional |
 | modo-sono | Rotina de fechamento diario (00-05h) | Alfred | Latente |
+| dark-radar | Inteligencia de mercado — monitorar concorrentes, discovery, estrategia | Scout/Sage | Operacional |
 
 ### Wolf Agency — Ferramentas (6 skills)
 

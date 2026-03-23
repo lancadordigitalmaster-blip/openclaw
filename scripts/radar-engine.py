@@ -158,9 +158,10 @@ def collect_channel_videos(channel: dict, max_videos: int = 30) -> list:
 
     try:
         cmd = [
-            "yt-dlp", "--dump-json", "--flat-playlist",
+            "yt-dlp", "--dump-json",
             "--playlist-items", f"1:{max_videos}",
             "--no-download", "--no-warnings", "--quiet",
+            "--skip-download", "--ignore-errors",
             f"{url}/videos"
         ]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
