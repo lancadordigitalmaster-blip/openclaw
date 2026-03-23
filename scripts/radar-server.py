@@ -79,9 +79,12 @@ class RadarHandler(BaseHTTPRequestHandler):
                     with open(score_path) as f:
                         score_data = json.load(f)
                     ch["score"] = score_data.get("score", 0)
+                    ch["grade"] = score_data.get("grade", "-")
                     ch["status"] = score_data.get("status", "?")
                     ch["stats"] = score_data.get("stats", {})
                     ch["factors"] = score_data.get("factors", {})
+                    ch["revenue_estimate"] = score_data.get("revenue_estimate", {})
+                    ch["growth_projection"] = score_data.get("growth_projection", {})
             return self._json({"ok": True, "channels": channels})
 
         # GET /api/radar/channel?id=X — detalhes de um canal
@@ -198,6 +201,30 @@ class RadarHandler(BaseHTTPRequestHandler):
                 with open(bp) as f:
                     return self._json({"ok": True, "week": week, **json.load(f)})
             return self._json({"ok": True, "week": week, "message": "briefing nao encontrado"})
+
+        # GET /api/radar/market-overview — agregado de metricas avancadas
+        if path == "/api/radar/market-overview":
+            eng = get_engine()
+            channels = eng.load_channels()
+            overview = {"channels": [], "total_revenue_low": 0, "total_revenue_high": 0}
+            for ch in channels:
+                ch_dir = RADAR_DIR / "channels" / ch.get("id", "")
+                score_path = ch_dir / "score.json"
+                if score_path.exists():
+                    with open(score_path) as f:
+                        sd = json.load(f)
+                    rev = sd.get("revenue_estimate", {})
+                    overview["channels"].append({
+                        "id": ch["id"], "name": ch.get("name", "?"),
+                        "grade": sd.get("grade", "-"), "score": sd.get("score", 0),
+                        "revenue_low": rev.get("monthly_revenue_low", 0),
+                        "revenue_high": rev.get("monthly_revenue_high", 0),
+                        "engagement_rate": sd.get("stats", {}).get("engagement_rate", 0),
+                        "shorts_ratio": sd.get("stats", {}).get("shorts_ratio", 0),
+                    })
+                    overview["total_revenue_low"] += rev.get("monthly_revenue_low", 0)
+                    overview["total_revenue_high"] += rev.get("monthly_revenue_high", 0)
+            return self._json({"ok": True, **overview})
 
         # GET /api/radar/health
         if path == "/api/radar/health":
