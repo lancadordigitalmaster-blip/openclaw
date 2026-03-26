@@ -231,11 +231,14 @@ class RadarHandler(BaseHTTPRequestHandler):
             eng = get_engine()
             return self._json({"ok": True, "keywords": eng.list_keyword_research()})
 
-        # GET /api/radar/best-time — melhor horário para postar
+        # GET /api/radar/best-time — melhor horario para postar
         if path == "/api/radar/best-time":
-            eng = get_engine()
-            result = eng.best_posting_time()
-            return self._json({"ok": True, **result})
+            try:
+                eng = get_engine()
+                result = eng.best_posting_time()
+                return self._json({"ok": True, **result})
+            except Exception as e:
+                return self._json({"ok": False, "error": str(e)}, 500)
 
         # GET /api/radar/tags — sugestões de tags
         if path == "/api/radar/tags":
