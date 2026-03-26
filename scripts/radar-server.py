@@ -226,6 +226,45 @@ class RadarHandler(BaseHTTPRequestHandler):
                     overview["total_revenue_high"] += rev.get("monthly_revenue_high", 0)
             return self._json({"ok": True, **overview})
 
+        # GET /api/radar/keywords — listar keyword research salvas
+        if path == "/api/radar/keywords":
+            eng = get_engine()
+            return self._json({"ok": True, "keywords": eng.list_keyword_research()})
+
+        # GET /api/radar/best-time — melhor horário para postar
+        if path == "/api/radar/best-time":
+            eng = get_engine()
+            result = eng.best_posting_time()
+            return self._json({"ok": True, **result})
+
+        # GET /api/radar/tags — sugestões de tags
+        if path == "/api/radar/tags":
+            topic = params.get("topic", [None])[0]
+            nicho = params.get("nicho", [None])[0]
+            eng = get_engine()
+            result = eng.suggest_tags(topic, nicho)
+            return self._json({"ok": True, **result})
+
+        # GET /api/radar/seo — SEO scores dos vídeos de um canal
+        if path == "/api/radar/seo":
+            ch_id = params.get("id", [None])[0]
+            if not ch_id:
+                return self._json({"ok": False, "error": "id required"}, 400)
+            ch_dir = RADAR_DIR / "channels" / ch_id
+            vp = ch_dir / "videos.json"
+            if not vp.exists():
+                return self._json({"ok": True, "videos": []})
+            eng = get_engine()
+            with open(vp) as f:
+                videos = json.load(f)
+            scored = []
+            for v in videos:
+                seo = eng.calculate_seo_score(v)
+                scored.append({**v, **seo})
+            # Also detect outliers
+            outliers = eng.detect_outliers(videos)
+            return self._json({"ok": True, "videos": scored, "outliers": outliers})
+
         # GET /api/radar/health
         if path == "/api/radar/health":
             eng = get_engine()
@@ -306,6 +345,34 @@ class RadarHandler(BaseHTTPRequestHandler):
             eng = get_engine()
             result = eng.run_discovery()
             return self._json({"ok": True, "candidates": result})
+
+        # POST /api/radar/keyword-research — pesquisar keyword
+        if path == "/api/radar/keyword-research":
+            keyword = body.get("keyword", "")
+            if not keyword:
+                return self._json({"ok": False, "error": "keyword required"}, 400)
+            import threading
+            eng = get_engine()
+            result = {"data": None}
+            def do_research():
+                result["data"] = eng.keyword_research(keyword)
+            t = threading.Thread(target=do_research, daemon=True)
+            t.start()
+            t.join(timeout=150)
+            if result["data"]:
+                return self._json({"ok": True, **result["data"]})
+            return self._json({"ok": True, "message": "pesquisa iniciada em background"})
+
+        # POST /api/radar/seo-generate — gerar título/descrição SEO
+        if path == "/api/radar/seo-generate":
+            topic = body.get("topic", "")
+            nicho = body.get("nicho", "geral")
+            style = body.get("style", "dark")
+            if not topic:
+                return self._json({"ok": False, "error": "topic required"}, 400)
+            eng = get_engine()
+            result = eng.generate_seo_content(topic, nicho, style)
+            return self._json({"ok": True, **result})
 
         self._json({"ok": False, "error": "rota nao encontrada"}, 404)
 

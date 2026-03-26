@@ -1062,6 +1062,554 @@ def full_cycle():
 
 
 # ═══════════════════════════════════════════════════════════════
+# SEO SCORE (per video)
+# ═══════════════════════════════════════════════════════════════
+
+# Emotional trigger words (pt-BR + en)
+_SEO_TRIGGERS = {
+    "incrível", "chocante", "revelado", "segredo", "verdade", "nunca", "jamais",
+    "ninguém", "proibido", "escondido", "misterioso", "assustador", "impressionante",
+    "surpreendente", "urgente", "agora", "finalmente", "descubra", "cuidado",
+    "perigo", "shocking", "secret", "truth", "hidden", "forbidden", "revealed",
+    "incredible", "amazing", "terrifying", "mysterious", "dangerous",
+}
+
+
+def calculate_seo_score(video: dict) -> dict:
+    """Calcula SEO score 0-100 de um vídeo individual."""
+    score = 0
+    breakdown = {}
+
+    title = video.get("title", "")
+    description = video.get("description", "")
+    tags = video.get("tags", []) or []
+    thumbnail = video.get("thumbnail", "")
+    views = video.get("view_count", 0)
+    likes = video.get("like_count", 0)
+
+    # 1. Title (0-20)
+    title_score = 0
+    tlen = len(title)
+    if 40 <= tlen <= 65:
+        title_score += 6  # ideal length
+    elif 30 <= tlen <= 80:
+        title_score += 3  # acceptable
+    # Has numbers
+    if any(c.isdigit() for c in title):
+        title_score += 4
+    # Emotional triggers
+    title_lower = title.lower()
+    trigger_count = sum(1 for t in _SEO_TRIGGERS if t in title_lower)
+    title_score += min(5, trigger_count * 2)
+    # Not all caps (YouTube penalizes)
+    if title != title.upper():
+        title_score += 2
+    # Starts with keyword (first 5 words have substance)
+    if tlen > 10:
+        title_score += 3
+    breakdown["titulo"] = min(20, title_score)
+    score += breakdown["titulo"]
+
+    # 2. Description (0-20)
+    desc_score = 0
+    desc_words = len(description.split()) if description else 0
+    if desc_words >= 200:
+        desc_score += 7
+    elif desc_words >= 100:
+        desc_score += 4
+    elif desc_words >= 30:
+        desc_score += 2
+    # Has links
+    if "http" in description:
+        desc_score += 3
+    # Has timestamps (00:00 pattern)
+    if re.search(r'\d{1,2}:\d{2}', description):
+        desc_score += 5
+    # Has hashtags
+    if "#" in description:
+        desc_score += 2
+    # Has keywords from title in description
+    title_words = set(w.lower() for w in title.split() if len(w) > 3)
+    desc_lower = description.lower()
+    matching = sum(1 for w in title_words if w in desc_lower)
+    desc_score += min(3, matching)
+    breakdown["descricao"] = min(20, desc_score)
+    score += breakdown["descricao"]
+
+    # 3. Tags (0-20)
+    tag_score = 0
+    tag_count = len(tags)
+    if 5 <= tag_count <= 15:
+        tag_score += 8  # ideal range
+    elif tag_count > 0:
+        tag_score += 4
+    # Tag relevance (tags matching title words)
+    if tags:
+        tags_lower = [t.lower() for t in tags]
+        tag_match = sum(1 for w in title_words if any(w in t for t in tags_lower))
+        tag_score += min(7, tag_match * 2)
+    # Tag diversity (long-tail keywords)
+    long_tags = sum(1 for t in tags if len(t.split()) >= 3)
+    tag_score += min(5, long_tags)
+    breakdown["tags"] = min(20, tag_score)
+    score += breakdown["tags"]
+
+    # 4. Thumbnail (0-20)
+    thumb_score = 0
+    if thumbnail:
+        thumb_score += 10  # has thumbnail
+        # High-res indicator (maxresdefault)
+        if "maxres" in thumbnail or "hqdefault" in thumbnail:
+            thumb_score += 5
+        # Custom thumbnail (not auto-generated)
+        if "custom" not in thumbnail.lower():
+            thumb_score += 5
+    breakdown["thumbnail"] = min(20, thumb_score)
+    score += breakdown["thumbnail"]
+
+    # 5. Engagement proxy (0-20)
+    eng_score = 0
+    if views > 0:
+        ratio = (likes / views) * 100
+        if ratio >= 5:
+            eng_score += 10
+        elif ratio >= 3:
+            eng_score += 7
+        elif ratio >= 1:
+            eng_score += 4
+        # View count thresholds
+        if views >= 100000:
+            eng_score += 10
+        elif views >= 10000:
+            eng_score += 7
+        elif views >= 1000:
+            eng_score += 4
+        elif views >= 100:
+            eng_score += 2
+    breakdown["engajamento"] = min(20, eng_score)
+    score += breakdown["engajamento"]
+
+    final = min(100, score)
+    return {
+        "seo_score": final,
+        "seo_grade": calculate_grade(final),
+        "breakdown": breakdown,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# OUTLIER DETECTION
+# ═══════════════════════════════════════════════════════════════
+
+def detect_outliers(videos: list, threshold: float = 3.0) -> list:
+    """Detecta vídeos outlier (views > threshold x média do canal)."""
+    if not videos:
+        return []
+    avg_views = sum(v.get("view_count", 0) for v in videos) / len(videos)
+    if avg_views <= 0:
+        return []
+
+    outliers = []
+    for v in videos:
+        views = v.get("view_count", 0)
+        ratio = views / avg_views
+        if ratio >= threshold:
+            outliers.append({
+                "id": v.get("id", ""),
+                "title": v.get("title", ""),
+                "views": views,
+                "outlier_score": round(ratio, 1),
+                "avg_views": int(avg_views),
+            })
+    outliers.sort(key=lambda x: x["outlier_score"], reverse=True)
+    return outliers
+
+
+# ═══════════════════════════════════════════════════════════════
+# BEST TIME TO POST
+# ═══════════════════════════════════════════════════════════════
+
+def best_posting_time(channels: list = None) -> dict:
+    """Analisa horários de upload dos top performers e recomenda janelas ótimas."""
+    if channels is None:
+        channels = load_channels()
+
+    day_names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    day_labels = {"mon": "Segunda", "tue": "Terça", "wed": "Quarta", "thu": "Quinta",
+                  "fri": "Sexta", "sat": "Sábado", "sun": "Domingo"}
+
+    # Aggregate: day -> {count, total_views, avg_views}
+    day_data = {d: {"count": 0, "total_views": 0} for d in day_names}
+    hour_data = {h: {"count": 0, "total_views": 0} for h in range(24)}
+    niche_data = {}  # nicho -> day -> {count, total_views}
+
+    for ch in channels:
+        ch_dir = RADAR_DIR / "channels" / ch.get("id", "")
+        videos_path = ch_dir / "videos.json"
+        if not videos_path.exists():
+            continue
+        with open(videos_path) as f:
+            videos = json.load(f)
+
+        nicho = ch.get("nicho", "geral")
+        if nicho not in niche_data:
+            niche_data[nicho] = {d: {"count": 0, "total_views": 0} for d in day_names}
+
+        for v in videos:
+            upload = v.get("upload_date", "")
+            views = v.get("view_count", 0)
+            if not upload:
+                continue
+            try:
+                dt = datetime.strptime(upload, "%Y%m%d")
+                day = day_names[dt.weekday()]
+                day_data[day]["count"] += 1
+                day_data[day]["total_views"] += views
+                niche_data[nicho][day]["count"] += 1
+                niche_data[nicho][day]["total_views"] += views
+            except ValueError:
+                pass
+
+    # Calculate averages
+    for d in day_names:
+        c = day_data[d]["count"]
+        day_data[d]["avg_views"] = int(day_data[d]["total_views"] / c) if c > 0 else 0
+
+    for nicho in niche_data:
+        for d in day_names:
+            c = niche_data[nicho][d]["count"]
+            niche_data[nicho][d]["avg_views"] = int(niche_data[nicho][d]["total_views"] / c) if c > 0 else 0
+
+    # Best days overall (top 3 by avg views)
+    ranked = sorted(day_names, key=lambda d: day_data[d]["avg_views"], reverse=True)
+    best_days = [{"day": d, "label": day_labels[d], "avg_views": day_data[d]["avg_views"],
+                  "uploads": day_data[d]["count"]} for d in ranked[:3]]
+
+    # Best days per niche
+    niche_best = {}
+    for nicho, data in niche_data.items():
+        ranked_n = sorted(day_names, key=lambda d: data[d]["avg_views"], reverse=True)
+        niche_best[nicho] = [{"day": d, "label": day_labels[d],
+                              "avg_views": data[d]["avg_views"]} for d in ranked_n[:3]]
+
+    return {
+        "heatmap": {d: {"count": day_data[d]["count"], "avg_views": day_data[d]["avg_views"]}
+                    for d in day_names},
+        "best_days": best_days,
+        "niche_best": niche_best,
+        "total_videos_analyzed": sum(day_data[d]["count"] for d in day_names),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# TAG SUGGESTIONS
+# ═══════════════════════════════════════════════════════════════
+
+def suggest_tags(topic: str = None, nicho: str = None) -> dict:
+    """Sugere tags baseado nos top performers do nicho."""
+    channels = load_channels()
+    all_tags = Counter()
+    top_video_tags = Counter()  # tags de vídeos com muitas views
+
+    for ch in channels:
+        if nicho and ch.get("nicho", "").lower() != nicho.lower():
+            continue
+        ch_dir = RADAR_DIR / "channels" / ch.get("id", "")
+        videos_path = ch_dir / "videos.json"
+        if not videos_path.exists():
+            continue
+        with open(videos_path) as f:
+            videos = json.load(f)
+
+        avg_views = sum(v.get("view_count", 0) for v in videos) / max(len(videos), 1)
+
+        for v in videos:
+            tags = v.get("tags", []) or []
+            # Filter by topic if given
+            if topic:
+                title = v.get("title", "").lower()
+                if topic.lower() not in title:
+                    continue
+            for t in tags:
+                all_tags[t.lower()] += 1
+                if v.get("view_count", 0) > avg_views * 1.5:
+                    top_video_tags[t.lower()] += 1
+
+    # Most common tags overall
+    common = [{"tag": t, "count": c} for t, c in all_tags.most_common(30)]
+    # Tags from top-performing videos
+    top_tags = [{"tag": t, "count": c} for t, c in top_video_tags.most_common(20)]
+    # Rising tags (appear in top videos more than average)
+    rising = []
+    for t, c in top_video_tags.most_common(50):
+        total = all_tags.get(t, 1)
+        ratio = c / total
+        if ratio > 0.5 and c >= 2:
+            rising.append({"tag": t, "top_ratio": round(ratio, 2), "top_count": c, "total_count": total})
+    rising.sort(key=lambda x: x["top_ratio"], reverse=True)
+
+    return {
+        "common_tags": common,
+        "top_performer_tags": top_tags,
+        "rising_tags": rising[:15],
+        "total_tags_analyzed": sum(all_tags.values()),
+        "filter": {"topic": topic, "nicho": nicho},
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# KEYWORD RESEARCH
+# ═══════════════════════════════════════════════════════════════
+
+def keyword_research(keyword: str) -> dict:
+    """Pesquisa keyword no YouTube via yt-dlp search, analisa competição e demanda."""
+    log(f"Keyword research: '{keyword}'")
+
+    # Search YouTube for top results
+    videos = []
+    try:
+        cmd = [
+            "yt-dlp", "--dump-json",
+            "--playlist-items", "1:50",
+            "--no-download", "--no-warnings", "--quiet",
+            "--skip-download", "--ignore-errors",
+            f"ytsearch50:{keyword}"
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode == 0:
+            for line in result.stdout.strip().split("\n"):
+                if line.strip():
+                    try:
+                        data = json.loads(line)
+                        videos.append({
+                            "id": data.get("id", ""),
+                            "title": data.get("title", ""),
+                            "channel": data.get("uploader", ""),
+                            "channel_id": data.get("channel_id", ""),
+                            "view_count": data.get("view_count", 0),
+                            "like_count": data.get("like_count", 0),
+                            "comment_count": data.get("comment_count", 0),
+                            "duration": data.get("duration", 0),
+                            "upload_date": data.get("upload_date", ""),
+                            "tags": data.get("tags", [])[:30] if data.get("tags") else [],
+                            "description": (data.get("description", "") or "")[:300],
+                            "thumbnail": data.get("thumbnail", ""),
+                            "is_short": (data.get("duration", 0) or 0) < 62,
+                        })
+                    except json.JSONDecodeError:
+                        continue
+    except Exception as e:
+        log(f"Keyword research erro: {e}", "WARN")
+
+    if not videos:
+        return {"keyword": keyword, "error": "Nenhum resultado encontrado"}
+
+    # Competition metrics
+    total_results = len(videos)
+    total_views = sum(v["view_count"] for v in videos)
+    avg_views = total_views / total_results
+    top10_avg = sum(v["view_count"] for v in videos[:10]) / min(10, len(videos))
+    max_views = max(v["view_count"] for v in videos) if videos else 0
+
+    # Demand score (0-100): based on avg views of top 10
+    if top10_avg >= 1000000:
+        demand = 100
+    elif top10_avg >= 100000:
+        demand = 80 + (top10_avg - 100000) / 900000 * 20
+    elif top10_avg >= 10000:
+        demand = 50 + (top10_avg - 10000) / 90000 * 30
+    elif top10_avg >= 1000:
+        demand = 20 + (top10_avg - 1000) / 9000 * 30
+    else:
+        demand = max(1, top10_avg / 1000 * 20)
+
+    # Competition score (0-100): how hard to rank
+    # Based on: avg subscriber count of top channels, video quality
+    channels_seen = set()
+    for v in videos[:20]:
+        channels_seen.add(v.get("channel_id", ""))
+    competition = min(100, len(channels_seen) * 5)  # more unique channels = more competition
+
+    # Overall score (higher = better opportunity)
+    opportunity_score = max(0, min(100, int(demand - competition * 0.5 + 25)))
+
+    # Related keywords from tags
+    all_tags = Counter()
+    for v in videos:
+        for t in (v.get("tags") or []):
+            t_low = t.lower().strip()
+            if t_low and t_low != keyword.lower():
+                all_tags[t_low] += 1
+    related = [{"keyword": t, "frequency": c} for t, c in all_tags.most_common(20)]
+
+    # Top channels in this keyword
+    ch_counter = Counter()
+    ch_views = {}
+    for v in videos:
+        ch = v.get("channel", "unknown")
+        ch_counter[ch] += 1
+        ch_views[ch] = ch_views.get(ch, 0) + v["view_count"]
+    top_channels = [{"name": ch, "videos": c, "total_views": ch_views[ch]}
+                    for ch, c in ch_counter.most_common(10)]
+
+    # Recent vs old content
+    now = datetime.now()
+    recent_count = 0
+    for v in videos:
+        try:
+            dt = datetime.strptime(v.get("upload_date", ""), "%Y%m%d")
+            if (now - dt).days <= 90:
+                recent_count += 1
+        except ValueError:
+            pass
+    freshness = round(recent_count / total_results * 100, 1) if total_results > 0 else 0
+
+    research = {
+        "keyword": keyword,
+        "total_results": total_results,
+        "demand_score": round(demand),
+        "competition_score": round(competition),
+        "opportunity_score": opportunity_score,
+        "avg_views": int(avg_views),
+        "top10_avg_views": int(top10_avg),
+        "max_views": max_views,
+        "freshness_pct": freshness,
+        "related_keywords": related,
+        "top_channels": top_channels,
+        "top_videos": [{
+            "title": v["title"], "channel": v["channel"],
+            "views": v["view_count"], "duration": v["duration"],
+            "upload_date": v["upload_date"], "thumbnail": v["thumbnail"],
+        } for v in videos[:10]],
+        "researched_at": datetime.now().isoformat(),
+    }
+
+    # Save to disk
+    kw_dir = RADAR_DIR / "keywords"
+    kw_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = re.sub(r'[^\w\s-]', '', keyword).strip().replace(' ', '-')[:50]
+    with open(kw_dir / f"{safe_name}.json", "w") as f:
+        json.dump(research, f, indent=2, ensure_ascii=False)
+
+    log(f"Keyword research: '{keyword}' → demand={round(demand)} competition={round(competition)} opportunity={opportunity_score}")
+    return research
+
+
+def list_keyword_research() -> list:
+    """Lista todas as pesquisas de keyword salvas."""
+    kw_dir = RADAR_DIR / "keywords"
+    if not kw_dir.exists():
+        return []
+    results = []
+    for f in sorted(kw_dir.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True):
+        with open(f) as fh:
+            data = json.load(fh)
+            results.append({
+                "keyword": data.get("keyword", ""),
+                "demand_score": data.get("demand_score", 0),
+                "competition_score": data.get("competition_score", 0),
+                "opportunity_score": data.get("opportunity_score", 0),
+                "avg_views": data.get("avg_views", 0),
+                "researched_at": data.get("researched_at", ""),
+            })
+    return results
+
+
+# ═══════════════════════════════════════════════════════════════
+# TITLE/DESCRIPTION GENERATOR
+# ═══════════════════════════════════════════════════════════════
+
+def generate_seo_content(topic: str, nicho: str = "geral", style: str = "dark") -> dict:
+    """Gera títulos, descrição e tags otimizados para SEO usando Gemini ou análise estatística."""
+
+    # Collect reference data from top performers
+    channels = load_channels()
+    ref_titles = []
+    ref_tags = Counter()
+    for ch in channels:
+        if nicho != "geral" and ch.get("nicho", "").lower() != nicho.lower():
+            continue
+        ch_dir = RADAR_DIR / "channels" / ch.get("id", "")
+        vp = ch_dir / "videos.json"
+        if not vp.exists():
+            continue
+        with open(vp) as f:
+            videos = json.load(f)
+        top_vids = sorted(videos, key=lambda v: v.get("view_count", 0), reverse=True)[:5]
+        for v in top_vids:
+            ref_titles.append(v.get("title", ""))
+            for t in (v.get("tags") or []):
+                ref_tags[t.lower()] += 1
+
+    # Try Gemini first
+    prompt = f"""Você é um especialista em SEO para YouTube, especializado em canais dark/faceless.
+
+Tema do vídeo: "{topic}"
+Nicho: {nicho}
+Estilo: {style}
+
+Títulos de referência (top performers do nicho):
+{chr(10).join(f'- {t}' for t in ref_titles[:10])}
+
+Gere exatamente este JSON (sem markdown, sem ```):
+{{
+  "titles": ["titulo1", "titulo2", "titulo3", "titulo4", "titulo5"],
+  "description": "descricao SEO completa com 200+ palavras, timestamps placeholder, hashtags",
+  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", "tag8", "tag9", "tag10", "tag11", "tag12", "tag13", "tag14", "tag15"]
+}}
+
+Regras:
+- Títulos: 40-65 caracteres, gatilhos emocionais (curiosidade, urgência, revelação, números, superlativos)
+- Descrição: inclua keywords, timestamps (00:00), links placeholder, hashtags
+- Tags: mix de short-tail e long-tail, relevantes ao tema e nicho"""
+
+    gemini_result = gemini_call(prompt, max_tokens=2000)
+    if gemini_result:
+        try:
+            # Clean markdown code blocks if present
+            cleaned = gemini_result.strip()
+            if cleaned.startswith("```"):
+                cleaned = re.sub(r'^```\w*\n?', '', cleaned)
+                cleaned = re.sub(r'\n?```$', '', cleaned)
+            data = json.loads(cleaned)
+            data["source"] = "gemini"
+            data["topic"] = topic
+            data["nicho"] = nicho
+            return data
+        except (json.JSONDecodeError, KeyError):
+            log("Gemini retornou JSON invalido, usando fallback estatístico", "WARN")
+
+    # Fallback: statistical generation
+    trigger_words = ["Revelado", "A Verdade Sobre", "O Segredo de", "Ninguém Conta Sobre",
+                     "O Que Aconteceu com", "A História Proibida de", "Por Que", "Como"]
+    titles = []
+    for i, trigger in enumerate(trigger_words[:5]):
+        title = f"{trigger} {topic}"
+        if len(title) > 65:
+            title = title[:62] + "..."
+        titles.append(title)
+
+    top_tags = [t for t, _ in ref_tags.most_common(15)]
+    if len(top_tags) < 15:
+        # Pad with generated tags
+        base_words = topic.lower().split()
+        for w in base_words:
+            if w not in top_tags:
+                top_tags.append(w)
+        top_tags.append(nicho)
+        top_tags.append(f"{nicho} {topic.split()[0]}" if topic.split() else nicho)
+
+    return {
+        "titles": titles[:5],
+        "description": f"{topic} — um mergulho profundo no universo de {nicho}.\n\n⏱️ Timestamps:\n00:00 Introdução\n01:00 Contexto\n03:00 Desenvolvimento\n07:00 Revelação\n10:00 Conclusão\n\n🔔 Inscreva-se e ative o sino!\n\n#{'#'.join(topic.split()[:3])} #{nicho}",
+        "tags": top_tags[:15],
+        "source": "statistical",
+        "topic": topic,
+        "nicho": nicho,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
 # CLI
 # ═══════════════════════════════════════════════════════════════
 
@@ -1093,6 +1641,24 @@ def main():
     p.add_argument("handle")
 
     sub.add_parser("health", help="Health check")
+
+    p = sub.add_parser("keyword", help="Keyword research")
+    p.add_argument("kw", help="Keyword to research")
+
+    sub.add_parser("keywords", help="Listar keyword research salvas")
+
+    p = sub.add_parser("seo", help="SEO score de videos de um canal")
+    p.add_argument("handle")
+
+    sub.add_parser("best-time", help="Melhor horario para postar")
+
+    p = sub.add_parser("tags", help="Sugerir tags")
+    p.add_argument("--topic", default=None)
+    p.add_argument("--nicho", default=None)
+
+    p = sub.add_parser("generate", help="Gerar titulo/descricao SEO")
+    p.add_argument("topic", help="Tema do video")
+    p.add_argument("--nicho", default="geral")
 
     args = parser.parse_args()
 
@@ -1147,6 +1713,42 @@ def main():
             print(json.dumps(result, indent=2))
         else:
             print("Sem videos coletados. Rode: radar-engine.py collect")
+
+    elif args.cmd == "keyword":
+        result = keyword_research(args.kw)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
+    elif args.cmd == "keywords":
+        for kw in list_keyword_research():
+            print(f"  [{kw['opportunity_score']:>3}] {kw['keyword']:30s} demand={kw['demand_score']} comp={kw['competition_score']} avg={kw['avg_views']:,}")
+
+    elif args.cmd == "seo":
+        channels = load_channels()
+        ch = next((c for c in channels if c.get("handle") == args.handle), None)
+        if not ch:
+            print(f"Canal @{args.handle} nao encontrado"); sys.exit(1)
+        ch_dir = RADAR_DIR / "channels" / ch["id"]
+        vp = ch_dir / "videos.json"
+        if vp.exists():
+            with open(vp) as f:
+                videos = json.load(f)
+            for v in videos[:10]:
+                seo = calculate_seo_score(v)
+                print(f"  [{seo['seo_score']:>3}] {seo['seo_grade']:3s} {v['title'][:60]}")
+        else:
+            print("Sem videos. Rode: radar-engine.py collect")
+
+    elif args.cmd == "best-time":
+        result = best_posting_time()
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
+    elif args.cmd == "tags":
+        result = suggest_tags(args.topic, args.nicho)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
+    elif args.cmd == "generate":
+        result = generate_seo_content(args.topic, args.nicho)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
 
     elif args.cmd == "health":
         print("=== Dark Radar Health ===")
