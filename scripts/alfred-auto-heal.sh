@@ -20,6 +20,8 @@ MAX_RESTARTS_PER_HOUR=3
 
 # Carregar .env (tokens, Supabase, etc)
 source "$OPENCLAW_HOME/.env" 2>/dev/null
+# Carregar lib-wolf.sh (wolf_notify, wolf_whatsapp, etc)
+source "$OPENCLAW_HOME/workspace/scripts/lib-wolf.sh" 2>/dev/null
 SUPABASE_URL="${SUPABASE_URL:-}"
 SUPABASE_SERVICE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-}"
 ALFRED_AGENT_ID="a1abe880-f1e3-40aa-bb62-0f748f5ac2c2"

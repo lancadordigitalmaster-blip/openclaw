@@ -176,6 +176,7 @@ fi
 
 log "Relatório gerado, enviando via WhatsApp..."
 
-wolf_notify "$REPORT"
-log "Relatório enviado"
+# Reddit roda 01:00 BRT — notificação movida para log (ninguém lê 1h da manhã)
+wolf_log "reddit-monitor" "$REPORT"
+log "Relatório registrado em log (sem notificação noturna)"
 echo "OK — Relatório enviado"

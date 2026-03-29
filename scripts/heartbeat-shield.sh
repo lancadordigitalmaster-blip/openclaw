@@ -141,7 +141,13 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     MSG="Shield detectou ${#ISSUES[@]} problema(s) de seguranca:"
     for i in "${ISSUES[@]}"; do MSG="$MSG
 - $i"; done
-    wolf_notify "$MSG"
+    # Notifica apenas em horário útil (07-23h BRT) — digest cobre o resto
+    HOUR_BRT=$(TZ=America/Sao_Paulo date '+%H')
+    if [ "$HOUR_BRT" -ge 7 ] && [ "$HOUR_BRT" -le 23 ]; then
+        wolf_notify "$MSG"
+    else
+        wolf_log "$AGENT" "Issue detectada fora de horário — aguardando digest: $MSG"
+    fi
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, detectei ${#ISSUES[@]} problema(s) de seguranca. Preciso de atencao." "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     # Avisos — card vai pra done mas reporta

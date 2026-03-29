@@ -201,8 +201,9 @@ $RESUMO
 
 _Changelog completo em changelogs/${TODAY}.md_"
 
-    wolf_notify "$MSG"
-    log "Notificação enviada: Nota $NOTA, Status $STATUS"
+    # Notificação movida para morning-brief (modo-sono roda 00:30 BRT — ninguém lê)
+    wolf_log "modo-sono" "Nota $NOTA, Status $STATUS — $RESUMO"
+    log "Resultado registrado (sem notificação noturna): Nota $NOTA, Status $STATUS"
 else
     log "ERRO: Resposta LLM vazia ou inválida"
 fi

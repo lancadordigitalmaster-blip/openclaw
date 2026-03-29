@@ -156,7 +156,13 @@ if [ ${#ISSUES[@]} -gt 0 ]; then
     MSG="$MSG
 
 Custo hoje: \$${COST_EST:-?}"
-    wolf_notify "$MSG"
+    # Notifica apenas em horário útil (07-23h BRT) — digest cobre o resto
+    HOUR_BRT=$(TZ=America/Sao_Paulo date '+%H')
+    if [ "$HOUR_BRT" -ge 7 ] && [ "$HOUR_BRT" -le 23 ]; then
+        wolf_notify "$MSG"
+    else
+        wolf_log "$AGENT" "Issue detectada fora de horário — aguardando digest: $MSG"
+    fi
     wolf_handoff "$AGENT_ID" "$ALFRED_ID" "Alfred, ${#ISSUES[@]} LLM(s) com problema. Custo hoje: \$${COST_EST:-?}" "alert"
 elif [ ${#WARNINGS[@]} -gt 0 ]; then
     wolf_mission_move "$MID" "done" "$DESCRIPTION"
