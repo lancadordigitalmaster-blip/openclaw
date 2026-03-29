@@ -3156,11 +3156,13 @@ async function startBridge() {
     auth: state,
     logger,
     printQRInTerminal: false,
-    browser: ["Wolf Agency", "Desktop", "1.0.0"],
+    browser: ["Mac OS", "Chrome", "14.4.1"],  // Must match a real platform for mobile sync
     connectTimeoutMs: 60000,
     syncFullHistory: true,
     markOnlineOnConnect: true,
+    fireInitQueries: true,
     appStateMacVerification: { patch: true, snapshot: true },
+    shouldSyncHistoryMessage: () => true,
     getMessage: async (key) => {
       // Required by Baileys v6 for message retry decryption
       // Without this, failed decryptions can't be retried → "Aguardando mensagem"
