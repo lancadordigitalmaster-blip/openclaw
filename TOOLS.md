@@ -5,7 +5,7 @@
 
 ## Skills Ativas (skills/)
 
-### Wolf Agency — Operacao (24 skills)
+### Wolf Agency — Operacao (22 skills)
 
 | Skill | Funcao | Agente | Status |
 |-------|--------|--------|--------|
@@ -13,14 +13,12 @@
 | wolf-reminders | Lembretes proativos | Alfred | Operacional |
 | wolf-quality-check | Checklist pre-entrega | Alfred | Operacional |
 | wolf-briefing-monitor | Analise de briefings | Alfred | Operacional |
-| wolf-meeting-summary | Resumo de reunioes | Alfred | Operacional |
-| wolf-process-docs | Documentacao de SOPs | Alfred | Operacional |
+| wolf-meeting-summary | Resumo de reunioes | Alfred | Dormant |
+| wolf-process-docs | Documentacao de SOPs | Alfred | Dormant |
 | wolf-clickup-digest | Digest diario ClickUp | Alfred | Operacional |
-| wolf-reports | Reports PDF profissionais | Alfred | Operacional |
+| wolf-reports | Reports PDF profissionais | Alfred | Dormant |
 | wolf-self-heal | Auto-diagnostico e recuperacao | Alfred | Operacional |
-| wolf-criar-grupo | Criacao de grupos Telegram | Alfred | Operacional |
-| wolf-weather | Previsao do tempo | Alfred | Operacional |
-| wolf-learning-engine | Aprendizado continuo, style guides | Alfred | Operacional |
+| wolf-learning-engine | Aprendizado continuo, style guides | Alfred | Dormant |
 | wolf-caption-gen | Legendas para Instagram | Luna | Operacional |
 | wolf-creative-analysis | Analise de criativos | Luna | Operacional |
 | wolf-reference-curator | Curadoria de referencias visuais | Luna | Operacional |
@@ -30,62 +28,53 @@
 | natiely-ops | Operacoes de design e gestao | Alfred | Operacional |
 | wolf-video-pipeline | Pipeline producao de video | Editor | Operacional |
 | wolf-voice | Transcricao de audio Telegram | Alfred | Operacional |
-| wolf-shorts-factory | Criacao de shorts/reels | Editor | Operacional |
+| wolf-shorts-factory | Criacao de shorts/reels | Editor | Dormant |
 | dark-radar | Inteligencia de mercado | Scout/Sage | Desabilitado (pip broken) |
 | modo-sono | Rotina de fechamento diario (00-05h) | Alfred | Latente |
 
-### Wolf Agency — Ferramentas (7 skills)
+### Wolf Agency — Ferramentas (5 skills)
 
 | Skill | Funcao | Status |
 |-------|--------|--------|
 | clickup-api | API ClickUp direto | Operacional |
-| clickup-auditor | Auditoria de tarefas ClickUp | Operacional |
-| design-system | Extracao de Design Systems (Figma, HTML, JSON, Tailwind) | Operacional |
-| knowledge-brain | Base de conhecimento (Supabase, 1199+ cards) | Operacional |
-| wolf-voice-debug | Debug via audio Telegram | Latente |
-| youtube-monitor | Monitor de canais YouTube | Operacional (standalone) |
-| youtube-transcript | Transcricao de videos YouTube | Operacional |
+| design-system | Extracao de Design Systems (Figma) | Operacional |
+| knowledge-brain | Base de conhecimento (1199+ cards) | Operacional |
+| youtube-monitor | Monitor de canais YouTube | Dormant |
+| youtube-transcript | Transcricao de videos YouTube | Dormant |
 
-### Plataforma OpenClaw (19 skills)
+### Plataforma OpenClaw (13 skills)
 
 | Skill | Funcao | Status |
 |-------|--------|--------|
 | agent-browser | Navegacao web | Operacional |
-| blogburst | Blog posts em massa | Requer BLOGBURST_API_KEY |
 | competitor-analysis-report | Analise de concorrentes | Operacional |
 | content-creator | Criacao de conteudo | Operacional |
 | find-skills | Busca de skills no ClawdHub | Operacional |
-| frontend-design | Design web profissional | Operacional |
+| frontend-design | Design web profissional | Dormant |
 | github | Integracao GitHub | Operacional |
-| google-meet | Google Meet API | Operacional |
-| google-slides | Google Slides API | Operacional |
 | google-trends | Google Trends | Operacional |
 | humanizer | Humanizacao de texto AI | Operacional |
-| invoice-tracker-pro | Rastreador de faturas | Operacional |
+| invoice-tracker-pro | Rastreador de faturas | Dormant |
 | markdown-converter | Conversao Markdown | Operacional |
-| n8n-workflow-automation | Automacao n8n | Operacional |
 | nano-pdf | Geracao de PDFs | Operacional |
 | news-summary | Resumo de noticias | Operacional |
-| tavily-search | Busca web Tavily | Requer TAVILY_API_KEY |
-| excel-xlsx | Geracao de planilhas Excel | Operacional |
-| word-docx | Geracao de documentos Word | Operacional |
+| excel-xlsx | Geracao de planilhas Excel | Dormant |
 
-### Marketing & Criacao (12 skills)
+### Marketing & Criacao (11 skills)
 
 | Skill | Funcao | Status |
 |-------|--------|--------|
-| postwall | Mural de posts | Requer POSTWALL_API_KEY |
 | quick-reminders | Lembretes rapidos | Operacional |
-| social-data | Dados de redes sociais | Requer MC_API |
 | summarize | Resumos gerais | Operacional |
-| content-engine | Conteudo nativo por plataforma | Operacional |
-| cost-aware-llm-pipeline | Roteamento de modelo por custo | Operacional |
-| strategic-compact | Compactacao estrategica de contexto | Operacional |
-| auto-shorts-repurposer | Repurpose long-form → shorts | Operacional |
-| email-sequence | Sequencias de email marketing | Operacional |
-| marketing-psychology | Frameworks de psicologia de marketing | Operacional |
+| content-engine | Conteudo nativo por plataforma | Dormant |
+| cost-aware-llm-pipeline | Roteamento de modelo por custo | Dormant |
+| strategic-compact | Compactacao estrategica de contexto | Dormant |
+| auto-shorts-repurposer | Repurpose long-form → shorts | Dormant |
+| email-sequence | Sequencias de email marketing | Dormant |
+| marketing-psychology | Frameworks de psicologia de marketing | Dormant |
 | page-architect | Arquitetura de landing pages | Operacional |
-| video-subtitles | Geracao de legendas em video | Operacional |
+| video-subtitles | Geracao de legendas em video | Dormant |
+| sovereign-brand-voice-writer | Escrita com voz de marca | Operacional |
 
 ### Utilidades (5 skills)
 
@@ -93,30 +82,9 @@
 |-------|--------|--------|
 | task-resume | Retomada de tarefas | Operacional |
 | todo-boss | Gestao de todos | Operacional |
-| whatsapp-business | WhatsApp Business API | Operacional |
-| powerpoint-pptx | Geracao de apresentacoes | Operacional |
-| sovereign-brand-voice-writer | Escrita com voz de marca | Operacional |
-
-### Nao configuradas / Requer API key
-
-| Skill | Funcao | Key necessaria |
-|-------|--------|----------------|
-| cold-email | Email frio automatizado | MACHFIVE_API_KEY |
-| genviral | Conteudo viral com API | GENVIRAL_API_KEY |
-| google-ads-api | Google Ads API | MATON_API_KEY |
-| tiktok-ads | TikTok Ads API | TBD |
-
-### Provavelmente abandonadas (candidatas a _archive)
-
-| Skill | Motivo |
-|-------|--------|
-| capability-evolver | Self-evolution generico, sem uso Wolf |
-| cs-pricing-strategy | Pricing tool generico, sem uso ativo |
-| feishu-evolver-wrapper | Plataforma chinesa, irrelevante |
-| mac-compute-use | MCP GUI automation, sem uso ativo |
-| proactive-agent | Nao documentado, sem referencias |
-| tavily-web-search-for-openclaw | Duplicata de tavily-search |
-| transcriptapi | Duplicata de wolf-voice / youtube-transcript |
+| powerpoint-pptx | Geracao de apresentacoes | Dormant |
+| word-docx | Geracao de documentos Word | Dormant |
+| cfo-wolf | Diretor Financeiro | Operacional |
 
 ---
 
@@ -132,7 +100,7 @@
 | Nova | agents/strategy/ | Estrategia e inteligencia |
 | Editor (Ed) | agents/video-editor-pro/ | Edicao de video |
 
-### Dev Squad (13 — Echo removido, diretorio ausente)
+### Dev Squad (13)
 
 | Agente | Pasta | Funcao |
 |--------|-------|--------|
@@ -160,7 +128,7 @@
 
 | Agente | Pasta | Funcao |
 |--------|-------|--------|
-| CFO Wolf | agents/cfo-wolf/ | Diretor Financeiro (requer MATON_API_KEY) |
+| CFO Wolf | agents/cfo-wolf/ | Diretor Financeiro |
 
 ---
 
@@ -174,4 +142,13 @@
 
 ---
 
-*Atualizado: 2026-03-26 — Auditoria completa: removidos 6 fantasmas, adicionadas 29 skills nao-documentadas, Echo removido (dir ausente), status de API keys atualizado*
+## Arquivadas (skills/_archive/) — 22 skills
+
+blogburst, capability-evolver, cold-email, cs-pricing-strategy, feishu-evolver-wrapper,
+genviral, google-ads-api, google-meet, google-slides, mac-compute-use, n8n-workflow-automation,
+postwall, proactive-agent, social-data, tavily-search, tavily-web-search-for-openclaw,
+tiktok-ads, transcriptapi, whatsapp-business + 3 anteriores
+
+---
+
+*Atualizado: 2026-03-26 — Limpeza completa: 12 skills mortas arquivadas, 5 abandonadas arquivadas, 2 duplicatas removidas, docs alinhados com disco*
