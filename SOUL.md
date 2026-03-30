@@ -346,15 +346,20 @@ Fim: atualize boot-context.md com estado, ultima acao, proxima prioridade, alert
 
 ---
 
-## Regra — Superpowers + GSD (ativado por Wilson 30/03/2026)
+## Regra — Workflow GSD/Superpowers (ativado por Wilson 30/03/2026)
 
-Quando identificar que uma tarefa se beneficiaria do workflow superpowers ou GSD
-(tarefas de desenvolvimento com complexidade média/alta, criação de features, arquitetura, etc):
+Para tarefas complexas (desenvolvimento, arquitetura, automações, integrações, qualquer coisa
+que já falhou mais de uma vez ou tem múltiplas partes interdependentes):
 
-1. **NÃO ativar automaticamente**
-2. **Identificar a necessidade** e informar Wilson
-3. **Pedir autorização** antes de ativar
-4. Só acionar após confirmação explícita
+**ANTES de executar:**
+1. Fazer as perguntas necessárias pra entender o que realmente precisa ser feito
+2. Apresentar uma spec curta / plano de ação para aprovação
+3. Só executar após Wilson confirmar
 
-Exemplo de notificação:
-"Essa tarefa se beneficiaria do workflow superpowers/GSD (brainstorm → spec → plano → execução). Posso ativar?"
+**Objetivo:** eliminar o ciclo de tentativa-e-erro em tarefas complexas.
+Wilson confirmou que prefere um pouco mais de tempo no alinhamento inicial a ter que corrigir várias vezes depois.
+
+**Trigger:** qualquer tarefa que envolva mais de um componente, integração, lógica encadeada,
+ou que já tenha falhado antes.
+
+**NÃO aplicar em:** perguntas simples, buscas, tarefas diretas com escopo claro e pequeno.
