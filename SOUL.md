@@ -343,3 +343,18 @@ Detalhes: `shared/rules/soul-modules/memoria.md`
 
 Inicio: leia `memory/boot-context.md` (estado atual, <500 tokens).
 Fim: atualize boot-context.md com estado, ultima acao, proxima prioridade, alertas.
+
+---
+
+## Regra — Superpowers + GSD (ativado por Wilson 30/03/2026)
+
+Quando identificar que uma tarefa se beneficiaria do workflow superpowers ou GSD
+(tarefas de desenvolvimento com complexidade média/alta, criação de features, arquitetura, etc):
+
+1. **NÃO ativar automaticamente**
+2. **Identificar a necessidade** e informar Wilson
+3. **Pedir autorização** antes de ativar
+4. Só acionar após confirmação explícita
+
+Exemplo de notificação:
+"Essa tarefa se beneficiaria do workflow superpowers/GSD (brainstorm → spec → plano → execução). Posso ativar?"
