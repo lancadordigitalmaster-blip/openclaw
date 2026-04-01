@@ -1,5 +1,4 @@
-const ADMIN_KEY   = 'wolf2026';
-const CORRECT_PIN = 'wolf2026';
+let ADMIN_KEY = sessionStorage.getItem('wolf_admin_key') || '';
 const SUPABASE_URL  = 'https://dqhiafxbljujahmpcdhf.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxaGlhZnhibGp1amFobXBjZGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2ODUyNzAsImV4cCI6MjA4ODI2MTI3MH0._eYfSa0stwIysa12_AObw52hugijfMetzLzkaeNCt2g';
 
@@ -9,30 +8,51 @@ function togglePinVis() {
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-function checkPin() {
+async function checkPin() {
   const val = document.getElementById('pin-input').value;
-  if (val === CORRECT_PIN) {
-    sessionStorage.setItem('wolf-admin-auth', '1');
-    document.getElementById('pin-overlay').classList.add('hidden');
-    document.getElementById('app').style.display = '';
-    initApp();
-  } else {
-    document.getElementById('pin-error').textContent = 'Senha incorreta. Tente novamente.';
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-input').focus();
+  if (!val) return;
+
+  document.getElementById('pin-error').textContent = 'Verificando...';
+
+  try {
+    const res = await fetch('/api/admin', { headers: { 'x-admin-key': val } });
+    if (res.ok) {
+      ADMIN_KEY = val;
+      sessionStorage.setItem('wolf_admin_key', val);
+      document.getElementById('pin-overlay').classList.add('hidden');
+      document.getElementById('app').style.display = '';
+      initApp();
+    } else {
+      document.getElementById('pin-error').textContent = 'Senha incorreta. Tente novamente.';
+      document.getElementById('pin-input').value = '';
+      document.getElementById('pin-input').focus();
+    }
+  } catch {
+    document.getElementById('pin-error').textContent = 'Erro de conexão. Tente novamente.';
   }
 }
 
 function logout() {
-  sessionStorage.removeItem('wolf-admin-auth');
+  sessionStorage.removeItem('wolf_admin_key');
+  ADMIN_KEY = '';
   location.reload();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  if (sessionStorage.getItem('wolf-admin-auth') === '1') {
-    document.getElementById('pin-overlay').classList.add('hidden');
-    document.getElementById('app').style.display = '';
-    initApp();
+  if (ADMIN_KEY) {
+    fetch('/api/admin', { headers: { 'x-admin-key': ADMIN_KEY } })
+      .then(r => {
+        if (r.ok) {
+          document.getElementById('pin-overlay').classList.add('hidden');
+          document.getElementById('app').style.display = '';
+          initApp();
+        } else {
+          sessionStorage.removeItem('wolf_admin_key');
+          ADMIN_KEY = '';
+          setTimeout(() => document.getElementById('pin-input')?.focus(), 100);
+        }
+      })
+      .catch(() => setTimeout(() => document.getElementById('pin-input')?.focus(), 100));
   } else {
     setTimeout(() => document.getElementById('pin-input')?.focus(), 100);
   }
