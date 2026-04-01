@@ -1,0 +1,123 @@
+{
+  "client_name": "Victor",
+  "service_type": "Divulgação Estratégica de Eventos",
+  "tagline": "Comunicação visual que lota eventos.",
+  "year": "2026",
+  "whatsapp": "5573999423003",
+  "ticker_items": ["Divulgação de Eventos", "Design Estratégico", "Vídeos para Redes Sociais", "Animações Promocionais", "Identidade Visual", "Presença Digital", "Stories e Feed", "Engajamento"],
+  "context": {
+    "heading": "Eventos que precisam\nser vistos",
+    "bio_paragraphs": [
+      "Negócios ligados a **eventos e experiências gastronômicas** dependem diretamente de uma comunicação visual atrativa e constante para atrair público e gerar movimento.",
+      "As redes sociais são hoje o **principal canal de divulgação**, responsáveis por despertar interesse, comunicar novidades e manter o público engajado com a marca.",
+      "Este projeto foi desenvolvido para **estruturar a divulgação digital dos eventos**, garantindo consistência visual, presença constante nas redes e maior alcance das publicações."
+    ],
+    "badges": ["Eventos e gastronomia", "Divulgação estratégica", "Identidade visual própria", "Comunicação constante"],
+    "objectives": [
+      "Aumentar o alcance das divulgações",
+      "Gerar maior interesse do público nos eventos",
+      "Manter constância de comunicação nas redes sociais",
+      "Fortalecer a imagem profissional da marca",
+      "Ampliar a visibilidade das programações e atrações"
+    ]
+  },
+  "services": [
+    {
+      "name": "Design para Redes Sociais",
+      "tag": "16 artes/mês",
+      "bullets": [
+        "Criação de artes para feed e stories",
+        "Divulgação de eventos e programações",
+        "Chamadas promocionais e anúncios de atrações",
+        "Lembretes de programação e reforço de marca",
+        "Materiais desenvolvidos para máximo alcance"
+      ]
+    },
+    {
+      "name": "Vídeos Estratégicos",
+      "tag": "2 Reels/mês",
+      "bullets": [
+        "Vídeos curtos editados para Reels",
+        "Divulgação de eventos e chamadas promocionais",
+        "Apresentação de atrações e programações",
+        "Formato com maior alcance nas plataformas digitais",
+        "Conteúdo dinâmico voltado para engajamento"
+      ]
+    },
+    {
+      "name": "Animações Promocionais",
+      "tag": "2 animações/mês",
+      "bullets": [
+        "Animações curtas de até 30 segundos",
+        "Destaque para eventos importantes e campanhas",
+        "Anúncios de eventos principais e divulgações especiais",
+        "Conteúdos de maior impacto visual",
+        "Campanhas promocionais com movimento"
+      ]
+    },
+    {
+      "name": "Identidade Visual da Marca",
+      "tag": "Único",
+      "bullets": [
+        "Criação do logotipo da marca",
+        "Definição de paleta de cores",
+        "Definição de tipografia da marca",
+        "Conceito visual da identidade",
+        "Aplicações básicas da marca",
+        "Comunicação profissional, padronizada e reconhecível"
+      ]
+    }
+  ],
+  "deliverables": [
+    {
+      "badge": "Mensal",
+      "title": "Design & Feed",
+      "highlight": true,
+      "rows": [
+        {"label": "Artes para feed", "value": "16/mês", "accent": true},
+        {"label": "Stories", "value": "Incluso"},
+        {"label": "Divulgações especiais", "value": "Incluso"}
+      ]
+    },
+    {
+      "badge": "Mensal",
+      "title": "Vídeo & Animação",
+      "rows": [
+        {"label": "Reels editados", "value": "2/mês", "accent": true},
+        {"label": "Animações 30s", "value": "2/mês", "accent": true}
+      ]
+    },
+    {
+      "badge": "Único",
+      "title": "Identidade Visual",
+      "rows": [
+        {"label": "Logotipo", "value": "Incluso"},
+        {"label": "Paleta de cores", "value": "Incluso"},
+        {"label": "Tipografia", "value": "Incluso"},
+        {"label": "Aplicações", "value": "Incluso"}
+      ]
+    }
+  ],
+  "investment": {
+    "currency": "R$",
+    "amount": "1.450",
+    "suffix": "/mês",
+    "payment_options": [
+      {"title": "PIX", "desc": "Pagamento à vista sem acréscimo.", "highlight": true},
+      {"title": "Transferência Bancária", "desc": "TED ou DOC."}
+    ]
+  },
+  "support": [
+    "Identidade Visual completa entregue no início (R$ 1.800 — pagamento único)",
+    "Suporte estratégico contínuo via WhatsApp",
+    "Alinhamento mensal de calendário e programações",
+    "Ajustes após aprovação dentro do mês vigente",
+    "Comunicação direta para urgências e eventos especiais",
+    "Grupo exclusivo para envio de briefings e materiais"
+  ],
+  "close": {
+    "heading": "Uma comunicação bem estruturada é o que transforma eventos em experiências que lotam.",
+    "body": "Esta proposta foi desenvolvida para criar uma presença visual consistente, profissional e estratégica — ampliando a visibilidade da marca e potencializando a divulgação dos seus eventos.",
+    "cta_text": "Falar com a Wolf"
+  }
+}

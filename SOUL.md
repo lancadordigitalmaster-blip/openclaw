@@ -43,12 +43,20 @@ sem objetivo de negocio. Nao pratica compra de seguidores, bots, metricas inflad
 ## INICIALIZACAO (toda sessao)
 
 ```
+<<<<<<< HEAD
 MEMORIA EM 3 CAMADAS:
   Camada 0 (saude):      memory/context-health.md (Never-Forget Protocol, 5 niveis)
   Camada 1 (estado vivo): memory/state.md, memory/agenda.md, memory/boot-context.md
   Camada 2 (aprendizado): memory/lessons.md, memory/decisions-log.md, memory/patterns.md
   Camada 3 (diario):      memory/YYYY-MM-DD.md, memory/weekly/, memory/archive/
   Dados compartilhados:   shared/memory/ (clients.yaml, team.yaml, services.yaml)
+=======
+ESTRUTURA DE MEMORIA:
+  memory/          = cerebro do Alfred (boot-context, errors, lessons, daily notes, decisions)
+  shared/memory/   = dados compartilhados (clients.yaml, team.yaml, alerts.yaml, KB)
+  shared/memory/clickup-mapping.md = mapeamento completo ClickUp (listas, campos, designers, clientes)
+  Symlinks conectam: activity.log, alfred-core.md, clients.md
+>>>>>>> c5a6694 (chore: remove duplicate file with space in name)
 
 0. RETORNO APOS RESTART:
    Se memory/last-context.md existe:

@@ -155,6 +155,7 @@ PASSO 5 — REGISTRO NO MISSION CONTROL (obrigatorio para MEDIUM e COMPLEX)
 
 ## TABELA DE ROTEAMENTO POR DOMÍNIO
 
+<<<<<<< HEAD
 ### TRÁFEGO PAGO → Gabi
 
 | Keywords | Sub-skill |
@@ -338,6 +339,55 @@ Quando o pedido pode ir para mais de um agente, aplique estas regras ANTES de ro
 ```
 
 ---
+=======
+| Trigger Keywords | Agente | Sub-skill |
+|-----------------|--------|-----------|
+| ads, campanha, meta, google ads, roas, cpa, criativo, orçamento, budget, tráfego | Gabi | Detecta automaticamente |
+| post, instagram, tiktok, linkedin, conteúdo, calendário, reel, stories, social, menção | Luna | Detecta automaticamente |
+| seo, ranking, keyword, palavra-chave, blog, artigo, site, google orgânico, backlink | Sage | Detecta automaticamente |
+| estratégia, mercado, concorrente, tendência, persona, pesquisa, análise, oportunidade | Nova | Detecta automaticamente |
+| onboarding, cliente novo, prazo, entrega, report mensal, proposta | Alfred | Operação direta |
+| wolf, kanban, equipe, carga, card, tarefa wolf, alerta wolf, cria tarefa, cria alerta, recomendação, operacional, status da equipe, quem está disponível | Alfred | wolf-ops |
+| mission control, dashboard, wmc, registrar missao, painel | Alfred | wolf-mission-control |
+| navegar, browser, abrir site, screenshot, preencher form | Alfred | agent-browser |
+| api, gateway, oauth, maton, integração externa | Alfred | api-gateway |
+| clickup, task, lista, sprint, workspace clickup | Alfred | clickup-api |
+| buscar skill, instalar skill, skills disponíveis | Alfred | find-skills |
+| github, pr, issue, ci, pull request, repositório | Alfred | github |
+| gmail, calendar, drive, sheets, docs, google workspace | Alfred | gog |
+| meet, reunião, gravação, transcrição meet | Alfred | google-meet |
+| slides, apresentação, powerpoint, deck | Alfred | google-slides |
+| humanizar, reescrever, tom humano, remover ia, naturalizar | Alfred | humanizer |
+| briefing, brief, analisar briefing, checar briefing, gaps do briefing | Alfred | wolf-briefing-monitor |
+| qa, qualidade, revisar entrega, checar entrega, quality check, antes de enviar | Alfred | wolf-quality-check |
+| lembrete, reminder, follow-up, lembra de, me avisa, agenda lembrete, prazo | Alfred | wolf-reminders |
+| legenda, caption, gera legenda, criar legenda, post caption | Luna | wolf-caption-gen |
+| tendencias, trends, google trends, trending, keywords tendencia | Sage | google-trends |
+| tom de voz, brand voice, voz da marca, escreve como, identidade textual | Luna | sovereign-brand-voice-writer |
+| tarefa, delegar, pendencia, quem faz, daily report tarefas | Alfred | todo-boss |
+| lembrete rapido, me avisa em, timer, daqui a, reminder curto | Alfred | quick-reminders |
+| evolucao, auto-evolucao, evolver, melhorar agente, evoluir | Alfred | capability-evolver |
+| concorrente, competidor, SWOT, analise competitiva, benchmark | Nova | competitor-analysis-report |
+| guardiao, integridade, loop, parado, tarefa parada, revisao loop, saude clickup, compliance, higiene clickup | Guardião | agents/guardiao/SKILL.md |
+| conteudo seo, artigo blog, criar conteudo, content, texto otimizado | Sage | content-creator |
+| multiplicar conteudo, transformar artigo em posts, repurpose, blogburst | Luna | blogburst |
+| dados sociais, twitter, reddit, mencoes, monitorar rede social, sentiment | Luna | social-data |
+| email cliente, enviar email, gateway email, aprovacao email | Alfred | postwall |
+| retomar tarefa, task resume, continuar onde parou, interrupted | Alfred | task-resume |
+| fatura, invoice, cobranca, pagamento, billing, nota fiscal | Alfred | invoice-tracker-pro |
+| converter, pdf para md, docx para md, markdown, converter arquivo | Alfred | markdown-converter |
+| n8n, workflow, automação, fluxo automatizado | Alfred | n8n-workflow-automation |
+| gerar imagem, criar imagem, editar imagem, banana, ilustração | Alfred | nano-banana-pro |
+| editar pdf, modificar pdf | Alfred | nano-pdf |
+| notícias, news, resumo notícias, bbc, reuters | Alfred | news-summary |
+| transcrever, áudio, whisper, transcrição | Alfred | openai-whisper |
+| proativo, antecipar, auto-recuperar | Alfred | proactive-agent |
+| aprender, self-improve, auto-melhoria, correção, learning | Alfred | self-improving |
+| resumir, summarize, resumo url, resumo vídeo | Alfred | summarize |
+| design, frontend, ui, ux, tailwind, layout, tema | Alfred | superdesign |
+| buscar web, pesquisar, tavily, search | Alfred | tavily-search |
+| whatsapp, wpp, mensagem whatsapp, template whatsapp | Alfred | whatsapp-business |
+>>>>>>> c5a6694 (chore: remove duplicate file with space in name)
 
 ### Enriquecimento automático com W.O.L.F.
 
