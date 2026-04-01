@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Self-Reflection CLI for OpenClaw
+# Based on SKILL.md spec v1.1.1
+
+CONFIG_FILE="${HOME}/.openclaw/self-reflection.json"
+DEFAULT_THRESHOLD=60
+DEFAULT_MEMORY="${HOME}/.openclaw/workspace/memory/self-review.md"
+DEFAULT_STATE="${HOME}/.openclaw/self-review-state.json"
+DEFAULT_MAX_ENTRIES=5
+
+# Load config
+if [[ -f "$CONFIG_FILE" ]]; then
+  THRESHOLD=$(jq -r '.threshold_minutes // empty' "$CONFIG_FILE" 2>/dev/null || echo "$DEFAULT_THRESHOLD")
+  MEMORY_FILE=$(jq -r '.memory_file // empty' "$CONFIG_FILE" 2>/dev/null || echo "$DEFAULT_MEMORY")
+  STATE_FILE=$(jq -r '.state_file // empty' "$CONFIG_FILE" 2>/dev/null || echo "$DEFAULT_STATE")
+  MAX_ENTRIES=$(jq -r '.max_entries_context // empty' "$CONFIG_FILE" 2>/dev/null || echo "$DEFAULT_MAX_ENTRIES")
+  # Expand ~ in paths
+  MEMORY_FILE="${MEMORY_FILE/#\~/$HOME}"
+  STATE_FILE="${STATE_FILE/#\~/$HOME}"
+else
+  THRESHOLD=$DEFAULT_THRESHOLD
+  MEMORY_FILE=$DEFAULT_MEMORY
+  STATE_FILE=$DEFAULT_STATE
+  MAX_ENTRIES=$DEFAULT_MAX_ENTRIES
+fi
+
+now_epoch() {
+  date +%s
+}
+
+now_iso() {
+  date "+%Y-%m-%d %H:%M"
+}
+
+init_state() {
+  if [[ ! -f "$STATE_FILE" ]]; then
+    echo "{\"last_reflection\": 0}" > "$STATE_FILE"
+  fi
+}
+
+init_memory() {
+  if [[ ! -f "$MEMORY_FILE" ]]; then
+    mkdir -p "$(dirname "$MEMORY_FILE")"
+    cat > "$MEMORY_FILE" <<'EOF'
+# Self-Review Log
+
+> Lessons learned and improvements for continuous growth.
+
+---
+EOF
+  fi
+}
+
+cmd_check() {
+  init_state
+  local quiet=false
+  [[ "${1:-}" == "--quiet" ]] && quiet=true
+
+  local last
+  last=$(jq -r '.last_reflection // 0' "$STATE_FILE")
+  local now
+  now=$(now_epoch)
+  local diff=$(( (now - last) / 60 ))
+
+  if (( diff >= THRESHOLD )); then
+    if $quiet; then
+      echo "ALERT"
+    else
+      echo "ALERT: Self-reflection required. Last reflection was ${diff} minutes ago."
+    fi
+    return 1
+  else
+    local remaining=$(( THRESHOLD - diff ))
+    if $quiet; then
+      echo "OK"
+    else
+      echo "OK: Status good. Next reflection due in ${remaining} minutes."
+    fi
+    return 0
+  fi
+}
+
+cmd_log() {
+  if [[ $# -lt 3 ]]; then
+    echo "Usage: self-reflection log <tag> <miss> <fix>"
+    exit 1
+  fi
+
+  local tag="$1"
+  local miss="$2"
+  local fix="$3"
+  local timestamp
+  timestamp=$(now_iso)
+
+  init_memory
+  init_state
+
+  # Append to memory file
+  cat >> "$MEMORY_FILE" <<EOF
+
+## ${timestamp} | ${tag}
+
+**Miss:** ${miss}
+**Fix:** ${fix}
+
+---
+EOF
+
+  # Update state
+  local now
+  now=$(now_epoch)
+  jq --argjson ts "$now" '.last_reflection = $ts' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+
+  echo "Reflection logged successfully."
+  echo "  Tag:  ${tag}"
+  echo "  Miss: ${miss}"
+  echo "  Fix:  ${fix}"
+}
+
+cmd_read() {
+  local n="${1:-$MAX_ENTRIES}"
+  init_memory
+
+  if [[ ! -f "$MEMORY_FILE" ]]; then
+    echo "No reflections found."
+    return
+  fi
+
+  local total
+  total=$(grep -c '^## [0-9]' "$MEMORY_FILE" 2>/dev/null || echo 0)
+
+  echo "=== Last ${n} reflections (of ${total} total) ==="
+  echo ""
+
+  # Extract entries (each starts with ## date)
+  awk -v n="$n" '
+    /^## [0-9]/ { count++ }
+    { lines[NR] = $0; entry_start[count] = (entry_start[count] ? entry_start[count] : NR) }
+    END {
+      start = (count > n) ? count - n + 1 : 1
+      for (i = start; i <= count; i++) {
+        from = entry_start[i]
+        to = (i < count) ? entry_start[i+1] - 1 : NR
+        for (j = from; j <= to; j++) print lines[j]
+      }
+    }
+  ' "$MEMORY_FILE"
+}
+
+cmd_stats() {
+  init_state
+  init_memory
+
+  local last
+  last=$(jq -r '.last_reflection // 0' "$STATE_FILE")
+  local last_human="never"
+  if (( last > 0 )); then
+    last_human=$(date -r "$last" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || date -d "@$last" "+%Y-%m-%d %H:%M:%S" 2>/dev/null || echo "unknown")
+  fi
+
+  local total
+  total=$(grep -c '^## [0-9]' "$MEMORY_FILE" 2>/dev/null || echo 0)
+
+  echo "=== Self-Reflection Statistics ==="
+  echo ""
+  echo "Last reflection: ${last_human}"
+  echo "Total reflections: ${total}"
+  echo ""
+  echo "Threshold: ${THRESHOLD} minutes"
+  echo "Memory file: ${MEMORY_FILE}"
+  echo ""
+
+  if (( total > 0 )); then
+    echo "Top tags:"
+    grep '^## [0-9]' "$MEMORY_FILE" | sed 's/.*| //' | sort | uniq -c | sort -rn | head -5 | while read -r count tag; do
+      echo "  ${tag}: ${count}"
+    done
+  fi
+}
+
+cmd_reset() {
+  init_state
+  local now
+  now=$(now_epoch)
+  jq --argjson ts "$now" '.last_reflection = $ts' "$STATE_FILE" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "$STATE_FILE"
+  echo "Timer reset. Next reflection due in ${THRESHOLD} minutes."
+}
+
+# Main
+case "${1:-help}" in
+  check) shift; cmd_check "$@" ;;
+  log)   shift; cmd_log "$@" ;;
+  read)  shift; cmd_read "$@" ;;
+  stats) cmd_stats ;;
+  reset) cmd_reset ;;
+  *)
+    echo "Usage: self-reflection <check|log|read|stats|reset>"
+    echo ""
+    echo "Commands:"
+    echo "  check [--quiet]            Check if reflection is due"
+    echo "  log <tag> <miss> <fix>     Log a new reflection"
+    echo "  read [n]                   Read last n reflections"
+    echo "  stats                      Show statistics"
+    echo "  reset                      Reset the timer"
+    ;;
+esac
