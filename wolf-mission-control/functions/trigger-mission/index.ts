@@ -1,13 +1,13 @@
 // Wolf Mission Control — Edge Function: trigger-mission
 // Versão: 2.0 | 2026-03-18
 // Aciona um agente para executar uma missão com contexto completo
-// LLM: Anthropic Haiku 4.5 direto (migrado de OpenRouter em 2026-04-01)
+// LLM: Anthropic Haiku 4.5 via OpenRouter (migrado de Anthropic direto em 2026-03-19)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY")!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const NETTO_TELEGRAM_ID = "789352357";
 
@@ -110,24 +110,23 @@ Se precisar sinalizar outro agente, use o formato:
 [/SIGNALS]
 `.trim();
 
-    // 7. Chamar LLM via Anthropic direto (Haiku 4.5)
-    const model = "claude-haiku-4-5-20251001";
+    // 7. Chamar LLM via OpenRouter (Anthropic Haiku 4.5)
+    const model = "anthropic/claude-haiku-4-5";
     const maxTokens = Math.min(mission.agents.max_tokens || 4096, 8192);
 
     const llmResponse = await fetch(
-      "https://api.anthropic.com/v1/messages",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model,
           max_tokens: maxTokens,
-          system: systemPrompt,
           messages: [
+            { role: "system", content: systemPrompt },
             { role: "user", content: contextualPrompt },
           ],
         }),
@@ -136,12 +135,12 @@ Se precisar sinalizar outro agente, use o formato:
 
     if (!llmResponse.ok) {
       const errBody = await llmResponse.text();
-      throw new Error(`Anthropic API error: ${llmResponse.status} — ${errBody}`);
+      throw new Error(`OpenRouter API error: ${llmResponse.status} — ${errBody}`);
     }
 
     const llmResult = await llmResponse.json();
-    const output = llmResult.content[0].text;
-    const tokensUsed = llmResult.usage?.output_tokens || 0;
+    const output = llmResult.choices[0].message.content;
+    const tokensUsed = llmResult.usage?.completion_tokens || 0;
 
     // 8. Salvar output
     const { data: outputRecord } = await supabase

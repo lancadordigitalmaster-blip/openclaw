@@ -14,7 +14,7 @@ Toda a logica de identidade e comportamento do Alfred esta em `SOUL.md`.
 OpenClaw Gateway (porta 18789)
   ├── Telegram Bot (@alfredwolf_bot)
   ├── 7 crons LLM ativos + 49 scripts crontab (jobs.json + crontab)
-  ├── 58 skills ativas + 20 agentes (TOOLS.md)
+  ├── 72 skills ativas + 20 agentes (TOOLS.md)
   ├── Wolf Mission Control (Supabase)
   ├── wolf-monitor.sh (bash puro, 30min) + wolf-queue.sh (LLM condicional)
   └── Anthropic API (Sonnet 4.6 primario, Haiku 4.5 crons)
@@ -26,7 +26,7 @@ OpenClaw Gateway (porta 18789)
 |---------|--------|
 | `SOUL.md` | System prompt do Alfred v4.0 — identidade, regras, protocolos |
 | `orchestrator/ORCHESTRATOR.md` | Roteamento de mensagens v5.1 |
-| `TOOLS.md` | Inventario completo: 58 skills + 20 agentes + 3 plugins |
+| `TOOLS.md` | Inventario completo: 72 skills + 20 agentes + 3 plugins |
 | `agents/*/SKILL.md` | Skills dos 20 agentes especializados |
 | `shared/memory/team.yaml` | Equipe real da Wolf (designers, atendimento) |
 | `shared/memory/clients.yaml` | Base de clientes (a preencher) |
@@ -37,8 +37,7 @@ OpenClaw Gateway (porta 18789)
 
 - **Primario:** `anthropic/claude-sonnet-4-6` (Sonnet 4.6) — conversas Telegram
 - **Crons:** `anthropic/claude-haiku-4-5-20251001` (Haiku 4.5) — tarefas automaticas
-- **Edge Functions (WMC):** `claude-haiku-4-5-20251001` (Anthropic direto, migrado de OpenRouter 2026-04-01)
-- **Fallbacks:** Haiku 4.5 (Anthropic) → Gemini 2.5 Flash (OpenRouter)
+- **Fallbacks:** Haiku 4.5 (Anthropic) → Haiku 4.5 (OpenRouter) → Gemini 2.5 Flash (OpenRouter)
 - **Heartbeat:** Haiku 4.5 (Anthropic)
 - **Custo estimado:** ~$2.50-5.50/mes (muito abaixo do antigo Ollama Cloud Pro $20/mes)
 
@@ -77,7 +76,7 @@ OpenClaw Gateway (porta 18789)
 7. **Meta Ads tokens validos** — 3 tokens ativos (expiram 2026-05-12), sync automatico via wolf-traffic-command
 8. **Sessions acumulam:** se Alfred travar, limpar `~/.openclaw/agents/main/sessions/sessions.json` + restart
 9. **Ferramenta com falha:** retry 2x → abordagem alternativa → so escalar pro usuario em ultimo caso
-10. **Auditoria 2026-04-01:** archives removidos, stubs dormentes limpos, Edge Functions migradas para Anthropic direto
-11. **API autenticada:** endpoints parse-proposal e update-proposal exigem header `x-api-key` (env var WOLF_API_KEY)
+10. **skills/_archive/** contem 11 skills arquivadas — nao usar
+11. **agents/_archive/** contem agents/editor (superseded por video-editor-pro) e agents/mi (vazio)
 12. **Regra de analise pre-implementacao:** antes de implementar QUALQUER mudanca, analisar se melhora o sistema ou se pode causar regressao/quebra. Avaliar impacto, riscos e beneficios. Essa regra e obrigatoria para toda implementacao.
 13. **Modo Sono:** rotina de fechamento diario autonomo (00:00-05:00) — ver `skills/modo-sono/` quando implementado
