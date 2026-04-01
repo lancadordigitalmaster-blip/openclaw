@@ -1,7 +1,9 @@
-const { createClient } = require('@supabase/supabase-js');
 const { readFileSync } = require('fs');
 const { join } = require('path');
 const { generateHTML } = require('../_lib/builder');
+const { getSupabaseClient } = require('../_lib/supabase-client');
+const { toSlug } = require('../_lib/slug-utils');
+const { setCors } = require('../_lib/cors');
 
 const TEMPLATES = {
   classic: readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8'),
@@ -9,10 +11,17 @@ const TEMPLATES = {
 };
 
 module.exports = async function handler(req, res) {
-  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (setCors(req, res, { methods: 'POST, OPTIONS' })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    // Autenticação via API key
+    const apiKey = req.headers['x-api-key'];
+    const expectedKey = process.env.WOLF_API_KEY;
+    if (!expectedKey || !apiKey || apiKey !== expectedKey) {
+      return res.status(401).json({ error: 'API key invalida ou ausente' });
+    }
+
     const { id, proposal_data, seller } = req.body || {};
 
     if (!id) return res.status(400).json({ error: 'ID da proposta obrigatorio' });
@@ -20,10 +29,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'proposal_data invalido' });
     }
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const supabase = getSupabaseClient();
 
     // Fetch current record to preserve template
     const { data: current } = await supabase.from('proposals').select('template').eq('id', id).single();
@@ -34,10 +40,7 @@ module.exports = async function handler(req, res) {
     const html = generateHTML(proposal_data, templateHTML, { templateName });
 
     // Derive slug from client_name
-    const clientSlug = proposal_data.client_name
-      .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const clientSlug = toSlug(proposal_data.client_name);
 
     // Upload to Supabase Storage
     const { error: uploadErr } = await supabase.storage
@@ -49,7 +52,8 @@ module.exports = async function handler(req, res) {
 
     if (uploadErr) return res.status(500).json({ error: `Erro ao salvar: ${uploadErr.message}` });
 
-    const publicUrl = `https://comercial.wolfpacks.com.br/proposta/${clientSlug}`;
+    const baseUrl = process.env.PROPOSAL_BASE_URL || 'https://comercial.wolfpacks.com.br';
+    const publicUrl = `${baseUrl}/proposta/${clientSlug}`;
 
     const inv = proposal_data.investment || {};
     const amountNum = parseFloat((inv.amount || '0').toString().replace(/\./g, '').replace(',', '.'));
@@ -75,7 +79,7 @@ module.exports = async function handler(req, res) {
       type: 'updated',
       description: `Proposta atualizada por ${actor}`,
       actor,
-    }).catch(() => {});
+    }).catch((err) => console.error('[update-proposal] activity insert error:', err.message));
 
     return res.status(200).json({ ok: true, url: publicUrl });
   } catch (err) {

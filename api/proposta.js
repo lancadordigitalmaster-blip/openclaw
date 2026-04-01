@@ -1,10 +1,11 @@
 const https = require('https');
+const { isValidSlug } = require('../_lib/slug-utils');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://dqhiafxbljujahmpcdhf.supabase.co';
 
 module.exports = async function handler(req, res) {
   const slug = req.query.slug;
-  if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+  if (!slug || !isValidSlug(slug)) {
     return res.status(400).send('Invalid proposal slug');
   }
 

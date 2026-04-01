@@ -1,18 +1,13 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('../_lib/supabase-client');
+const { isValidSlug } = require('../_lib/slug-utils');
 
 module.exports = async function handler(req, res) {
   const slug = req.query.slug;
-  if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
+  if (!slug || !isValidSlug(slug)) {
     return res.status(400).send('Invalid slug');
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).send('Server configuration error');
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase.storage
     .from('proposals')
     .download(`${slug}.html`);

@@ -1,10 +1,23 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('../_lib/supabase-client');
+const { timingSafeEqual } = require('crypto');
+const { setCors } = require('../_lib/cors');
 const https = require('https');
+
+function safeCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+const ALLOWED_BRIDGE_HOSTS = new Set(['127.0.0.1', 'localhost']);
 
 function pingUrl(url, timeoutMs) {
   return new Promise((resolve) => {
     try {
       const u = new URL(url + '/status');
+      if (!ALLOWED_BRIDGE_HOSTS.has(u.hostname)) return resolve(false);
       const mod = u.protocol === 'https:' ? https : require('http');
       const req = mod.get(u.toString(), { timeout: timeoutMs }, (res) => {
         resolve(true);
@@ -19,103 +32,83 @@ function pingUrl(url, timeoutMs) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-key');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (setCors(req, res, { methods: 'GET, OPTIONS' })) return;
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const adminKey = req.headers['x-admin-key'];
-  const expectedKey = process.env.ADMIN_SECRET || 'wolf2026';
-  if (!adminKey || adminKey !== expectedKey) {
+  const expectedKey = process.env.ADMIN_SECRET;
+  if (!expectedKey) {
+    return res.status(500).json({ error: 'ADMIN_SECRET env var not configured' });
+  }
+  if (!adminKey || !safeCompare(adminKey, expectedKey)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const sb = getSupabaseClient();
 
-  if (!supabaseUrl || !supabaseKey) {
-    return res.status(500).json({ error: 'Missing Supabase env vars' });
-  }
+  // Auto-prune system_logs older than 7 days (fire-and-forget, runs on each admin request)
+  const pruneDate = new Date(Date.now() - 7 * 86400000).toISOString();
+  sb.from('system_logs').delete().lt('created_at', pruneDate)
+    .then(({ error }) => { if (error) console.error('log prune error:', error.message); })
+    .catch((err) => console.error('log prune error:', err.message));
 
-  const sb = createClient(supabaseUrl, supabaseKey);
-
-  // --- Proposals ---
-  let proposals = [];
-  let stats = {
-    open_count: 0,
-    won_count: 0,
-    lost_count: 0,
-    total_pipeline: 0,
-    total_revenue: 0,
-    views_today: 0,
-  };
-
-  try {
-    const { data: allProposals } = await sb
-      .from('proposals')
+  // Execute all independent queries in parallel
+  const [proposalsResult, activitiesResult, configResult, cronResult, logsResult] = await Promise.all([
+    sb.from('proposals')
       .select('id, client_name, seller, status, amount, service_type, created_at, view_count, slug, last_viewed_at')
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(20)
+      .then(r => r.data || [])
+      .catch((err) => { console.error('proposals fetch error:', err.message); return []; }),
 
-    if (allProposals) {
-      proposals = allProposals;
-
-      const today = new Date().toISOString().slice(0, 10);
-
-      for (const p of allProposals) {
-        const amt = parseFloat(p.amount) || 0;
-        if (p.status === 'open' || p.status === 'sent') {
-          stats.open_count++;
-          stats.total_pipeline += amt;
-        } else if (p.status === 'won') {
-          stats.won_count++;
-          stats.total_revenue += amt;
-        } else if (p.status === 'lost') {
-          stats.lost_count++;
-        }
-        if (p.last_viewed_at && p.last_viewed_at.slice(0, 10) === today) {
-          stats.views_today += p.view_count || 0;
-        }
-      }
-    }
-  } catch (err) {
-    console.error('proposals fetch error:', err.message);
-    proposals = [];
-  }
-
-  // --- Activities ---
-  let activities = [];
-  try {
-    const { data: acts } = await sb
-      .from('proposal_activities')
+    sb.from('proposal_activities')
       .select('id, proposal_id, type, description, actor, created_at, proposals(client_name)')
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(30)
+      .then(r => r.data || [])
+      .catch((err) => { console.error('activities fetch error:', err.message); return []; }),
 
-    if (acts) activities = acts;
-  } catch (err) {
-    console.error('activities fetch error:', err.message);
-    activities = [];
-  }
+    sb.from('config')
+      .select('*')
+      .then(r => r.data || [])
+      .catch((err) => { console.error('config fetch error:', err.message); return []; }),
 
-  // --- Config ---
-  let config = [];
-  let bridgeUrl = null;
-  try {
-    const { data: cfg } = await sb.from('config').select('*');
-    if (cfg) {
-      config = cfg;
-      const bridgeRow = cfg.find((r) => r.key === 'bridge_url');
-      if (bridgeRow) bridgeUrl = bridgeRow.value || null;
+    sb.from('cron_status')
+      .select('*')
+      .order('name')
+      .then(r => r.data || [])
+      .catch((err) => { console.error('cron_status fetch error:', err.message); return []; }),
+
+    sb.from('system_logs')
+      .select('id, created_at, level, source, message, details')
+      .order('created_at', { ascending: false })
+      .limit(200)
+      .then(r => r.data || [])
+      .catch((err) => { console.error('logs fetch error:', err.message); return []; }),
+  ]);
+
+  // Compute stats from proposals
+  const stats = { open_count: 0, won_count: 0, lost_count: 0, total_pipeline: 0, total_revenue: 0, views_today: 0 };
+  const today = new Date().toISOString().slice(0, 10);
+  for (const p of proposalsResult) {
+    const amt = parseFloat(p.amount) || 0;
+    if (p.status === 'open' || p.status === 'sent') {
+      stats.open_count++;
+      stats.total_pipeline += amt;
+    } else if (p.status === 'won') {
+      stats.won_count++;
+      stats.total_revenue += amt;
+    } else if (p.status === 'lost') {
+      stats.lost_count++;
     }
-  } catch (err) {
-    console.error('config fetch error:', err.message);
-    config = [];
+    if (p.last_viewed_at && p.last_viewed_at.slice(0, 10) === today) {
+      stats.views_today += p.view_count || 0;
+    }
   }
 
-  // --- Bridge ping ---
+  // Bridge ping (depends on config result)
+  const bridgeRow = configResult.find((r) => r.key === 'bridge_url');
+  const bridgeUrl = bridgeRow?.value || null;
   let bridge = { online: false, url: null };
   if (bridgeUrl) {
     try {
@@ -126,31 +119,18 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // --- Cron Status ---
-  let cronStatus = [];
-  try {
-    const { data: cronRows } = await sb.from('cron_status').select('*').order('name');
-    if (cronRows) cronStatus = cronRows;
-  } catch (err) {
-    console.error('cron_status fetch error:', err.message);
-  }
-
-  // --- System Logs ---
-  let logs = [];
-  try {
-    const { data: logRows } = await sb
-      .from('system_logs')
-      .select('id, created_at, level, source, message, details')
-      .order('created_at', { ascending: false })
-      .limit(200);
-    if (logRows) logs = logRows;
-  } catch (err) {
-    console.error('logs fetch error:', err.message);
-  }
-
-  // --- Error count (last 24h) ---
+  // Error count (last 24h)
   const cutoff24h = new Date(Date.now() - 86400000).toISOString();
-  const errorCount24h = logs.filter(l => l.level === 'error' && l.created_at >= cutoff24h).length;
+  const errorCount24h = logsResult.filter(l => l.level === 'error' && l.created_at >= cutoff24h).length;
 
-  return res.status(200).json({ stats, proposals, activities, config, bridge, logs, errorCount24h, cronStatus });
+  return res.status(200).json({
+    stats,
+    proposals: proposalsResult,
+    activities: activitiesResult,
+    config: configResult,
+    bridge,
+    logs: logsResult,
+    errorCount24h,
+    cronStatus: cronResult,
+  });
 };

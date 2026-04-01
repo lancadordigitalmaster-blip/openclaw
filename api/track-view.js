@@ -1,9 +1,9 @@
-const { createClient } = require('@supabase/supabase-js');
+const { getSupabaseClient } = require('../_lib/supabase-client');
+const { isValidSlug } = require('../_lib/slug-utils');
+const { rateLimit } = require('../_lib/rate-limit');
+const { setCors } = require('../_lib/cors');
 
-const sb = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
-);
+const sb = getSupabaseClient();
 
 async function syslog(level, message, details) {
   try { await sb.from('system_logs').insert({ source: 'track-view', level, message, details }); } catch {}
@@ -22,18 +22,22 @@ async function notifyWhatsApp(phone, msg) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to: phone, text: msg }),
       signal: AbortSignal.timeout(5000),
-    }).catch(() => {});
-  } catch (_) {}
+    }).catch((err) => console.error('[notifyWhatsApp] fetch error:', err.message));
+  } catch (err) {
+    console.error('[notifyWhatsApp] error:', err.message);
+  }
 }
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (setCors(req, res, { methods: 'POST, OPTIONS' })) return;
   if (req.method !== 'POST') return res.status(405).end();
+
+  // Rate limit: 30 views por minuto por IP
+  if (rateLimit(req, res, { maxRequests: 30, windowMs: 60_000 })) return;
 
   const slug = req.query.slug || (req.body && req.body.slug);
   if (!slug) return res.status(400).json({ error: 'slug required' });
+  if (!isValidSlug(slug)) return res.status(400).json({ error: 'slug invalido' });
 
   try {
     // Busca proposta pelo slug direto
@@ -63,7 +67,7 @@ module.exports = async (req, res) => {
       type: 'view',
       description: `Proposta visualizada pelo cliente (${viewCount}ª vez)`,
       actor: 'Cliente',
-    }).catch(() => {});
+    }).catch((err) => console.error('[track-view] activity insert error:', err.message));
 
     // Notificar na 1ª, 3ª e a cada 5 views
     const shouldNotify = viewCount === 1 || viewCount === 3 || (viewCount > 3 && viewCount % 5 === 0);

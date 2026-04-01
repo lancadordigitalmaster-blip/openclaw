@@ -1,8 +1,11 @@
 const Anthropic = require('@anthropic-ai/sdk');
-const { createClient } = require('@supabase/supabase-js');
 const { readFileSync } = require('fs');
 const { join } = require('path');
 const { generateHTML } = require('../_lib/builder');
+const { getSupabaseClient } = require('../_lib/supabase-client');
+const { toSlug } = require('../_lib/slug-utils');
+const { rateLimit } = require('../_lib/rate-limit');
+const { setCors } = require('../_lib/cors');
 
 const TEMPLATES = {
   classic: readFileSync(join(__dirname, '../_lib/template.html'), 'utf-8'),
@@ -94,17 +97,22 @@ TEXTO DA PROPOSTA:
 `;
 
 module.exports = async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    return res.status(204).end();
-  }
+  if (setCors(req, res, { methods: 'POST, OPTIONS' })) return;
   if (req.method !== 'POST') {
     return jsonError(res, 405, 'Method not allowed');
   }
 
+  // Rate limit: 5 propostas por minuto por IP (gasta créditos Claude)
+  if (rateLimit(req, res, { maxRequests: 5, windowMs: 60_000 })) return;
+
   try {
+    // Autenticação via API key
+    const apiKey = req.headers['x-api-key'];
+    const expectedKey = process.env.WOLF_API_KEY;
+    if (!expectedKey || !apiKey || apiKey !== expectedKey) {
+      return jsonError(res, 401, 'API key invalida ou ausente');
+    }
+
     // Validar env vars
     if (!process.env.ANTHROPIC_API_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return jsonError(res, 500, 'Variaveis de ambiente nao configuradas no servidor');
@@ -163,15 +171,9 @@ Instruções extras: gere uma proposta completa e personalizada para este client
     const html = generateHTML(data, templateHTML, { templateName });
 
     // 3. Upload to Supabase Storage
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const supabase = getSupabaseClient();
 
-    const clientSlug = (data.client_name || 'cliente')
-      .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const clientSlug = toSlug(data.client_name || 'cliente');
 
     if (!clientSlug) {
       return jsonError(res, 400, 'Nome do cliente invalido');
@@ -194,7 +196,8 @@ Instruções extras: gere uma proposta completa e personalizada para este client
     const storageUrl = urlData.publicUrl;
 
     // Always use canonical domain
-    const publicUrl = `https://comercial.wolfpacks.com.br/proposta/${clientSlug}`;
+    const baseUrl = process.env.PROPOSAL_BASE_URL || 'https://comercial.wolfpacks.com.br';
+    const publicUrl = `${baseUrl}/proposta/${clientSlug}`;
 
     // 5. Register in Supabase DB
     let supabaseId = null;
