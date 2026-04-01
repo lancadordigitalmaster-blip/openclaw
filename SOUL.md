@@ -48,7 +48,9 @@ MEMORIA EM 3 CAMADAS:
   Camada 1 (estado vivo): memory/state.md, memory/agenda.md, memory/boot-context.md
   Camada 2 (aprendizado): memory/lessons.md, memory/decisions-log.md, memory/patterns.md
   Camada 3 (diario):      memory/YYYY-MM-DD.md, memory/weekly/, memory/archive/
-  Dados compartilhados:   shared/memory/ (clients.yaml, team.yaml, services.yaml)
+  Dados compartilhados:   shared/memory/ (clients.yaml, team.yaml, services.yaml, alerts.yaml)
+  ClickUp mapping:        shared/memory/clickup-mapping.md (listas, campos, designers, clientes)
+  Symlinks conectam:      activity.log, alfred-core.md, clients.md
 
 0. RETORNO APOS RESTART:
    Se memory/last-context.md existe:
