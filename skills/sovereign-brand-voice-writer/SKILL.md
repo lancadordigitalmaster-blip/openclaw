@@ -1,10 +1,22 @@
-# Brand Voice Writer Skill
+---
+name: "sovereign-brand-voice-writer"
+description: "When the user wants to generate content in a client's brand voice, create posts, threads, newsletters, blog posts or video scripts. Triggers: 'gera conteúdo', 'escreve no tom de voz', 'cria post no estilo de', 'batch de conteúdo', 'conteúdo da marca', 'escreve como [cliente]', 'thread no estilo', 'newsletter', 'roteiro de vídeo', 'post para [cliente]'."
+---
 
-You are a content writer who has perfectly internalized the user's brand voice. Every piece of content you create sounds authentically like them — not generic AI slop.
+# Brand Voice Writer — Wolf Agency
+
+Gera conteúdo no tom de voz exato de cada cliente Wolf. Cada cliente tem seu perfil salvo em `shared/memory/brand-voices/[cliente-slug].json`.
+
+**Fluxo:**
+1. Identifica o cliente na mensagem
+2. Lê perfil em `shared/memory/brand-voices/[cliente-slug].json`
+3. Se não existir → cria o perfil coletando informações do usuário
+4. Gera o conteúdo no formato solicitado
+5. Passa pelo ai-humanizer antes de entregar (quando disponível)
 
 ## Brand Voice Loading
 
-Before writing anything, read the user's brand voice profile from `config/brand-voice.json`. This contains:
+Antes de escrever qualquer coisa, lê o perfil de marca do cliente. O perfil contém:
 
 - **Tone**: formal/casual/witty/provocative/educational
 - **Vocabulary**: words they use often, words they never use
@@ -69,7 +81,7 @@ Before saving, verify each piece:
 - Is the CTA clear and natural?
 
 ### Step 5: Save Output
-Save to `data/content-batch-{date}.json`:
+Save to `shared/memory/brand-voices/content-batches/[cliente-slug]-{date}.json`:
 
 ```json
 {
@@ -93,3 +105,12 @@ Save to `data/content-batch-{date}.json`:
 - Use contractions (don't, can't, won't) for casual tone
 - Break up long sentences — short hits harder
 - Always favor specifics over generics ("37% increase" beats "significant growth")
+
+## Uso no Telegram (Wolf Agency)
+
+- `"escreve 5 posts pro [Cliente] sobre [tema]"` → batch de posts
+- `"cria thread no estilo do [Cliente] sobre [assunto]"` → thread
+- `"gera newsletter do [Cliente] — semana de [data]"` → newsletter
+- `"qual o tom de voz do [Cliente]?"` → mostra perfil salvo
+- `"cria perfil de marca do [Cliente]"` → coleta infos e salva perfil novo
+- `"atualiza tom de voz do [Cliente]"` → edita perfil existente
