@@ -1,4 +1,4 @@
-FROM node:22-slim
+FROM node:current-slim
 
 # ffmpeg para transcrição de áudio/vídeo
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

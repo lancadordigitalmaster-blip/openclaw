@@ -705,11 +705,7 @@ const customTools = [
         site_name: {
           type: "string",
           description:
-<<<<<<< HEAD
             "Nome curto para a URL (ex: wesley-ramos). Sera usado como path: propostas.wolfpacks.com.br/wesley-ramos",
-=======
-            "Nome curto para a URL (ex: wesley-ramos). Sera usado como path: vercel-wolfpack-deploy.vercel.app/wesley-ramos",
->>>>>>> c5a6694 (chore: remove duplicate file with space in name)
         },
       },
       required: ["filepath"],
