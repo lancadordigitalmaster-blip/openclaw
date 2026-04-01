@@ -101,11 +101,7 @@ A ferramenta gera o HTML, faz deploy no Vercel e retorna a URL. Envie ao solicit
 ```
 ✅ Proposta gerada para [Cliente]!
 
-<<<<<<< HEAD
-🔗 https://propostas.wolfpacks.com.br/[slug]
-=======
 🔗 https://comercial.wolfpacks.com.br/proposta/[slug]
->>>>>>> c5a6694 (chore: remove duplicate file with space in name)
 
 Abra no navegador para ver a proposta completa com animações.
 ```
@@ -126,21 +122,13 @@ Abra no navegador para ver a proposta completa com animações.
 | Fechamento | `close.heading`, `close.body`, `close.cta_text` |
 ---
 
-<<<<<<< HEAD
 ## Deploy
-
-| URL | Uso |
-|-----|-----|
-| `propostas.wolfpacks.com.br/[slug]` | Todas as propostas |
-
-**SEMPRE** usar `propostas.wolfpacks.com.br` como URL pública. Nunca expor URLs internas (Vercel, Netlify, etc.) para o cliente.
-=======
-## Deploy Vercel
 
 | Projeto | URL | Uso |
 |---------|-----|-----|
 | **wolf-comercial** | `comercial.wolfpacks.com.br/proposta/[slug]` | Propostas (clientes reais) |
->>>>>>> c5a6694 (chore: remove duplicate file with space in name)
+
+**SEMPRE** usar `comercial.wolfpacks.com.br` como URL pública. Nunca expor URLs internas (Vercel, Netlify, etc.) para o cliente.
 
 ---
 
@@ -153,11 +141,7 @@ Abra no navegador para ver a proposta completa com animações.
 - WhatsApp padrão: `5573991484716` (Wolf Agency)
 - Usar `**negrito**` nos bio_paragraphs para destaques (o script converte para `<strong>`)
 - Se algum campo não estiver nos slides, omitir (o script usa defaults)
-<<<<<<< HEAD
-- URL pública: SEMPRE `propostas.wolfpacks.com.br` — nunca expor URLs internas
-=======
-- URL gerada automaticamente: `https://comercial.wolfpacks.com.br/proposta/[slug]`
->>>>>>> c5a6694 (chore: remove duplicate file with space in name)
+- URL pública: SEMPRE `comercial.wolfpacks.com.br/proposta/[slug]` — nunca expor URLs internas
 
 ---
 
