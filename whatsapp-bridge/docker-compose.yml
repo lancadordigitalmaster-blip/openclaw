@@ -1,0 +1,28 @@
+services:
+  whatsapp-bridge:
+    build: .
+    container_name: wolf-whatsapp-bridge
+    restart: always
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./auth_state:/app/auth_state
+      - ./sessions:/app/sessions
+      - ./groups:/app/groups
+      - ${HOME}/.openclaw/.env:/app/.env:ro
+    env_file:
+      - ${HOME}/.openclaw/.env
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Sao_Paulo
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

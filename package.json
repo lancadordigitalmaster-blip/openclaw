@@ -2,7 +2,7 @@
   "name": "wolf-comercial",
   "private": true,
   "scripts": {
-    "test": "node --test tests/"
+    "test": "node --test tests/test-lib.js tests/test-builder.js tests/test-api-validation.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
