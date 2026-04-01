@@ -2,13 +2,13 @@
 // Versão: 2.0 | 2026-03-18
 // Recebe mensagens do Telegram, usa Alfred (Anthropic Haiku 4.5) para decidir ação,
 // cria missão no WMC e aciona trigger-mission automaticamente.
-// LLM: Anthropic Haiku 4.5 via OpenRouter (migrado de Anthropic direto em 2026-03-19)
+// LLM: Anthropic Haiku 4.5 direto (migrado de OpenRouter em 2026-04-01)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const OPENROUTER_API_KEY   = Deno.env.get("OPENROUTER_API_KEY")!;
+const ANTHROPIC_API_KEY    = Deno.env.get("ANTHROPIC_API_KEY")!;
 const TELEGRAM_BOT_TOKEN   = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const NETTO_TELEGRAM_ID    = Deno.env.get("NETTO_TELEGRAM_ID") ?? "789352357";
 const WOLF_KEY             = Deno.env.get("WOLF_ROUTER_KEY") ?? "wolf-secret";
@@ -35,30 +35,31 @@ const AGENT_MAP: Record<string, string> = {
 };
 
 // =============================================================
-// CHAMADA LLM (Anthropic Haiku 4.5 via OpenRouter)
+// CHAMADA LLM (Anthropic Haiku 4.5 direto)
 // =============================================================
-async function callLLM(system: string, user: string, maxTokens = 1024): Promise<string> {
+async function callLLM(systemPrompt: string, user: string, maxTokens = 1024): Promise<string> {
   const res = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
+    "https://api.anthropic.com/v1/messages",
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-haiku-4-5",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: maxTokens,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: system },
           { role: "user", content: user },
         ],
       }),
     }
   );
-  if (!res.ok) throw new Error(`OpenRouter API error: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error(`Anthropic API error: ${res.status} ${await res.text()}`);
   const json = await res.json();
-  return json.choices[0].message.content;
+  return json.content[0].text;
 }
 
 // =============================================================
