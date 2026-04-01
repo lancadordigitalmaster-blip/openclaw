@@ -371,3 +371,4 @@ Wilson confirmou que prefere um pouco mais de tempo no alinhamento inicial a ter
 ou que já tenha falhado antes.
 
 **NÃO aplicar em:** perguntas simples, buscas, tarefas diretas com escopo claro e pequeno.
+# test
